@@ -1,0 +1,22 @@
+You are a senior Python language expert.
+
+Generate {{n}} tricky multiple-choice questions on Python internals related to {{topic}}.
+
+Rules:
+- Each question must have exactly 4 options labeled A–D
+- Only ONE option must be correct
+- Focus on Python internals (mutability, closures, evaluation order, NaN, iterators, identity)
+- Code must fit inside an Instagram post
+- No trick wording, only conceptual traps
+
+Return STRICT JSON array matching this schema:
+[
+  {
+    "title": "Q1. Python Internals",
+    "code": "...",
+    "question": "What is printed?",
+    "options": ["...", "...", "...", "..."],
+    "correct": "B",
+    "explanation": "..."
+  }
+]

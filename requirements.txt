@@ -1,0 +1,6 @@
+openai
+pillow
+moviepy
+python-dotenv
+pydantic
+tqdm
