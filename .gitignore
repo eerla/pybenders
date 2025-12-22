@@ -8,6 +8,6 @@ build/
 dist/
 *.egg-info/
 .venv/
-.pybenders
+pybenders/
 .env
-.output/
+output/

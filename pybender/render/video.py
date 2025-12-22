@@ -4,9 +4,9 @@ from moviepy import (
     AudioFileClip,
     TextClip,
     vfx,
+    concatenate_videoclips
 )
 from pathlib import Path
-
 
 VIDEO_W, VIDEO_H = 1080, 1920
 FPS = 30
@@ -22,7 +22,25 @@ def create_question_reel(
     # QUESTION CLIP (0–20s)
     # --------------------------------------------------
 
-    # Background (dimmed)
+    fg_start = (
+        ImageClip(str(question_image))
+        .resized(width=SAFE_WIDTH)
+        .with_duration(10)
+        .with_position("center")
+        )
+
+    fg_end = (
+        ImageClip(str(question_image))
+        .resized(width=int(SAFE_WIDTH * 1.03))
+        .with_duration(10)
+        .with_position("center")
+    )
+
+    fg_q = concatenate_videoclips(
+        [fg_start, fg_end],
+        method="compose"
+    ).with_duration(20)
+
     bg_q = (
         ImageClip(str(question_image))
         .resized(height=VIDEO_H)
@@ -30,23 +48,10 @@ def create_question_reel(
         .with_opacity(0.25)
     )
 
-    # Foreground (safe area)
-    fg_q = (
-        ImageClip(str(question_image))
-        .resized(width=SAFE_WIDTH)
-        .with_duration(20)
-        .with_position("center")
-    )
-
-    # Safe zoom (foreground only)
-    fg_q = fg_q.with_effects([
-        vfx.Resize(lambda t: 1 + 0.03 * (t / 20))
-    ])
-
     question_clip = CompositeVideoClip(
         [bg_q, fg_q],
         size=(VIDEO_W, VIDEO_H)
-    )
+    ).with_duration(20)
 
     # --------------------------------------------------
     # CTA CLIP (20–30s)
@@ -165,6 +170,7 @@ def create_question_reel(
     final_video.write_videofile(
         str(output_path),
         codec="libx264",
+        preset="ultrafast",  # veryfast, default = medium
         audio_codec="aac",
         fps=FPS,
         threads=4
