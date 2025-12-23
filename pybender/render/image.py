@@ -60,7 +60,7 @@ def wrap_text(draw, text, font, max_width):
 # create new function to create a eye catching beautifully animated CTA image 
 VIDEO_W, VIDEO_H = 1080, 1920
 # Canvas
-WIDTH, HEIGHT = 1080, 1080
+WIDTH, HEIGHT = 1080, 1920
 PADDING_X = 60
 PADDING_Y = 50
 
@@ -329,7 +329,7 @@ def render_answer_image(q: Question, out_path: Path) -> None:
     # --------------------------------------------------
     # Header
     # --------------------------------------------------
-    header = "Answer Revealed"
+    header = "Answer"
     hw = draw.textbbox((0, 0), header, font=HEADER_FONT)[2]
     draw.text(
         ((WIDTH - hw) // 2, 18),
@@ -426,53 +426,50 @@ def render_answer_image(q: Question, out_path: Path) -> None:
     correct_label = q.correct.upper()
     option_h = 52
 
-    for label, option in zip(["A", "B", "C", "D"], q.options):
-        is_correct = label == correct_label
+    # Show only the correct answer
+    label = correct_label
+    option = q.options[ord(label) - ord("A")]
+    
+    # Highlight background
+    draw.rounded_rectangle(
+        [content_x, y - 6, content_x + max_width, y + option_h],
+        radius=14,
+        fill=CORRECT_BG
+    )
+    draw.rectangle(
+        [content_x, y - 6, content_x + 6, y + option_h],
+        fill=SUCCESS_COLOR
+    )
 
-        if is_correct:
-            # Highlight background
-            draw.rounded_rectangle(
-                [content_x, y - 6, content_x + max_width, y + option_h],
-                radius=14,
-                fill=CORRECT_BG
-            )
-            draw.rectangle(
-                [content_x, y - 6, content_x + 6, y + option_h],
-                fill=SUCCESS_COLOR
-            )
+    draw.text(
+        (content_x + 18, y),
+        f"{label}. {option}",
+        font=TEXT_FONT,
+        fill=SUCCESS_COLOR
+    )
 
-        text_color = SUCCESS_COLOR if is_correct else TEXT_COLOR
-        prefix = f"{label}. " if is_correct else f"{label}. "
+    y += option_h + 12
 
-        draw.text(
-            (content_x + 18, y),
-            f"{prefix}{option}",
-            font=TEXT_FONT,
-            fill=text_color
+    # --------------------------------------------------
+    # Explanation (optional but powerful) 
+    # --------------------------------------------------
+    if q.explanation:
+        y += 10
+        draw.line(
+            [(content_x, y), (content_x + max_width, y)],
+            fill=ACCENT_COLOR,
+            width=2
         )
+        y += 18
 
-        y += option_h + 12
-
-    # --------------------------------------------------
-    # Explanation (optional but powerful) -- adding new slide specific to explanation
-    # --------------------------------------------------
-    # if q.explanation:
-    #     y += 10
-    #     draw.line(
-    #         [(content_x, y), (content_x + max_width, y)],
-    #         fill=ACCENT_COLOR,
-    #         width=2
-    #     )
-    #     y += 18
-
-    #     for line in wrap_text(draw, q.explanation, TEXT_FONT, max_width):
-    #         draw.text(
-    #             (content_x, y),
-    #             line,
-    #             font=TEXT_FONT,
-    #             fill=SUBTLE_TEXT
-    #         )
-    #         y += 44
+        for line in wrap_text(draw, q.explanation, TEXT_FONT, max_width):
+            draw.text(
+                (content_x, y),
+                line,
+                font=TEXT_FONT,
+                fill=SUBTLE_TEXT
+            )
+            y += 44
 
     # --------------------------------------------------
     # Save
@@ -838,6 +835,121 @@ def render_explanation_image(q: Question, out_path: Path) -> None:
         (content_x + (max_width - fw) // 2, HEIGHT - 70),
         footer,
         font=HEADER_FONT,
+        fill=SUBTLE_TEXT
+    )
+
+    # --------------------------------------------------
+    # Save
+    # --------------------------------------------------
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+
+
+def render_welcome_image() -> None:
+    """
+    Render a welcome image: 'Welcome to Daily Dose of Python'
+    """
+    out_path = Path("output/images/welcome/welcome.png")
+    if out_path.exists():
+        print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+        return
+
+    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
+    draw = ImageDraw.Draw(img)
+
+    # --------------------------------------------------
+    # Main Card
+    # --------------------------------------------------
+    card_x, card_y = 60, 220
+    card_w, card_h = WIDTH - 120, HEIGHT - 440
+
+    draw.rounded_rectangle(
+        [card_x, card_y, card_x + card_w, card_y + card_h],
+        radius=32,
+        fill=CARD_COLOR
+    )
+
+    content_x = card_x + 60
+    max_width = card_w - 120
+    y = card_y + 220
+
+    # --------------------------------------------------
+    # Title
+    # --------------------------------------------------
+    title = "Welcome to"
+    tw = draw.textbbox((0, 0), title, font=TITLE_FONT)[2]
+    draw.text(
+        (content_x + (max_width - tw) // 2, y),
+        title,
+        font=TITLE_FONT,
+        fill=SUBTLE_TEXT
+    )
+    y += 70
+
+    # --------------------------------------------------
+    # Brand Name
+    # --------------------------------------------------
+    brand = "Daily Dose of Python"
+    bw = draw.textbbox((0, 0), brand, font=TITLE_FONT)[2]
+    draw.text(
+        (content_x + (max_width - bw) // 2, y),
+        brand,
+        font=TITLE_FONT,
+        fill=ACCENT_COLOR
+    )
+    y += 90
+
+    # --------------------------------------------------
+    # Divider
+    # --------------------------------------------------
+    draw.line(
+        [
+            content_x + 120,
+            y,
+            content_x + max_width - 120,
+            y
+        ],
+        fill=ACCENT_COLOR,
+        width=2
+    )
+    y += 150
+
+    # --------------------------------------------------
+    # Subtitle
+    # --------------------------------------------------
+    subtitle = "Bite-sized Python challenges.\nThink. Comment. Learn."
+    for line in subtitle.split("\n"):
+        lw = draw.textbbox((0, 0), line, font=TITLE_FONT)[2]
+        draw.text(
+            (content_x + (max_width - lw) // 2, y),
+            line,
+            font=TITLE_FONT,
+            fill=TEXT_COLOR
+        )
+        y += 68
+
+    # --------------------------------------------------
+    # Overlay Image
+    # --------------------------------------------------
+    overlay_path = Path("output/images/media/pyimg.png")
+    if overlay_path.exists():
+        overlay = Image.open(overlay_path).convert("RGBA")
+        overlay_w, overlay_h = 600, 600
+        overlay_resized = overlay.resize((overlay_w, overlay_h), Image.Resampling.LANCZOS)
+        overlay_x = (WIDTH - overlay_w) // 2
+        overlay_y = y + 40
+        img.paste(overlay_resized, (overlay_x, overlay_y), overlay_resized)
+
+    # --------------------------------------------------
+    # Footer
+    # --------------------------------------------------
+    footer = "New challenges every day"
+    fb = draw.textbbox((0, 0), footer, font=TITLE_FONT)
+    fw = fb[2] - fb[0]
+    draw.text(
+        ((WIDTH - fw) // 2, HEIGHT - 90),
+        footer,
+        font=TITLE_FONT,
         fill=SUBTLE_TEXT
     )
 
