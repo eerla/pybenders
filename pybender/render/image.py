@@ -77,9 +77,9 @@ SUCCESS_COLOR = (72, 187, 120)
 FONT_DIR = Path("pybender/assets/fonts")
 
 TITLE_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-SemiBold.ttf"), 48)
-TEXT_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 38)
-CODE_FONT = ImageFont.truetype(str(FONT_DIR / "JetBrainsMono-Regular.ttf"), 36)
-HEADER_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 28)
+TEXT_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 48)
+CODE_FONT = ImageFont.truetype(str(FONT_DIR / "JetBrainsMono-Regular.ttf"), 40)
+HEADER_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 48)
 
 
 
@@ -228,50 +228,65 @@ def render_question_image(q: Question, out_path: Path) -> None:
     max_width = card_w - 80
 
     # --------------------------------------------------
+    # Calculate total content height first
+    # --------------------------------------------------
     # Title
-    # --------------------------------------------------
     title_bbox = draw.textbbox((0, 0), q.title, font=TITLE_FONT)
-    title_x = content_x + (max_width - title_bbox[2]) // 2
-    draw.text((title_x, y), q.title, font=TITLE_FONT, fill=ACCENT_COLOR)
-    y += 70
+    title_height = 70
 
-    # --------------------------------------------------
-    # Code Block
-    # --------------------------------------------------
+    # Code block
     code_lines = q.code.split("\n")
     line_height = 44
     block_padding = 20
-    block_height = len(code_lines) * line_height + block_padding * 2
-
-    # First, calculate wrapped lines to determine actual block height
     all_wrapped_lines = []
     for raw_line in code_lines:
         wrapped = wrap_code_line(
             draw,
             raw_line,
             CODE_FONT,
-            max_width - 40  # Account for padding inside code block
+            max_width - 40
         )
         all_wrapped_lines.extend(wrapped)
-    
-    # Recalculate block height based on actual wrapped line count
-    block_height = len(all_wrapped_lines) * line_height + block_padding * 2
+    code_block_height = len(all_wrapped_lines) * line_height + block_padding * 2
+    code_section_height = code_block_height + 40
 
-    # Code container
+    # Question text
+    question_lines = wrap_text(draw, q.question, TEXT_FONT, max_width)
+    question_height = len(question_lines) * 48 + 20
+
+    # Options
+    options_height = 4 * 46
+
+    # Total content height
+    total_content_height = title_height + code_section_height + question_height + options_height
+    card_content_height = card_h - 80  # Account for top and bottom padding
+
+    # Calculate starting y position to center vertically
+    y = card_y + (card_content_height - total_content_height) // 2
+
+    # --------------------------------------------------
+    # Title
+    # --------------------------------------------------
+    title_x = content_x + (max_width - title_bbox[2]) // 2
+    draw.text((title_x, y), q.title, font=TITLE_FONT, fill=ACCENT_COLOR)
+    y += title_height
+
+    # --------------------------------------------------
+    # Code Block
+    # --------------------------------------------------
     draw.rounded_rectangle(
         [
             content_x,
             y,
             content_x + max_width,
-            y + block_height
+            y + code_block_height
         ],
         radius=18,
         fill=CODE_BG
     )
 
-    # Accent bar
     draw.rectangle(
-        [content_x, y, content_x + 6, y + block_height],
+        [content_x, y, content_x + 6, y + code_block_height],
         fill=ACCENT_COLOR
     )
 
@@ -285,17 +300,14 @@ def render_question_image(q: Question, out_path: Path) -> None:
         )
         cy += line_height
 
-    y = cy + block_padding
-
-    y += 20
+    y += code_section_height
 
     # --------------------------------------------------
     # Question Text
     # --------------------------------------------------
-    for line in wrap_text(draw, q.question, TEXT_FONT, max_width):
+    for line in question_lines:
         draw.text((content_x, y), line, font=TEXT_FONT, fill=TEXT_COLOR)
         y += 48
-
     y += 20
 
     # --------------------------------------------------
@@ -309,7 +321,7 @@ def render_question_image(q: Question, out_path: Path) -> None:
             font=TEXT_FONT,
             fill=TEXT_COLOR
         )
-        y += 46
+        y += 56
 
     # --------------------------------------------------
     # Save
@@ -364,7 +376,7 @@ def render_answer_image(q: Question, out_path: Path) -> None:
         font=TITLE_FONT,
         fill=ACCENT_COLOR
     )
-    y += 60
+    y += 80
 
     # --------------------------------------------------
     # Code Block
@@ -424,7 +436,7 @@ def render_answer_image(q: Question, out_path: Path) -> None:
     # Options (highlight correct)
     # --------------------------------------------------
     correct_label = q.correct.upper()
-    option_h = 52
+    option_h = 60
 
     # Show only the correct answer
     label = correct_label
@@ -462,14 +474,28 @@ def render_answer_image(q: Question, out_path: Path) -> None:
         )
         y += 18
 
-        for line in wrap_text(draw, q.explanation, TEXT_FONT, max_width):
+        explanation_label = "Explanation: "
+        explanation_content = q.explanation
+        
+        # Draw "Explanation:" in accent color
+        label_width = draw.textbbox((0, 0), explanation_label, font=TEXT_FONT)[2]
+        draw.text(
+            (content_x, y),
+            explanation_label,
+            font=TEXT_FONT,
+            fill=ACCENT_COLOR
+        )
+        y += 60
+        
+        # Draw the explanation text starting from the next line
+        for line in wrap_text(draw, explanation_content, TEXT_FONT, max_width):
             draw.text(
-                (content_x, y),
-                line,
-                font=TEXT_FONT,
-                fill=SUBTLE_TEXT
+            (content_x, y),
+            line,
+            font=TEXT_FONT,
+            fill=SUBTLE_TEXT
             )
-            y += 44
+            y += 50
 
     # --------------------------------------------------
     # Save
@@ -494,7 +520,7 @@ def render_single_post_image(q: Question) -> None:
     # --------------------------------------------------
     # Header (Brand)
     # --------------------------------------------------
-    header = "Daily Python Internals"
+    header = "Daily Dose of Python"
     hw = draw.textbbox((0, 0), header, font=HEADER_FONT)[2]
     draw.text(
         ((WIDTH - hw) // 2, 18),
@@ -517,7 +543,7 @@ def render_single_post_image(q: Question) -> None:
 
     content_x = card_x + 40
     max_width = card_w - 80
-    y = card_y + 30
+    y = card_y + 80
 
     # --------------------------------------------------
     # Title
@@ -529,7 +555,7 @@ def render_single_post_image(q: Question) -> None:
         font=TITLE_FONT,
         fill=ACCENT_COLOR
     )
-    y += 60
+    y += 80
 
     # --------------------------------------------------
     # Code Block
@@ -570,12 +596,35 @@ def render_single_post_image(q: Question) -> None:
     y = cy + 30
 
     # --------------------------------------------------
+    # Question Text
+    # --------------------------------------------------
+    question_lines = wrap_text(draw, q.question, TEXT_FONT, max_width)
+    for line in question_lines:
+        draw.text((content_x, y), line, font=TEXT_FONT, fill=TEXT_COLOR)
+        y += 48
+    y += 20
+
+    # --------------------------------------------------
+    # All Options
+    # --------------------------------------------------
+    for label, option in zip(["A", "B", "C", "D"], q.options):
+        option_text = f"{label}. {option}"
+        draw.text(
+            (content_x, y),
+            option_text,
+            font=TEXT_FONT,
+            fill=TEXT_COLOR
+        )
+        y += 56
+
+    y += 20
+    # --------------------------------------------------
     # Correct Answer Highlight
     # --------------------------------------------------
     correct_label = q.correct.upper()
     correct_option = q.options[ord(correct_label) - ord("A")]
 
-    answer_height = 70
+    answer_height = 80
     draw.rounded_rectangle(
         [content_x, y, content_x + max_width, y + answer_height],
         radius=18,
@@ -596,30 +645,39 @@ def render_single_post_image(q: Question) -> None:
     y += answer_height + 24
 
     # --------------------------------------------------
-    # Explanation (Capped)
+    # Explanation (optional but powerful) 
     # --------------------------------------------------
     if q.explanation:
+        y += 10
         draw.line(
             [(content_x, y), (content_x + max_width, y)],
             fill=ACCENT_COLOR,
             width=2
         )
-        y += 16
+        y += 18
 
-        wrapped = wrap_text(draw, q.explanation, TEXT_FONT, max_width)
-
-        max_lines = MAX_EXPLANATION_HEIGHT // EXPL_LINE_HEIGHT
-        if len(wrapped) > max_lines:
-            wrapped = wrapped[: max_lines - 1] + ["… Full explanation in caption"]
-
-        for line in wrapped:
+        explanation_label = "Explanation: "
+        explanation_content = q.explanation
+        
+        # Draw "Explanation:" in accent color
+        label_width = draw.textbbox((0, 0), explanation_label, font=TEXT_FONT)[2]
+        draw.text(
+            (content_x, y),
+            explanation_label,
+            font=TEXT_FONT,
+            fill=ACCENT_COLOR
+        )
+        y += 60
+        
+        # Draw the explanation text starting from the next line
+        for line in wrap_text(draw, explanation_content, TEXT_FONT, max_width):
             draw.text(
-                (content_x, y),
-                line,
-                font=TEXT_FONT,
-                fill=SUBTLE_TEXT
+            (content_x, y),
+            line,
+            font=TEXT_FONT,
+            fill=SUBTLE_TEXT
             )
-            y += EXPL_LINE_HEIGHT
+            y += 50
 
     # --------------------------------------------------
     # Save
