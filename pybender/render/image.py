@@ -316,3 +316,172 @@ def render_question_image(q: Question, out_path: Path) -> None:
     # --------------------------------------------------
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
+
+
+
+CORRECT_BG = (20, 45, 70)
+SUCCESS_COLOR = (72, 187, 120)
+BADGE_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-SemiBold.ttf"), 28)
+
+
+def render_answer_image(q: Question, out_path: Path) -> None:
+    """
+    Render answer-reveal image highlighting the correct option.
+    """
+
+    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
+    draw = ImageDraw.Draw(img)
+
+    # --------------------------------------------------
+    # Header
+    # --------------------------------------------------
+    header = "Answer Revealed"
+    hw = draw.textbbox((0, 0), header, font=HEADER_FONT)[2]
+    draw.text(
+        ((WIDTH - hw) // 2, 18),
+        header,
+        font=HEADER_FONT,
+        fill=SUBTLE_TEXT
+    )
+
+    # --------------------------------------------------
+    # Main Card
+    # --------------------------------------------------
+    card_x, card_y = 40, 70
+    card_w, card_h = WIDTH - 80, HEIGHT - 110
+
+    draw.rounded_rectangle(
+        [card_x, card_y, card_x + card_w, card_y + card_h],
+        radius=28,
+        fill=CARD_COLOR
+    )
+
+    content_x = card_x + 40
+    max_width = card_w - 80
+    y = card_y + 30
+
+    # --------------------------------------------------
+    # Title
+    # --------------------------------------------------
+    title_bbox = draw.textbbox((0, 0), q.title, font=TITLE_FONT)
+    draw.text(
+        (content_x + (max_width - title_bbox[2]) // 2, y),
+        q.title,
+        font=TITLE_FONT,
+        fill=ACCENT_COLOR
+    )
+    y += 60
+
+    # --------------------------------------------------
+    # Code Block
+    # --------------------------------------------------
+    code_lines = q.code.split("\n")
+    line_height = 44
+    block_padding = 20
+    block_height = len(code_lines) * line_height + block_padding * 2
+
+    # First, calculate wrapped lines to determine actual block height
+    all_wrapped_lines = []
+    for raw_line in code_lines:
+        wrapped = wrap_code_line(
+            draw,
+            raw_line,
+            CODE_FONT,
+            max_width - 40  # Account for padding inside code block
+        )
+        all_wrapped_lines.extend(wrapped)
+    
+    # Recalculate block height based on actual wrapped line count
+    block_height = len(all_wrapped_lines) * line_height + block_padding * 2
+
+    # Code container
+    draw.rounded_rectangle(
+        [
+            content_x,
+            y,
+            content_x + max_width,
+            y + block_height
+        ],
+        radius=18,
+        fill=CODE_BG
+    )
+
+    # Accent bar
+    draw.rectangle(
+        [content_x, y, content_x + 6, y + block_height],
+        fill=ACCENT_COLOR
+    )
+
+    cy = y + block_padding
+    for line in all_wrapped_lines:
+        draw.text(
+            (content_x + 20, cy),
+            line,
+            font=CODE_FONT,
+            fill=TEXT_COLOR
+        )
+        cy += line_height
+
+    y = cy + block_padding
+
+    y += 20
+
+    # --------------------------------------------------
+    # Options (highlight correct)
+    # --------------------------------------------------
+    correct_label = q.correct.upper()
+    option_h = 52
+
+    for label, option in zip(["A", "B", "C", "D"], q.options):
+        is_correct = label == correct_label
+
+        if is_correct:
+            # Highlight background
+            draw.rounded_rectangle(
+                [content_x, y - 6, content_x + max_width, y + option_h],
+                radius=14,
+                fill=CORRECT_BG
+            )
+            draw.rectangle(
+                [content_x, y - 6, content_x + 6, y + option_h],
+                fill=SUCCESS_COLOR
+            )
+
+        text_color = SUCCESS_COLOR if is_correct else TEXT_COLOR
+        prefix = f"{label}. " if is_correct else f"{label}. "
+
+        draw.text(
+            (content_x + 18, y),
+            f"{prefix}{option}",
+            font=TEXT_FONT,
+            fill=text_color
+        )
+
+        y += option_h + 12
+
+    # --------------------------------------------------
+    # Explanation (optional but powerful)
+    # --------------------------------------------------
+    if q.explanation:
+        y += 10
+        draw.line(
+            [(content_x, y), (content_x + max_width, y)],
+            fill=ACCENT_COLOR,
+            width=2
+        )
+        y += 18
+
+        for line in wrap_text(draw, q.explanation, TEXT_FONT, max_width):
+            draw.text(
+                (content_x, y),
+                line,
+                font=TEXT_FONT,
+                fill=SUBTLE_TEXT
+            )
+            y += 44
+
+    # --------------------------------------------------
+    # Save
+    # --------------------------------------------------
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
