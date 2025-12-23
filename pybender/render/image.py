@@ -2,6 +2,30 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 from pybender.generator.schema import Question
 
+
+# Canvas
+WIDTH, HEIGHT = 1080, 1920
+PADDING_X = 60
+PADDING_Y = 50
+
+# Colors (match CTA theme)
+BG_COLOR = (9, 12, 24)
+CARD_COLOR = (11, 18, 32)
+CODE_BG = (15, 23, 42)
+TEXT_COLOR = (226, 232, 240)
+SUBTLE_TEXT = (148, 163, 184)
+ACCENT_COLOR = (76, 201, 240)
+CORRECT_BG = (20, 45, 70)
+SUCCESS_COLOR = (72, 187, 120)
+# Fonts
+FONT_DIR = Path("pybender/assets/fonts")
+
+TITLE_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-SemiBold.ttf"), 48)
+TEXT_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 48)
+CODE_FONT = ImageFont.truetype(str(FONT_DIR / "JetBrainsMono-Regular.ttf"), 40)
+HEADER_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 48)
+
+
 def wrap_code_line(draw, line, font, max_width):
     """
     Wrap a single line of code while preserving leading indentation.
@@ -32,6 +56,7 @@ def wrap_code_line(draw, line, font, max_width):
 
     return lines
 
+
 def wrap_text(draw, text, font, max_width):
     """
     Wrap text so that each line fits within max_width.
@@ -55,143 +80,6 @@ def wrap_text(draw, text, font, max_width):
         lines.append(current)
 
     return lines
-
-
-# create new function to create a eye catching beautifully animated CTA image 
-VIDEO_W, VIDEO_H = 1080, 1920
-# Canvas
-WIDTH, HEIGHT = 1080, 1920
-PADDING_X = 60
-PADDING_Y = 50
-
-# Colors (match CTA theme)
-BG_COLOR = (9, 12, 24)
-CARD_COLOR = (11, 18, 32)
-CODE_BG = (15, 23, 42)
-TEXT_COLOR = (226, 232, 240)
-SUBTLE_TEXT = (148, 163, 184)
-ACCENT_COLOR = (76, 201, 240)
-CORRECT_BG = (20, 45, 70)
-SUCCESS_COLOR = (72, 187, 120)
-# Fonts
-FONT_DIR = Path("pybender/assets/fonts")
-
-TITLE_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-SemiBold.ttf"), 48)
-TEXT_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 48)
-CODE_FONT = ImageFont.truetype(str(FONT_DIR / "JetBrainsMono-Regular.ttf"), 40)
-HEADER_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 48)
-
-
-
-def render_day1_cta_image() -> None:
-    """
-    Render a reusable Call-To-Action image (dark theme).
-    Saved once and reused for all reels.
-    """
-    out_path = Path("output/images/cta/day1.png")
-    if out_path.exists():
-        return
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # --------------------------------------------------
-    # Colors (Dark Theme)
-    # --------------------------------------------------
-    BG_COLOR = (9, 12, 24)          # page background
-    CARD_COLOR = (11, 18, 32)       # CTA card
-    ACCENT = (76, 201, 240)         # blue accent
-    TEXT_PRIMARY = (255, 255, 255)
-    TEXT_SECONDARY = (160, 174, 192)
-
-    # --------------------------------------------------
-    # Canvas
-    # --------------------------------------------------
-    img = Image.new("RGB", (VIDEO_W, VIDEO_H), BG_COLOR)
-    draw = ImageDraw.Draw(img)
-
-    # --------------------------------------------------
-    # Card Geometry
-    # --------------------------------------------------
-    card_w, card_h = 920, 720
-    card_x = (VIDEO_W - card_w) // 2
-    card_y = (VIDEO_H - card_h) // 2
-    radius = 32
-
-    # Rounded card
-    draw.rounded_rectangle(
-        [
-            card_x,
-            card_y,
-            card_x + card_w,
-            card_y + card_h,
-        ],
-        radius=radius,
-        fill=CARD_COLOR,
-    )
-
-    # --------------------------------------------------
-    # Fonts (adjust paths as needed)
-    # --------------------------------------------------
-    FONT_DIR = Path("pybender/assets/fonts")
-
-    title_font = ImageFont.truetype(
-        str(FONT_DIR / "Inter-Bold.ttf"), 72
-    )
-    body_font = ImageFont.truetype(
-        str(FONT_DIR / "Inter-SemiBold.ttf"), 50
-    )
-    follow_font = ImageFont.truetype(
-        str(FONT_DIR / "Inter-Regular.ttf"), 44
-    )
-
-    # --------------------------------------------------
-    # Text Content
-    # --------------------------------------------------
-    title_text = "What's Your Answer?"
-    body_text = "Drop A, B, C, or D below!\n\nAnswer drops tomorrow"
-    follow_text = "Follow for daily Python challenges"
-
-    # --------------------------------------------------
-    # Text Positions
-    # --------------------------------------------------
-    center_x = VIDEO_W // 2
-
-    def draw_centered_text(text, font, y, color):
-        w, h = draw.textbbox((0, 0), text, font=font)[2:]
-        draw.text(
-            (center_x - w // 2, y),
-            text,
-            font=font,
-            fill=color,
-            align="center",
-        )
-
-    draw_centered_text(
-        title_text,
-        title_font,
-        card_y + 90,
-        ACCENT,
-    )
-
-    draw_centered_text(
-        body_text,
-        body_font,
-        card_y + 260,
-        TEXT_PRIMARY,
-    )
-
-    draw_centered_text(
-        follow_text,
-        follow_font,
-        card_y + 520,
-        TEXT_SECONDARY,
-    )
-
-    # --------------------------------------------------
-    # Save
-    # --------------------------------------------------
-    img.save(out_path, format="PNG")
-    print(f"CTA image rendered at: {out_path}")
 
 
 def render_question_image(q: Question, out_path: Path) -> None:
@@ -686,6 +574,117 @@ def render_single_post_image(q: Question) -> None:
     print(f"Single post image saved → {out_path}")
 
 
+def render_day1_cta_image() -> None:
+    """
+    Render a reusable Call-To-Action image (dark theme).
+    Saved once and reused for all reels.
+    """
+    out_path = Path("output/images/cta/day1.png")
+    if out_path.exists():
+        return
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # --------------------------------------------------
+    # Colors (Dark Theme)
+    # --------------------------------------------------
+    BG_COLOR = (9, 12, 24)          # page background
+    CARD_COLOR = (11, 18, 32)       # CTA card
+    ACCENT = (76, 201, 240)         # blue accent
+    TEXT_PRIMARY = (255, 255, 255)
+    TEXT_SECONDARY = (160, 174, 192)
+
+    # --------------------------------------------------
+    # Canvas
+    # --------------------------------------------------
+    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
+    draw = ImageDraw.Draw(img)
+
+    # --------------------------------------------------
+    # Card Geometry
+    # --------------------------------------------------
+    card_w, card_h = 920, 720
+    card_x = (WIDTH - card_w) // 2
+    card_y = (HEIGHT - card_h) // 2
+    radius = 32
+
+    # Rounded card
+    draw.rounded_rectangle(
+        [
+            card_x,
+            card_y,
+            card_x + card_w,
+            card_y + card_h,
+        ],
+        radius=radius,
+        fill=CARD_COLOR,
+    )
+
+    # --------------------------------------------------
+    # Fonts (adjust paths as needed)
+    # --------------------------------------------------
+    FONT_DIR = Path("pybender/assets/fonts")
+
+    title_font = ImageFont.truetype(
+        str(FONT_DIR / "Inter-Bold.ttf"), 72
+    )
+    body_font = ImageFont.truetype(
+        str(FONT_DIR / "Inter-SemiBold.ttf"), 50
+    )
+    follow_font = ImageFont.truetype(
+        str(FONT_DIR / "Inter-Regular.ttf"), 44
+    )
+
+    # --------------------------------------------------
+    # Text Content
+    # --------------------------------------------------
+    title_text = "What's Your Answer?"
+    body_text = "Drop A, B, C, or D below!\n\nAnswer drops tomorrow"
+    follow_text = "Follow for daily Python challenges"
+
+    # --------------------------------------------------
+    # Text Positions
+    # --------------------------------------------------
+    center_x = WIDTH // 2
+
+    def draw_centered_text(text, font, y, color):
+        w, h = draw.textbbox((0, 0), text, font=font)[2:]
+        draw.text(
+            (center_x - w // 2, y),
+            text,
+            font=font,
+            fill=color,
+            align="center",
+        )
+
+    draw_centered_text(
+        title_text,
+        title_font,
+        card_y + 90,
+        ACCENT,
+    )
+
+    draw_centered_text(
+        body_text,
+        body_font,
+        card_y + 260,
+        TEXT_PRIMARY,
+    )
+
+    draw_centered_text(
+        follow_text,
+        follow_font,
+        card_y + 520,
+        TEXT_SECONDARY,
+    )
+
+    # --------------------------------------------------
+    # Save
+    # --------------------------------------------------
+    img.save(out_path, format="PNG")
+    print(f"CTA image rendered at: {out_path}")
+
+
 def render_day2_cta_image() -> None:
     """
     Render a reusable Call-To-Action image (dark theme).
@@ -700,15 +699,15 @@ def render_day2_cta_image() -> None:
     TEXT_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 48)
     SUBTLE_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 42)
 
-    img = Image.new("RGB", (VIDEO_W, VIDEO_H), BG_COLOR)
+    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
 
     # --------------------------------------------------
     # CTA Card
     # --------------------------------------------------
     card_w, card_h = 920, 640
-    card_x = (VIDEO_W - card_w) // 2
-    card_y = (VIDEO_H - card_h) // 2
+    card_x = (WIDTH - card_w) // 2
+    card_y = (HEIGHT - card_h) // 2
 
     draw.rounded_rectangle(
         [card_x, card_y, card_x + card_w, card_y + card_h],
@@ -772,6 +771,121 @@ def render_day2_cta_image() -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
     print(f"Day 2 CTA image saved → {out_path}")
+
+
+def render_welcome_image() -> None:
+    """
+    Render a welcome image: 'Welcome to Daily Dose of Python'
+    """
+    out_path = Path("output/images/welcome/welcome.png")
+    if out_path.exists():
+        print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+        return
+
+    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
+    draw = ImageDraw.Draw(img)
+
+    # --------------------------------------------------
+    # Main Card
+    # --------------------------------------------------
+    card_x, card_y = 60, 220
+    card_w, card_h = WIDTH - 120, HEIGHT - 440
+
+    draw.rounded_rectangle(
+        [card_x, card_y, card_x + card_w, card_y + card_h],
+        radius=32,
+        fill=CARD_COLOR
+    )
+
+    content_x = card_x + 60
+    max_width = card_w - 120
+    y = card_y + 220
+
+    # --------------------------------------------------
+    # Title
+    # --------------------------------------------------
+    title = "Welcome to"
+    tw = draw.textbbox((0, 0), title, font=TITLE_FONT)[2]
+    draw.text(
+        (content_x + (max_width - tw) // 2, y),
+        title,
+        font=TITLE_FONT,
+        fill=SUBTLE_TEXT
+    )
+    y += 70
+
+    # --------------------------------------------------
+    # Brand Name
+    # --------------------------------------------------
+    brand = "Daily Dose of Python"
+    bw = draw.textbbox((0, 0), brand, font=TITLE_FONT)[2]
+    draw.text(
+        (content_x + (max_width - bw) // 2, y),
+        brand,
+        font=TITLE_FONT,
+        fill=ACCENT_COLOR
+    )
+    y += 90
+
+    # --------------------------------------------------
+    # Divider
+    # --------------------------------------------------
+    draw.line(
+        [
+            content_x + 120,
+            y,
+            content_x + max_width - 120,
+            y
+        ],
+        fill=ACCENT_COLOR,
+        width=2
+    )
+    y += 150
+
+    # --------------------------------------------------
+    # Subtitle
+    # --------------------------------------------------
+    subtitle = "Bite-sized Python challenges.\nThink. Comment. Learn."
+    for line in subtitle.split("\n"):
+        lw = draw.textbbox((0, 0), line, font=TITLE_FONT)[2]
+        draw.text(
+            (content_x + (max_width - lw) // 2, y),
+            line,
+            font=TITLE_FONT,
+            fill=TEXT_COLOR
+        )
+        y += 68
+
+    # --------------------------------------------------
+    # Overlay Image
+    # --------------------------------------------------
+    overlay_path = Path("output/images/media/pyimg.png")
+    if overlay_path.exists():
+        overlay = Image.open(overlay_path).convert("RGBA")
+        overlay_w, overlay_h = 600, 600
+        overlay_resized = overlay.resize((overlay_w, overlay_h), Image.Resampling.LANCZOS)
+        overlay_x = (WIDTH - overlay_w) // 2
+        overlay_y = y + 40
+        img.paste(overlay_resized, (overlay_x, overlay_y), overlay_resized)
+
+    # --------------------------------------------------
+    # Footer
+    # --------------------------------------------------
+    footer = "New challenges every day"
+    fb = draw.textbbox((0, 0), footer, font=TITLE_FONT)
+    fw = fb[2] - fb[0]
+    draw.text(
+        ((WIDTH - fw) // 2, HEIGHT - 90),
+        footer,
+        font=TITLE_FONT,
+        fill=SUBTLE_TEXT
+    )
+
+    # --------------------------------------------------
+    # Save
+    # --------------------------------------------------
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
 
 
 def render_explanation_image(q: Question, out_path: Path) -> None:
@@ -902,117 +1016,3 @@ def render_explanation_image(q: Question, out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
 
-
-def render_welcome_image() -> None:
-    """
-    Render a welcome image: 'Welcome to Daily Dose of Python'
-    """
-    out_path = Path("output/images/welcome/welcome.png")
-    if out_path.exists():
-        print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-        return
-
-    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
-    draw = ImageDraw.Draw(img)
-
-    # --------------------------------------------------
-    # Main Card
-    # --------------------------------------------------
-    card_x, card_y = 60, 220
-    card_w, card_h = WIDTH - 120, HEIGHT - 440
-
-    draw.rounded_rectangle(
-        [card_x, card_y, card_x + card_w, card_y + card_h],
-        radius=32,
-        fill=CARD_COLOR
-    )
-
-    content_x = card_x + 60
-    max_width = card_w - 120
-    y = card_y + 220
-
-    # --------------------------------------------------
-    # Title
-    # --------------------------------------------------
-    title = "Welcome to"
-    tw = draw.textbbox((0, 0), title, font=TITLE_FONT)[2]
-    draw.text(
-        (content_x + (max_width - tw) // 2, y),
-        title,
-        font=TITLE_FONT,
-        fill=SUBTLE_TEXT
-    )
-    y += 70
-
-    # --------------------------------------------------
-    # Brand Name
-    # --------------------------------------------------
-    brand = "Daily Dose of Python"
-    bw = draw.textbbox((0, 0), brand, font=TITLE_FONT)[2]
-    draw.text(
-        (content_x + (max_width - bw) // 2, y),
-        brand,
-        font=TITLE_FONT,
-        fill=ACCENT_COLOR
-    )
-    y += 90
-
-    # --------------------------------------------------
-    # Divider
-    # --------------------------------------------------
-    draw.line(
-        [
-            content_x + 120,
-            y,
-            content_x + max_width - 120,
-            y
-        ],
-        fill=ACCENT_COLOR,
-        width=2
-    )
-    y += 150
-
-    # --------------------------------------------------
-    # Subtitle
-    # --------------------------------------------------
-    subtitle = "Bite-sized Python challenges.\nThink. Comment. Learn."
-    for line in subtitle.split("\n"):
-        lw = draw.textbbox((0, 0), line, font=TITLE_FONT)[2]
-        draw.text(
-            (content_x + (max_width - lw) // 2, y),
-            line,
-            font=TITLE_FONT,
-            fill=TEXT_COLOR
-        )
-        y += 68
-
-    # --------------------------------------------------
-    # Overlay Image
-    # --------------------------------------------------
-    overlay_path = Path("output/images/media/pyimg.png")
-    if overlay_path.exists():
-        overlay = Image.open(overlay_path).convert("RGBA")
-        overlay_w, overlay_h = 600, 600
-        overlay_resized = overlay.resize((overlay_w, overlay_h), Image.Resampling.LANCZOS)
-        overlay_x = (WIDTH - overlay_w) // 2
-        overlay_y = y + 40
-        img.paste(overlay_resized, (overlay_x, overlay_y), overlay_resized)
-
-    # --------------------------------------------------
-    # Footer
-    # --------------------------------------------------
-    footer = "New challenges every day"
-    fb = draw.textbbox((0, 0), footer, font=TITLE_FONT)
-    fw = fb[2] - fb[0]
-    draw.text(
-        ((WIDTH - fw) // 2, HEIGHT - 90),
-        footer,
-        font=TITLE_FONT,
-        fill=SUBTLE_TEXT
-    )
-
-    # --------------------------------------------------
-    # Save
-    # --------------------------------------------------
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(out_path)
