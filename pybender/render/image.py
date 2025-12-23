@@ -8,7 +8,8 @@ PADDING_X = 60
 PADDING_Y = 50
 
 # Colors
-BG_COLOR = "#0F172A"      # dark slate
+# BG_COLOR = "#0F172A"      # dark slate
+BG_COLOR = (9, 12, 24) 
 TEXT_COLOR = "#E5E7EB"    # light gray
 ACCENT_COLOR = "#38BDF8"  # cyan
 
@@ -33,12 +34,28 @@ def render_question_image(q: Question, out_path: Path) -> None:
 
     img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
-
     y = PADDING_Y
 
-    # ---- Title ----
+    # ---- Header ----
+    header_text = "Daily Dose of Python"
+    header_color = "#94A3B8"
+    header_bbox = draw.textbbox((0, 0), header_text, font=TITLE_FONT)
+    header_width = header_bbox[2] - header_bbox[0]
+    header_x = (WIDTH - header_width) // 2
     draw.text(
-        (PADDING_X, y),
+        (header_x, y),
+        header_text,
+        font=TITLE_FONT,
+        fill=header_color  # slate gray - subtle header color for dark theme
+    )
+    y += 60
+
+    # ---- Title ----
+    title_bbox = draw.textbbox((0, 0), q.title, font=TITLE_FONT)
+    title_width = title_bbox[2] - title_bbox[0]
+    title_x = (WIDTH - title_width) // 2
+    draw.text(
+        (title_x, y),
         q.title,
         font=TITLE_FONT,
         fill=ACCENT_COLOR
@@ -91,7 +108,7 @@ def render_question_image(q: Question, out_path: Path) -> None:
             font=TEXT_FONT,
             fill=TEXT_COLOR
         )
-        y += 50
+        y += 55
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
@@ -151,3 +168,119 @@ def wrap_text(draw, text, font, max_width):
         lines.append(current)
 
     return lines
+
+
+# create new function to create a eye catching beautifully animated CTA image 
+VIDEO_W, VIDEO_H = 1080, 1920
+
+
+def render_cta_image() -> None:
+    """
+    Render a reusable Call-To-Action image (dark theme).
+    Saved once and reused for all reels.
+    """
+    out_path = Path("pybender/assets/backgrounds/cta.png")
+    if out_path.exists():
+        return
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # --------------------------------------------------
+    # Colors (Dark Theme)
+    # --------------------------------------------------
+    BG_COLOR = (9, 12, 24)          # page background
+    CARD_COLOR = (11, 18, 32)       # CTA card
+    ACCENT = (76, 201, 240)         # blue accent
+    TEXT_PRIMARY = (255, 255, 255)
+    TEXT_SECONDARY = (160, 174, 192)
+
+    # --------------------------------------------------
+    # Canvas
+    # --------------------------------------------------
+    img = Image.new("RGB", (VIDEO_W, VIDEO_H), BG_COLOR)
+    draw = ImageDraw.Draw(img)
+
+    # --------------------------------------------------
+    # Card Geometry
+    # --------------------------------------------------
+    card_w, card_h = 920, 720
+    card_x = (VIDEO_W - card_w) // 2
+    card_y = (VIDEO_H - card_h) // 2
+    radius = 32
+
+    # Rounded card
+    draw.rounded_rectangle(
+        [
+            card_x,
+            card_y,
+            card_x + card_w,
+            card_y + card_h,
+        ],
+        radius=radius,
+        fill=CARD_COLOR,
+    )
+
+    # --------------------------------------------------
+    # Fonts (adjust paths as needed)
+    # --------------------------------------------------
+    FONT_DIR = Path("pybender/assets/fonts")
+
+    title_font = ImageFont.truetype(
+        str(FONT_DIR / "Inter-Bold.ttf"), 72
+    )
+    body_font = ImageFont.truetype(
+        str(FONT_DIR / "Inter-SemiBold.ttf"), 50
+    )
+    follow_font = ImageFont.truetype(
+        str(FONT_DIR / "Inter-Regular.ttf"), 44
+    )
+
+    # --------------------------------------------------
+    # Text Content
+    # --------------------------------------------------
+    title_text = "What's Your Answer?"
+    body_text = "Drop A, B, C, or D below!\n\nAnswer drops tomorrow"
+    follow_text = "Follow for daily Python challenges"
+
+    # --------------------------------------------------
+    # Text Positions
+    # --------------------------------------------------
+    center_x = VIDEO_W // 2
+
+    def draw_centered_text(text, font, y, color):
+        w, h = draw.textbbox((0, 0), text, font=font)[2:]
+        draw.text(
+            (center_x - w // 2, y),
+            text,
+            font=font,
+            fill=color,
+            align="center",
+        )
+
+    draw_centered_text(
+        title_text,
+        title_font,
+        card_y + 90,
+        ACCENT,
+    )
+
+    draw_centered_text(
+        body_text,
+        body_font,
+        card_y + 260,
+        TEXT_PRIMARY,
+    )
+
+    draw_centered_text(
+        follow_text,
+        follow_font,
+        card_y + 520,
+        TEXT_SECONDARY,
+    )
+
+    # --------------------------------------------------
+    # Save
+    # --------------------------------------------------
+    img.save(out_path, format="PNG")
+    print(f"CTA image rendered at: {out_path}")
+
