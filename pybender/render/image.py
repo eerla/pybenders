@@ -2,119 +2,6 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 from pybender.generator.schema import Question
 
-# Canvas
-WIDTH, HEIGHT = 1080, 1080
-PADDING_X = 60
-PADDING_Y = 50
-
-# Colors
-# BG_COLOR = "#0F172A"      # dark slate
-BG_COLOR = (9, 12, 24) 
-TEXT_COLOR = "#E5E7EB"    # light gray
-ACCENT_COLOR = "#38BDF8"  # cyan
-
-# Fonts
-FONT_DIR = Path("pybender/assets/fonts")
-
-TITLE_FONT = ImageFont.truetype(
-    str(FONT_DIR / "Inter-SemiBold.ttf"), 48
-)
-CODE_FONT = ImageFont.truetype(
-    str(FONT_DIR / "JetBrainsMono-Regular.ttf"), 40
-)
-TEXT_FONT = ImageFont.truetype(
-    str(FONT_DIR / "Inter-Regular.ttf"), 40
-)
-
-
-def render_question_image(q: Question, out_path: Path) -> None:
-    """
-    Render a single Question into a 1080x1080 Instagram-ready PNG.
-    """
-
-    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
-    draw = ImageDraw.Draw(img)
-    y = PADDING_Y
-
-    # ---- Header ----
-    header_text = "Daily Dose of Python"
-    header_color = "#94A3B8"
-    header_bbox = draw.textbbox((0, 0), header_text, font=TITLE_FONT)
-    header_width = header_bbox[2] - header_bbox[0]
-    header_x = (WIDTH - header_width) // 2
-    draw.text(
-        (header_x, y),
-        header_text,
-        font=TITLE_FONT,
-        fill=header_color  # slate gray - subtle header color for dark theme
-    )
-    y += 60
-
-    # ---- Title ----
-    title_bbox = draw.textbbox((0, 0), q.title, font=TITLE_FONT)
-    title_width = title_bbox[2] - title_bbox[0]
-    title_x = (WIDTH - title_width) // 2
-    draw.text(
-        (title_x, y),
-        q.title,
-        font=TITLE_FONT,
-        fill=ACCENT_COLOR
-    )
-    y += 80
-
-    # ---- Code Snippet ----
-    MAX_TEXT_WIDTH = WIDTH - (2 * PADDING_X)
-
-    for raw_line in q.code.split("\n"):
-        wrapped = wrap_code_line(
-            draw,
-            raw_line,
-            CODE_FONT,
-            MAX_TEXT_WIDTH
-        )
-
-        for line in wrapped:
-            draw.text(
-                (PADDING_X, y),
-                line,
-                font=CODE_FONT,
-                fill=TEXT_COLOR
-            )
-            y += 48
-
-
-
-    y += 30
-
-    # Separator line
-    draw.line(
-        [(PADDING_X, y), (WIDTH - PADDING_X, y)],
-        fill=ACCENT_COLOR,
-        width=2
-    )
-    y += 30
-
-    # ---- Question Text ----
-    for line in wrap_text(draw, q.question, TEXT_FONT, MAX_TEXT_WIDTH):
-        draw.text((PADDING_X, y), line, font=TEXT_FONT, fill=TEXT_COLOR)
-        y += 80
-
-
-    # ---- Options ----
-    for label, option in zip(["A", "B", "C", "D"], q.options):
-        draw.text(
-            (PADDING_X, y),
-            f"{label}. {option}",
-            font=TEXT_FONT,
-            fill=TEXT_COLOR
-        )
-        y += 55
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(out_path)
-
-
-
 def wrap_code_line(draw, line, font, max_width):
     """
     Wrap a single line of code while preserving leading indentation.
@@ -284,3 +171,148 @@ def render_cta_image() -> None:
     img.save(out_path, format="PNG")
     print(f"CTA image rendered at: {out_path}")
 
+
+# Canvas
+WIDTH, HEIGHT = 1080, 1080
+PADDING_X = 60
+PADDING_Y = 50
+
+# Colors (match CTA theme)
+BG_COLOR = (9, 12, 24)
+CARD_COLOR = (11, 18, 32)
+CODE_BG = (15, 23, 42)
+TEXT_COLOR = (226, 232, 240)
+SUBTLE_TEXT = (148, 163, 184)
+ACCENT_COLOR = (76, 201, 240)
+
+# Fonts
+FONT_DIR = Path("pybender/assets/fonts")
+
+TITLE_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-SemiBold.ttf"), 48)
+TEXT_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 38)
+CODE_FONT = ImageFont.truetype(str(FONT_DIR / "JetBrainsMono-Regular.ttf"), 36)
+HEADER_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 28)
+
+
+def render_question_image(q: Question, out_path: Path) -> None:
+    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
+    draw = ImageDraw.Draw(img)
+
+    # --------------------------------------------------
+    # Header (branding)
+    # --------------------------------------------------
+    header_text = "Daily Dose of Python"
+    hw = draw.textbbox((0, 0), header_text, font=HEADER_FONT)[2]
+    draw.text(
+        ((WIDTH - hw) // 2, 20),
+        header_text,
+        font=HEADER_FONT,
+        fill=SUBTLE_TEXT
+    )
+
+    # --------------------------------------------------
+    # Main Card
+    # --------------------------------------------------
+    card_x, card_y = 40, 80
+    card_w, card_h = WIDTH - 80, HEIGHT - 120
+    radius = 28
+
+    draw.rounded_rectangle(
+        [card_x, card_y, card_x + card_w, card_y + card_h],
+        radius=radius,
+        fill=CARD_COLOR
+    )
+
+    y = card_y + 40
+    content_x = card_x + 40
+    max_width = card_w - 80
+
+    # --------------------------------------------------
+    # Title
+    # --------------------------------------------------
+    title_bbox = draw.textbbox((0, 0), q.title, font=TITLE_FONT)
+    title_x = content_x + (max_width - title_bbox[2]) // 2
+    draw.text((title_x, y), q.title, font=TITLE_FONT, fill=ACCENT_COLOR)
+    y += 70
+
+    # --------------------------------------------------
+    # Code Block
+    # --------------------------------------------------
+    code_lines = q.code.split("\n")
+    line_height = 44
+    block_padding = 20
+    block_height = len(code_lines) * line_height + block_padding * 2
+
+    # First, calculate wrapped lines to determine actual block height
+    all_wrapped_lines = []
+    for raw_line in code_lines:
+        wrapped = wrap_code_line(
+            draw,
+            raw_line,
+            CODE_FONT,
+            max_width - 40  # Account for padding inside code block
+        )
+        all_wrapped_lines.extend(wrapped)
+    
+    # Recalculate block height based on actual wrapped line count
+    block_height = len(all_wrapped_lines) * line_height + block_padding * 2
+
+    # Code container
+    draw.rounded_rectangle(
+        [
+            content_x,
+            y,
+            content_x + max_width,
+            y + block_height
+        ],
+        radius=18,
+        fill=CODE_BG
+    )
+
+    # Accent bar
+    draw.rectangle(
+        [content_x, y, content_x + 6, y + block_height],
+        fill=ACCENT_COLOR
+    )
+
+    cy = y + block_padding
+    for line in all_wrapped_lines:
+        draw.text(
+            (content_x + 20, cy),
+            line,
+            font=CODE_FONT,
+            fill=TEXT_COLOR
+        )
+        cy += line_height
+
+    y = cy + block_padding
+
+    y += 20
+
+    # --------------------------------------------------
+    # Question Text
+    # --------------------------------------------------
+    for line in wrap_text(draw, q.question, TEXT_FONT, max_width):
+        draw.text((content_x, y), line, font=TEXT_FONT, fill=TEXT_COLOR)
+        y += 48
+
+    y += 20
+
+    # --------------------------------------------------
+    # Options
+    # --------------------------------------------------
+    for label, option in zip(["A", "B", "C", "D"], q.options):
+        option_text = f"{label}. {option}"
+        draw.text(
+            (content_x, y),
+            option_text,
+            font=TEXT_FONT,
+            fill=TEXT_COLOR
+        )
+        y += 46
+
+    # --------------------------------------------------
+    # Save
+    # --------------------------------------------------
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
