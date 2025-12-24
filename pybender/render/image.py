@@ -3,6 +3,7 @@ from pathlib import Path
 from pybender.generator.schema import Question
 from pybender.generator.question_gen import generate_questions
 import json
+from datetime import datetime
 
 class ImageRenderer:
     """
@@ -33,6 +34,9 @@ class ImageRenderer:
         self.TEXT_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-Regular.ttf"), 48)
         self.CODE_FONT = ImageFont.truetype(str(self.FONT_DIR / "JetBrainsMono-Regular.ttf"), 40)
         self.HEADER_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-Regular.ttf"), 48)
+
+        self.RUN_DATE = datetime.now().strftime("%Y%m%d")
+        self.RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     @staticmethod
     def wrap_code_line(draw, line, font, max_width):
@@ -416,13 +420,13 @@ class ImageRenderer:
         img.save(out_path)
 
 
-    def render_single_post_image(self, q: Question) -> None:
+    def render_single_post_image(self, q: Question, out_path: Path) -> None:
         """
         Render a single-post image with question + answer together.
         Output: pybenders/output/images/singles/<slug>.png
         """
-        out_path = Path("output/images/singles") / f"{q.title.lower().replace(' ', '_')}.png"
-        out_path.parent.mkdir(parents=True, exist_ok=True)
+        # out_path = Path("output/images/singles") / f"{q.title.lower().replace(' ', '_')}.png"
+        # out_path.parent.mkdir(parents=True, exist_ok=True)
 
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
@@ -603,8 +607,9 @@ class ImageRenderer:
         Saved once and reused for all reels.
         """
         out_path = Path("output/images/cta/day1_carousel.png")
-        # if out_path.exists():
-        #     return
+        if out_path.exists():
+            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+            return
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -699,9 +704,9 @@ class ImageRenderer:
         Saved once and reused for all reels.
         """
         out_path = Path("output/images/cta/day2_carousel.png")
-        # if out_path.exists():
-        #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-        #     return
+        if out_path.exists():
+            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+            return
 
         TITLE_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-SemiBold.ttf"), 84)
         TEXT_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-Regular.ttf"), 48)
@@ -785,11 +790,10 @@ class ImageRenderer:
         """
         Render a welcome image: 'Welcome to Daily Dose of Python'
         """
-        # out_path = Path("output/images/welcome/welcome_carousel.png")
-        out_path = Path("output/images/welcome/welcome1.png")
-        # if out_path.exists():
-        #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-        #     return
+        out_path = Path("output/images/welcome/welcome_carousel.png")
+        if out_path.exists():
+            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+            return
 
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
@@ -1028,7 +1032,51 @@ class ImageRenderer:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
 
+    def main():
+        questions = generate_questions(1)
+        # with open("output/questions.json", "r") as f:
+        #     questions_data = json.load(f)
+        #     questions = [Question(**q) for q in questions_data]
 
+        # test question image rendering
+        print("rendering question images...")
+        output_dir = Path(f"output/images/{self.RUN_DATE}/questions")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for question in questions:
+            renderer.render_question_image(
+                question,
+                output_dir / f"{question.title.replace(' ', '_')}.png"
+            )
+
+        print("Question Images rendered successfully")
+
+        # test answer image rendering
+        print("rendering answer images...")
+        output_dir = Path(f"output/images/{self.RUN_DATE}/answers")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for question in questions:
+            renderer.render_answer_image(
+                question,
+                output_dir / f"{question.title.replace(' ', '_')}.png"
+            )
+
+        print("Answer Image rendered successfully")
+
+        # test single post rendering
+        print("rendering single post images...")
+        output_dir = Path(f"output/images/{self.RUN_DATE}/singles")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for question in questions:
+            renderer.render_single_post_image(
+                question, 
+                output_dir / f"{question.title.replace(' ', '_')}.png"
+            )
+
+        print("Single post Image rendered successfully")
+
+        renderer.render_day1_cta_image()
+        renderer.render_day2_cta_image()
+        renderer.render_welcome_image()
 # if __name__ == "__main__":
 #     renderer = ImageRenderer()
 #     # testing

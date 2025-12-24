@@ -1,6 +1,6 @@
 You are a senior Python language expert.
 
-Generate {{n}} tricky multiple-choice questions on Python internals related to {{topic}}.
+Generate {{n}} tricky Python multiple-choice questions on the topic related to {{topic}}.
 
 Rules:
 - Each question must have exactly 4 options labeled A–D
