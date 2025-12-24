@@ -10,6 +10,7 @@ class ImageRenderer:
     Wrapper class for image rendering functions.
     """
     def __init__(self):
+        self.MODEL = "gpt-4o-mini"
         # Canvas
         self.WIDTH, self.HEIGHT = 1080, 1920
         # if for_carousel:
@@ -35,9 +36,10 @@ class ImageRenderer:
         self.CODE_FONT = ImageFont.truetype(str(self.FONT_DIR / "JetBrainsMono-Regular.ttf"), 40)
         self.HEADER_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-Regular.ttf"), 48)
 
-        self.RUN_DATE = datetime.now().strftime("%Y%m%d")
-        self.RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
-
+    @staticmethod
+    def slugify(text: str) -> str:
+        return text.lower().replace(" ", "_")
+    
     @staticmethod
     def wrap_code_line(draw, line, font, max_width):
         """
@@ -96,7 +98,7 @@ class ImageRenderer:
 
 
     def render_question_image(self, q: Question, out_path: Path) -> None:
-
+        print("Rendering question image...")
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
 
@@ -234,13 +236,14 @@ class ImageRenderer:
         # --------------------------------------------------
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
+        print(f"question image saved to: {out_path}")
 
 
     def render_answer_image(self, q: Question, out_path: Path) -> None:
         """
         Render answer-reveal image highlighting the correct option.
         """
-
+        print("Rendering answer image...")
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
 
@@ -418,6 +421,7 @@ class ImageRenderer:
         # --------------------------------------------------
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
+        print(f"answer image saved to: {out_path}")
 
 
     def render_single_post_image(self, q: Question, out_path: Path) -> None:
@@ -425,8 +429,7 @@ class ImageRenderer:
         Render a single-post image with question + answer together.
         Output: pybenders/output/images/singles/<slug>.png
         """
-        # out_path = Path("output/images/singles") / f"{q.title.lower().replace(' ', '_')}.png"
-        # out_path.parent.mkdir(parents=True, exist_ok=True)
+        print("Rendering single post image...")
 
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
@@ -872,7 +875,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Overlay Image
         # --------------------------------------------------
-        overlay_path = Path("output/images/media/pyimg.png")
+        overlay_path = Path("output/images/welcome/media/pyimg.png")
         overlay_h = 0
         if overlay_path.exists():
             overlay = Image.open(overlay_path).convert("RGBA")
@@ -1032,94 +1035,99 @@ class ImageRenderer:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
 
-    def main():
-        questions = generate_questions(1)
-        # with open("output/questions.json", "r") as f:
-        #     questions_data = json.load(f)
-        #     questions = [Question(**q) for q in questions_data]
+    def main(self):
 
-        # test question image rendering
-        print("rendering question images...")
-        output_dir = Path(f"output/images/{self.RUN_DATE}/questions")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        for question in questions:
-            renderer.render_question_image(
-                question,
-                output_dir / f"{question.title.replace(' ', '_')}.png"
-            )
+        # --------------------------------------------------
+        # Run context
+        # --------------------------------------------------
+        RUN_DATE = datetime.now().strftime("%Y-%m-%d")
+        RUN_TIMESTAMP = datetime.now().strftime("%H%M%S")
+        RUN_ID = f"{RUN_DATE}_{RUN_TIMESTAMP}"
+        topic = None
+        print(f"Starting run: {RUN_ID}")
+        
+        # --------------------------------------------------
+        # Generate questions
+        # --------------------------------------------------
+        # questions, topic = generate_questions(n=2)  # get from LLM
+        with open("output/data/questions/20251224/questions_20251224_145650.json", "r") as f:
+            questions_data = json.load(f)
+            questions = [Question(**q) for q in questions_data]
+        
 
-        print("Question Images rendered successfully")
+        # Assign stable question IDs
+        for idx, q in enumerate(questions, start=1):
+            q.question_id = f"{RUN_ID}_q{idx:02d}"
 
-        # test answer image rendering
-        print("rendering answer images...")
-        output_dir = Path(f"output/images/{self.RUN_DATE}/answers")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        for question in questions:
-            renderer.render_answer_image(
-                question,
-                output_dir / f"{question.title.replace(' ', '_')}.png"
-            )
+        # --------------------------------------------------
+        # Output directories (type-based)
+        # --------------------------------------------------
+        base_img_dir = Path("output/images")
+        question_dir = base_img_dir / "questions"
+        answer_dir = base_img_dir / "answers"
+        single_dir = base_img_dir / "singles"
 
-        print("Answer Image rendered successfully")
+        for d in [question_dir, answer_dir, single_dir]:
+            d.mkdir(parents=True, exist_ok=True)
 
-        # test single post rendering
-        print("rendering single post images...")
-        output_dir = Path(f"output/images/{self.RUN_DATE}/singles")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        for question in questions:
-            renderer.render_single_post_image(
-                question, 
-                output_dir / f"{question.title.replace(' ', '_')}.png"
-            )
+        metadata = {
+            "run_id": RUN_ID,
+            "run_date": RUN_DATE,
+            "run_timestamp": RUN_TIMESTAMP,
+            "generator": {
+                "model": self.MODEL,
+                "topic": topic if topic else "PYTHON" # or return topic from generate_questions()
+            },
+            "questions": []
+        }
 
-        print("Single post Image rendered successfully")
 
+        # --------------------------------------------------
+        # Render assets
+        # --------------------------------------------------
+        print("Rendering images...")
+
+        for q in questions:
+            q_slug = self.slugify(q.title)
+
+            question_img = question_dir / f"{q.question_id}_question.png"
+            answer_img = answer_dir / f"{q.question_id}_answer.png"
+            single_img = single_dir / f"{q.question_id}_single.png"
+
+            renderer.render_question_image(q, question_img)
+            renderer.render_answer_image(q, answer_img)
+            renderer.render_single_post_image(q, single_img)
+
+            metadata["questions"].append({
+                "question_id": q.question_id,
+                "title": q.title,
+                "slug": q_slug,
+                "content": q.model_dump(),
+                "assets": {
+                    "question_image": str(question_img),
+                    "answer_image": str(answer_img),
+                    "single_post_image": str(single_img)
+                }
+            })
+
+        print("All images rendered successfully")
+
+        # --------------------------------------------------
+        # Write metadata.json (single source of truth)
+        # --------------------------------------------------
+        run_dir = Path("output/runs") / RUN_ID
+        run_dir.mkdir(parents=True, exist_ok=True)
+
+        metadata_path = run_dir / "metadata.json"
+        with open(metadata_path, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=2)
+
+        print(f"Metadata written to {metadata_path}")
         renderer.render_day1_cta_image()
         renderer.render_day2_cta_image()
         renderer.render_welcome_image()
-# if __name__ == "__main__":
-#     renderer = ImageRenderer()
-#     # testing
-#     # # questions = generate_questions("python internals", 1)
-#     with open("output/questions.json", "r") as f:
-#         questions_data = json.load(f)
-#         questions = [Question(**q) for q in questions_data]
+        print("Image rendering process completed successfully")
 
-    # test question image rendering
-    # output_dir = Path("output/images/questions")
-    # output_dir.mkdir(parents=True, exist_ok=True)
-
-    # for question in questions:
-    #     # print(question)
-    #     renderer.render_question_image(
-    #         question,
-    #         output_dir / f"{question.title.replace(' ', '_')}.png"
-    #     )
-
-    # print("Question Image rendered successfully")
-
-    # test answer image rendering
-    # output_dir = Path("output/images/answers")
-    # output_dir.mkdir(parents=True, exist_ok=True)
-
-    # for question in questions:
-    #     # print(question)
-    #     renderer.render_answer_image(
-    #         question,
-    #         output_dir / f"{question.title.replace(' ', '_')}.png"
-    #     )
-
-    # print("Answer Image rendered successfully")
-
-    # test single post rendering
-    # for question in questions:
-    #     # print(question)
-    #     renderer.render_single_post_image(
-    #         question,
-    #     )
-
-    # print("Single post Image rendered successfully")
-
-    # renderer.render_day1_cta_image()
-    # renderer.render_day2_cta_image()
-    # renderer.render_welcome_image()
+if __name__ == "__main__":
+    renderer = ImageRenderer()
+    renderer.main()

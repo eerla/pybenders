@@ -7,7 +7,9 @@ from moviepy import (
 )
 from pathlib import Path
 import numpy as np
+import json
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 
 class VideoRenderer:
@@ -257,23 +259,30 @@ class VideoRenderer:
 
         print(f"✅ Day 2 reel generated at: {out_path}")
 
+    def main(self, question_img: Path, answer_img: Path):
+        
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            executor.submit(self.generate_day1_reel, question_img=question_img)
+            executor.submit(self.generate_day2_reel, question_img=question_img, answer_img=answer_img)
+
 
 if __name__ == "__main__":
     renderer = VideoRenderer()
-    import os
-    import random
-    from concurrent.futures import ProcessPoolExecutor
+    renderer.main()
+    # import os
+    # import random
+    # from concurrent.futures import ProcessPoolExecutor
 
-    questions_images = os.listdir("output/images/questions")
-    for qi in questions_images:
-        qi_path = Path("output/images/questions") / qi
-        ai_path = Path("output/images/answers") / qi
+    # questions_images = os.listdir("output/images/questions")
+    # for qi in questions_images:
+    #     qi_path = Path("output/images/questions") / qi
+    #     ai_path = Path("output/images/answers") / qi
 
-        with ProcessPoolExecutor(max_workers=2) as executor: 
-            future1 = executor.submit(renderer.generate_day1_reel, question_img=qi_path)
-            future2 = executor.submit(renderer.generate_day2_reel, question_img=qi_path, answer_img=ai_path)
-            future1.result()
-            future2.result()
+    #     with ProcessPoolExecutor(max_workers=2) as executor: 
+    #         future1 = executor.submit(renderer.generate_day1_reel, question_img=qi_path)
+    #         future2 = executor.submit(renderer.generate_day2_reel, question_img=qi_path, answer_img=ai_path)
+    #         future1.result()
+    #         future2.result()
 
-        print(f"Reel created successfully for {qi}")
+    #     print(f"Reel created successfully for {qi}")
 

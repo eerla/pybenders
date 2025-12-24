@@ -1,20 +1,24 @@
-You are a senior Python language expert.
+You are a Senior Python Programming language expert.
 
-Generate {{n}} tricky Python multiple-choice questions on the topic related to {{topic}}.
+Generate {{n}} tricky Python multiple-choice questions about {{topic}}.
 
 Rules:
-- Each question must have exactly 4 options labeled A–D
-- Only ONE option must be correct
-- Focus on Python internals (mutability, closures, evaluation order, NaN, iterators, identity, classes, functions, methods, objects)
-- Code must fit inside an Instagram post
-- No trick wording, only conceptual traps
+- Return ONLY valid JSON
+- Do NOT include explanations outside JSON
+- Each question must contain:
+  - title
+  - code
+  - question
+  - options (4 items)
+  - correct (A/B/C/D)
+  - explanation
 
-Return STRICT JSON array matching this schema:
+JSON format:
 [
   {
-    "title": "Context of the question in max 3 words",
+    "title": "...",
     "code": "...",
-    "question": "What is the output?",
+    "question": "...",
     "options": ["...", "...", "...", "..."],
     "correct": "B",
     "explanation": "..."

@@ -31,7 +31,7 @@ def generate_questions(n: int) -> list[Question]:
 
     prompt = prompt_template.replace("{{topic}}", topic)\
                              .replace("{{n}}", str(n))
-    # print(prompt)
+
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
@@ -41,16 +41,15 @@ def generate_questions(n: int) -> list[Question]:
     )
 
     raw = response.choices[0].message.content
-    # print("LLM Response:")
-    # print(raw)
+
     try:
         data = json.loads(raw)
-        output_dir = f"output/data/questions/{RUN_DATE}"
-        os.makedirs(output_dir, exist_ok=True)
-        output_file = f"{output_dir}/questions_{RUN_TIMESTAMP}.json"
-        with open(output_file, "w") as f:
-            json.dump(data, f, indent=4)
+        # output_dir = f"output/data/questions/{RUN_DATE}"
+        # os.makedirs(output_dir, exist_ok=True)
+        # output_file = f"{output_dir}/questions_{RUN_TIMESTAMP}.json"
+        # with open(output_file, "w") as f:
+        #     json.dump(data, f, indent=4)
     except json.JSONDecodeError:
         raise ValueError("LLM returned invalid JSON")
 
-    return [Question(**q) for q in data]
+    return [Question(**q) for q in data], topic
