@@ -691,9 +691,9 @@ def render_day2_cta_image() -> None:
     Saved once and reused for all reels.
     """
     out_path = Path("output/images/cta/day2.png")
-    if out_path.exists():
-        print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-        return
+    # if out_path.exists():
+    #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+    #     return
 
     TITLE_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-SemiBold.ttf"), 84)
     TEXT_FONT = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 48)
