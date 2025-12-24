@@ -2,178 +2,278 @@ from moviepy import (
     ImageClip,
     CompositeVideoClip,
     AudioFileClip,
-    TextClip,
+    AudioArrayClip,
     vfx,
-    concatenate_videoclips
 )
 from pathlib import Path
-
-VIDEO_W, VIDEO_H = 1080, 1920
-FPS = 30
-SAFE_WIDTH = 960
+import numpy as np
+from datetime import datetime
 
 
-def create_question_reel(
-    question_image: Path,
-    music_path: Path,
-    output_path: Path
-):
-    # --------------------------------------------------
-    # QUESTION CLIP (0–20s)
-    # --------------------------------------------------
+class VideoRenderer:
+    def __init__(self):
+        self.VIDEO_W, self.VIDEO_H = 1080, 1920
+        self.FPS = 30
+        self.SAFE_WIDTH = 960
+        self.QUESTION_DURATION = 1
+        self.CTA_DURATION = 1
+        self.TOTAL_DURATION = self.QUESTION_DURATION + self.CTA_DURATION
 
-    fg_start = (
-        ImageClip(str(question_image))
-        .resized(width=SAFE_WIDTH)
-        .with_duration(10)
-        .with_position("center")
+        self.RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.RUN_DATE = datetime.now().strftime("%Y%m%d")
+
+
+    def generate_day1_reel(
+        self,
+        question_img: Path,
+        **kwargs,
+    ):
+        """
+        Generate Day 1 reel:
+        Welcome → Question → CTA
+        """
+        welcome_img = kwargs.get("welcome_img", None)
+        cta_img = kwargs.get("cta_img", None)   
+        music_path = kwargs.get("music_path", None)
+        # Default CTA image if none provided
+        if cta_img is None:
+            cta_img = Path("output/images/cta/day1.png")
+
+        if welcome_img is None:
+            welcome_img = Path("output/images/welcome/welcome.png")
+        
+        if music_path is None:
+            music_path = Path("pybender/assets/music/chill_loop.mp3")
+        
+        # --------------------------------------------------
+        # Output Path (timestamped)
+        # --------------------------------------------------
+        out_dir = Path(f"output/reels/day1/{self.RUN_DATE}")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{self.RUN_TIMESTAMP}_day1_reel.mp4"
+
+        # --------------------------------------------------
+        # Durations
+        # --------------------------------------------------
+        WELCOME_DUR = 3.0
+        QUESTION_DUR = 7.0
+        CTA_DUR = 4.0
+        FADE_DUR = 0.6
+
+        # --------------------------------------------------
+        # Welcome Clip
+        # --------------------------------------------------
+        welcome_clip = (
+            ImageClip(str(welcome_img))
+            .resized(height=self.VIDEO_H)
+            .with_duration(WELCOME_DUR)
+            .with_fps(self.FPS)
+            .with_effects([vfx.Resize(1.02), vfx.FadeOut(FADE_DUR)])
         )
 
-    fg_end = (
-        ImageClip(str(question_image))
-        .resized(width=int(SAFE_WIDTH * 1.03))
-        .with_duration(10)
-        .with_position("center")
-    )
-
-    fg_q = concatenate_videoclips(
-        [fg_start, fg_end],
-        method="compose"
-    ).with_duration(20)
-
-    bg_q = (
-        ImageClip(str(question_image))
-        .resized(height=VIDEO_H)
-        .with_duration(20)
-        .with_opacity(0.25)
-    )
-
-    question_clip = CompositeVideoClip(
-        [bg_q, fg_q],
-        size=(VIDEO_W, VIDEO_H)
-    ).with_duration(20)
-
-    # --------------------------------------------------
-    # CTA CLIP (20–30s)
-    # --------------------------------------------------
-
-    # CTA Background (static, darkened)
-    bg_cta = (
-        ImageClip(str(question_image))
-        .resized(height=VIDEO_H)
-        .with_duration(10)
-        .with_opacity(0.18)
-    )
-
-    # CTA Card (semi-transparent panel)
-    card_bg = (
-        ImageClip(str(question_image))
-        .resized((800, 520))
-        .with_opacity(0.0)  # invisible image holder
-        .with_duration(10)
-        .with_position("center")
-    )
-
-    card_overlay = (
-        TextClip(
-            text=" ",
-            font_size=10,
-            color="white",
-            size=(800, 520),
-            method="caption",
-            bg_color="#0B1220"
+        # --------------------------------------------------
+        # Question Clip
+        # --------------------------------------------------
+        question_clip = (
+            ImageClip(str(question_img))
+            .resized(height=self.VIDEO_H)
+            .with_duration(QUESTION_DUR)
+            .with_fps(self.FPS)
+            .with_start(WELCOME_DUR - FADE_DUR)
+            .with_effects([
+                vfx.FadeIn(FADE_DUR),
+                vfx.FadeOut(FADE_DUR)
+            ])
         )
-        .with_opacity(0.85)
-        .with_duration(10)
-        .with_position("center")
-    )
 
-    # CTA Text – Title
-    cta_title = (
-        TextClip(
-            text="💬 Drop Your Answer Below",
-            font_size=70,
-            font=None,
-            color="#4CC9F0",
-            method="caption",
-            size=(760, None),
-            text_align="center"
+
+        # --------------------------------------------------
+        # CTA Clip
+        # --------------------------------------------------
+        cta_clip = (
+            ImageClip(str(cta_img))
+            .resized(height=self.VIDEO_H)
+            .with_duration(CTA_DUR)
+            .with_fps(self.FPS)
+            .with_start(WELCOME_DUR + QUESTION_DUR - (FADE_DUR * 2))
+            .with_effects([vfx.FadeIn(FADE_DUR)])
         )
-        .with_duration(10)
-        .with_position(("center", VIDEO_H // 2 - 160))
-    )
 
-    # CTA Text – Body
-    cta_body = (
-        TextClip(
-            text="A / B / C / D\n\n⏱ Answer revealed in 24 hours",
-            font_size=48,
-            font=None,
-            color="white",
-            method="caption",
-            size=(760, None),
-            text_align="center"
+
+        # --------------------------------------------------
+        # Composite
+        # --------------------------------------------------
+        final_video = CompositeVideoClip(
+            [welcome_clip, question_clip, cta_clip],
+            size=(self.VIDEO_W, self.VIDEO_H)
+        ).with_duration(
+            WELCOME_DUR + QUESTION_DUR + CTA_DUR
+        ).with_fps(self.FPS)
+
+        # --------------------------------------------------
+        # Audio (optional)
+        # --------------------------------------------------
+        if music_path and music_path.exists():
+            audio = (
+                AudioFileClip(str(music_path))
+                .subclipped(0, final_video.duration)
+                .with_volume_scaled(0.35)
+            )
+            final_video = final_video.with_audio(audio)
+        else:
+            # silent track so players enable volume button
+            samples = int(final_video.duration * 44100)
+            silence = np.zeros((samples, 2), dtype=np.float32)
+            final_video = final_video.with_audio(
+                AudioArrayClip(silence, fps=44100)
+            )
+
+        # --------------------------------------------------
+        # Export
+        # --------------------------------------------------
+        final_video.write_videofile(
+            str(out_path),
+            codec="libx264",
+            audio_codec="aac",
+            fps=self.FPS,
+            preset="ultrafast",
+            threads=4
         )
-        .with_duration(10)
-        .with_position(("center", VIDEO_H // 2 - 20))
-    )
 
-    # CTA Text – Follow Hook
-    cta_follow = (
-        TextClip(
-            text="➕ Follow for Python Internals & Tricky Questions",
-            font_size=42,
-            font=None,
-            color="#A0AEC0",
-            method="caption",
-            size=(760, None),
-            text_align="center"
+        print(f"✅ Day 1 reel generated at: {out_path}")
+
+
+    def generate_day2_reel(
+        self,
+        question_img: Path,
+        answer_img: Path,
+        **kwargs,
+    ):
+        """
+        Generate Day 2 reel:
+        Question → Answer Reveal → CTA
+        """
+
+        cta_img = kwargs.get("cta_img", None)
+        music_path = kwargs.get("music_path", None)
+
+        # Defaults
+        if cta_img is None:
+            cta_img = Path("output/images/cta/day2.png")
+
+        if music_path is None:
+            music_path = Path("pybender/assets/music/chill_loop.mp3")
+
+        # --------------------------------------------------
+        # Output Path (same RUN_TIMESTAMP as Day 1)
+        # --------------------------------------------------
+        out_dir = Path(f"output/reels/day2/{self.RUN_DATE}")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{self.RUN_TIMESTAMP}_day2_reel.mp4"
+
+        # --------------------------------------------------
+        # Durations
+        # --------------------------------------------------
+        QUESTION_DUR = 3.0
+        ANSWER_DUR = 5.0
+        CTA_DUR = 4.0
+        FADE_DUR = 0.4
+
+        # --------------------------------------------------
+        # Question Clip (short reminder)
+        # --------------------------------------------------
+        question_clip = (
+            ImageClip(str(question_img))
+            .resized(height=self.VIDEO_H)
+            .with_duration(QUESTION_DUR)
+            .with_fps(self.FPS)
+            .with_effects([vfx.Resize(1.02), vfx.FadeOut(FADE_DUR)])
         )
-        .with_duration(10)
-        .with_position(("center", VIDEO_H // 2 + 160))
-    )
 
-    cta_clip = CompositeVideoClip(
-        [
-            bg_cta,
-            card_overlay,
-            cta_title,
-            cta_body,
-            cta_follow
-        ],
-        size=(VIDEO_W, VIDEO_H)
-    ).with_start(20)
+        # --------------------------------------------------
+        # Answer Reveal Clip (main highlight)
+        # --------------------------------------------------
+        answer_clip = (
+            ImageClip(str(answer_img))
+            .resized(height=self.VIDEO_H)
+            .with_duration(ANSWER_DUR)
+            .with_fps(self.FPS)
+            .with_start(QUESTION_DUR - FADE_DUR)
+            # subtle pop-in effect
+            .with_effects([vfx.Resize(1.04)])
+            .with_effects([vfx.FadeIn(FADE_DUR), vfx.FadeOut(FADE_DUR)])
+        )
 
-    # --------------------------------------------------
-    # FINAL COMPOSITION
-    # --------------------------------------------------
+        # --------------------------------------------------
+        # CTA Clip
+        # --------------------------------------------------
+        cta_clip = (
+            ImageClip(str(cta_img))
+            .resized(height=self.VIDEO_H)
+            .with_duration(CTA_DUR)
+            .with_fps(self.FPS)
+            .with_start(QUESTION_DUR + ANSWER_DUR - (FADE_DUR * 2))
+            .with_effects([vfx.Resize(1.02), vfx.FadeIn(FADE_DUR)])
+        )
 
-    final_video = CompositeVideoClip(
-        [question_clip, cta_clip],
-        size=(VIDEO_W, VIDEO_H)
-    ).with_duration(30).with_fps(FPS)
+        # --------------------------------------------------
+        # Composite
+        # --------------------------------------------------
+        final_video = CompositeVideoClip(
+            [question_clip, answer_clip, cta_clip],
+            size=(self.VIDEO_W, self.VIDEO_H)
+        ).with_duration(
+            QUESTION_DUR + ANSWER_DUR + CTA_DUR
+        ).with_fps(self.FPS)
 
-    # --------------------------------------------------
-    # AUDIO
-    # --------------------------------------------------
+        # --------------------------------------------------
+        # Audio
+        # --------------------------------------------------
+        if music_path and music_path.exists():
+            audio = (
+                AudioFileClip(str(music_path))
+                .subclipped(0, final_video.duration)
+                .with_volume_scaled(0.25)
+            )
+            final_video = final_video.with_audio(audio)
+        else:
+            samples = int(final_video.duration * 44100)
+            silence = np.zeros((samples, 2), dtype=np.float32)
+            final_video = final_video.with_audio(
+                AudioArrayClip(silence, fps=44100)
+            )
 
-    if music_path.exists():
-        audio = AudioFileClip(str(music_path)).subclipped(0, 30)
-        audio = audio.with_volume_scaled(0.12)
-        final_video = final_video.with_audio(audio)
+        # --------------------------------------------------
+        # Export
+        # --------------------------------------------------
+        final_video.write_videofile(
+            str(out_path),
+            codec="libx264",
+            audio_codec="aac",
+            fps=self.FPS,
+            preset="ultrafast",
+            threads=4
+        )
 
-    # --------------------------------------------------
-    # EXPORT
-    # --------------------------------------------------
+        print(f"✅ Day 2 reel generated at: {out_path}")
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    final_video.write_videofile(
-        str(output_path),
-        codec="libx264",
-        preset="ultrafast",  # veryfast, default = medium
-        audio_codec="aac",
-        fps=FPS,
-        threads=4
-    )
 
-    print(f"Video saved to {output_path}")
+if __name__ == "__main__":
+    renderer = VideoRenderer()
+    import os
+    import random
+    from concurrent.futures import ProcessPoolExecutor
+
+    questions_images = os.listdir("output/images/questions")
+    for qi in questions_images:
+        qi_path = Path("output/images/questions") / qi
+        ai_path = Path("output/images/answers") / qi
+
+        with ProcessPoolExecutor(max_workers=2) as executor: 
+            future1 = executor.submit(renderer.generate_day1_reel, question_img=qi_path)
+            future2 = executor.submit(renderer.generate_day2_reel, question_img=qi_path, answer_img=ai_path)
+            future1.result()
+            future2.result()
+
+        print(f"Reel created successfully for {qi}")
+

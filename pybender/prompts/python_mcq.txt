@@ -5,16 +5,16 @@ Generate {{n}} tricky multiple-choice questions on Python internals related to {
 Rules:
 - Each question must have exactly 4 options labeled A–D
 - Only ONE option must be correct
-- Focus on Python internals (mutability, closures, evaluation order, NaN, iterators, identity)
+- Focus on Python internals (mutability, closures, evaluation order, NaN, iterators, identity, classes, functions, methods, objects)
 - Code must fit inside an Instagram post
 - No trick wording, only conceptual traps
 
 Return STRICT JSON array matching this schema:
 [
   {
-    "title": "Q1. Python Internals",
+    "title": "Context of the question in max 3 words",
     "code": "...",
-    "question": "What is printed?",
+    "question": "What is the output?",
     "options": ["...", "...", "...", "..."],
     "correct": "B",
     "explanation": "..."

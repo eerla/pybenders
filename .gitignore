@@ -11,3 +11,5 @@ dist/
 pybenders/
 .env
 output/
+
+pybenders/output/
