@@ -8,8 +8,6 @@ def main():
     with open("output/questions.json", "r") as f:
         questions_data = json.load(f)
         questions = [Question(**q) for q in questions_data]
-    output_dir = Path("output/images/answers")
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     for question in questions:
         # print(question)
