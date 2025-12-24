@@ -5,6 +5,8 @@ from pybender.generator.schema import Question
 
 # Canvas
 WIDTH, HEIGHT = 1080, 1920
+# if for_carousel:
+# WIDTH, HEIGHT = 1080, 1080
 PADDING_X = 60
 PADDING_Y = 50
 
@@ -83,20 +85,9 @@ def wrap_text(draw, text, font, max_width):
 
 
 def render_question_image(q: Question, out_path: Path) -> None:
+
     img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
-
-    # --------------------------------------------------
-    # Header (branding)
-    # --------------------------------------------------
-    header_text = "Daily Dose of Python"
-    hw = draw.textbbox((0, 0), header_text, font=HEADER_FONT)[2]
-    draw.text(
-        ((WIDTH - hw) // 2, 20),
-        header_text,
-        font=HEADER_FONT,
-        fill=SUBTLE_TEXT
-    )
 
     # --------------------------------------------------
     # Main Card
@@ -118,6 +109,10 @@ def render_question_image(q: Question, out_path: Path) -> None:
     # --------------------------------------------------
     # Calculate total content height first
     # --------------------------------------------------
+    # Header
+    header_text = "Daily Dose of Python"
+    header_height = 60
+
     # Title
     title_bbox = draw.textbbox((0, 0), q.title, font=TITLE_FONT)
     title_height = 70
@@ -146,11 +141,23 @@ def render_question_image(q: Question, out_path: Path) -> None:
     options_height = 4 * 46
 
     # Total content height
-    total_content_height = title_height + code_section_height + question_height + options_height
+    total_content_height = header_height + title_height + code_section_height + question_height + options_height
     card_content_height = card_h - 80  # Account for top and bottom padding
 
     # Calculate starting y position to center vertically
     y = card_y + (card_content_height - total_content_height) // 2
+
+    # --------------------------------------------------
+    # Header
+    # --------------------------------------------------
+    hw = draw.textbbox((0, 0), header_text, font=HEADER_FONT)[2]
+    draw.text(
+        (content_x + (max_width - hw) // 2, y),
+        header_text,
+        font=HEADER_FONT,
+        fill=SUBTLE_TEXT
+    )
+    y += header_height
 
     # --------------------------------------------------
     # Title
@@ -227,82 +234,100 @@ def render_answer_image(q: Question, out_path: Path) -> None:
     draw = ImageDraw.Draw(img)
 
     # --------------------------------------------------
-    # Header
-    # --------------------------------------------------
-    header = "Answer"
-    hw = draw.textbbox((0, 0), header, font=HEADER_FONT)[2]
-    draw.text(
-        ((WIDTH - hw) // 2, 18),
-        header,
-        font=HEADER_FONT,
-        fill=SUBTLE_TEXT
-    )
-
-    # --------------------------------------------------
     # Main Card
     # --------------------------------------------------
-    card_x, card_y = 40, 70
-    card_w, card_h = WIDTH - 80, HEIGHT - 110
+    card_x, card_y = 40, 80
+    card_w, card_h = WIDTH - 80, HEIGHT - 120
+    radius = 28
 
     draw.rounded_rectangle(
         [card_x, card_y, card_x + card_w, card_y + card_h],
-        radius=28,
+        radius=radius,
         fill=CARD_COLOR
     )
 
     content_x = card_x + 40
     max_width = card_w - 80
-    y = card_y + 30
 
     # --------------------------------------------------
+    # Calculate total content height first
+    # --------------------------------------------------
+    # Answer label
+    answer_label_height = 70
+    
     # Title
-    # --------------------------------------------------
     title_bbox = draw.textbbox((0, 0), q.title, font=TITLE_FONT)
-    draw.text(
-        (content_x + (max_width - title_bbox[2]) // 2, y),
-        q.title,
-        font=TITLE_FONT,
-        fill=ACCENT_COLOR
-    )
-    y += 80
+    title_height = 80
 
-    # --------------------------------------------------
-    # Code Block
-    # --------------------------------------------------
+    # Code block
     code_lines = q.code.split("\n")
     line_height = 44
     block_padding = 20
-    block_height = len(code_lines) * line_height + block_padding * 2
-
-    # First, calculate wrapped lines to determine actual block height
     all_wrapped_lines = []
     for raw_line in code_lines:
         wrapped = wrap_code_line(
             draw,
             raw_line,
             CODE_FONT,
-            max_width - 40  # Account for padding inside code block
+            max_width - 40
         )
         all_wrapped_lines.extend(wrapped)
-    
-    # Recalculate block height based on actual wrapped line count
-    block_height = len(all_wrapped_lines) * line_height + block_padding * 2
+    code_block_height = len(all_wrapped_lines) * line_height + block_padding * 2
+    code_section_height = code_block_height + 40
 
-    # Code container
+    # Answer option
+    option_h = 60
+    answer_section_height = option_h + 32
+
+    # Explanation
+    explanation_height = 0
+    if q.explanation:
+        explanation_lines = wrap_text(draw, q.explanation, TEXT_FONT, max_width)
+        explanation_height = 28 + 60 + (len(explanation_lines) * 50)  # divider + label + content
+
+    # Total content height
+    total_content_height = answer_label_height + title_height + code_section_height + answer_section_height + explanation_height
+    card_content_height = card_h - 80  # Account for top and bottom padding
+
+    # Calculate starting y position to center vertically
+    y = card_y + (card_content_height - total_content_height) // 2
+
+    # --------------------------------------------------
+    # Answer Label
+    # --------------------------------------------------
+    answer_text = "Answer"
+    aw = draw.textbbox((0, 0), answer_text, font=HEADER_FONT)[2]
+    draw.text(
+        (content_x + (max_width - aw) // 2, y),
+        answer_text,
+        font=HEADER_FONT,
+        fill=SUBTLE_TEXT
+    )
+    y += answer_label_height
+
+    # --------------------------------------------------
+    # Title
+    # --------------------------------------------------
+    title_x = content_x + (max_width - title_bbox[2]) // 2
+    draw.text((title_x, y), q.title, font=TITLE_FONT, fill=ACCENT_COLOR)
+    y += title_height
+
+    # --------------------------------------------------
+    # Code Block
+    # --------------------------------------------------
     draw.rounded_rectangle(
         [
             content_x,
             y,
             content_x + max_width,
-            y + block_height
+            y + code_block_height
         ],
         radius=18,
         fill=CODE_BG
     )
 
-    # Accent bar
     draw.rectangle(
-        [content_x, y, content_x + 6, y + block_height],
+        [content_x, y, content_x + 6, y + code_block_height],
         fill=ACCENT_COLOR
     )
 
@@ -316,19 +341,13 @@ def render_answer_image(q: Question, out_path: Path) -> None:
         )
         cy += line_height
 
-    y = cy + block_padding
-
-    y += 20
+    y += code_section_height
 
     # --------------------------------------------------
-    # Options (highlight correct)
+    # Answer Option (highlight correct)
     # --------------------------------------------------
     correct_label = q.correct.upper()
-    option_h = 60
-
-    # Show only the correct answer
-    label = correct_label
-    option = q.options[ord(label) - ord("A")]
+    option = q.options[ord(correct_label) - ord("A")]
     
     # Highlight background
     draw.rounded_rectangle(
@@ -343,18 +362,17 @@ def render_answer_image(q: Question, out_path: Path) -> None:
 
     draw.text(
         (content_x + 18, y),
-        f"{label}. {option}",
+        f"{correct_label}. {option}",
         font=TEXT_FONT,
         fill=SUCCESS_COLOR
     )
 
-    y += option_h + 12
+    y += answer_section_height
 
     # --------------------------------------------------
-    # Explanation (optional but powerful) 
+    # Explanation (optional but powerful)
     # --------------------------------------------------
     if q.explanation:
-        y += 10
         draw.line(
             [(content_x, y), (content_x + max_width, y)],
             fill=ACCENT_COLOR,
@@ -366,7 +384,6 @@ def render_answer_image(q: Question, out_path: Path) -> None:
         explanation_content = q.explanation
         
         # Draw "Explanation:" in accent color
-        label_width = draw.textbbox((0, 0), explanation_label, font=TEXT_FONT)[2]
         draw.text(
             (content_x, y),
             explanation_label,
@@ -375,13 +392,13 @@ def render_answer_image(q: Question, out_path: Path) -> None:
         )
         y += 60
         
-        # Draw the explanation text starting from the next line
+        # Draw the explanation text
         for line in wrap_text(draw, explanation_content, TEXT_FONT, max_width):
             draw.text(
-            (content_x, y),
-            line,
-            font=TEXT_FONT,
-            fill=SUBTLE_TEXT
+                (content_x, y),
+                line,
+                font=TEXT_FONT,
+                fill=SUBTLE_TEXT
             )
             y += 50
 
@@ -579,7 +596,7 @@ def render_day1_cta_image() -> None:
     Render a reusable Call-To-Action image (dark theme).
     Saved once and reused for all reels.
     """
-    out_path = Path("output/images/cta/day1.png")
+    out_path = Path("output/images/cta/day1_carousel.png")
     if out_path.exists():
         return
 
@@ -690,7 +707,7 @@ def render_day2_cta_image() -> None:
     Render a reusable Call-To-Action image (dark theme).
     Saved once and reused for all reels.
     """
-    out_path = Path("output/images/cta/day2.png")
+    out_path = Path("output/images/cta/day2_carousel.png")
     # if out_path.exists():
     #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
     #     return
@@ -777,10 +794,11 @@ def render_welcome_image() -> None:
     """
     Render a welcome image: 'Welcome to Daily Dose of Python'
     """
+    # out_path = Path("output/images/welcome/welcome_carousel.png")
     out_path = Path("output/images/welcome/welcome.png")
-    if out_path.exists():
-        print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-        return
+    # if out_path.exists():
+    #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+    #     return
 
     img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
@@ -854,7 +872,7 @@ def render_welcome_image() -> None:
             font=TITLE_FONT,
             fill=TEXT_COLOR
         )
-        y += 68
+        y += 70
 
     # --------------------------------------------------
     # Overlay Image
@@ -865,17 +883,19 @@ def render_welcome_image() -> None:
         overlay_w, overlay_h = 600, 600
         overlay_resized = overlay.resize((overlay_w, overlay_h), Image.Resampling.LANCZOS)
         overlay_x = (WIDTH - overlay_w) // 2
-        overlay_y = y + 40
+        overlay_y = y + 20
         img.paste(overlay_resized, (overlay_x, overlay_y), overlay_resized)
 
+    y += overlay_h + 60  # Adjust y position for footer text
+
     # --------------------------------------------------
-    # Footer
+    # Footer Text
     # --------------------------------------------------
     footer = "New challenges every day"
     fb = draw.textbbox((0, 0), footer, font=TITLE_FONT)
     fw = fb[2] - fb[0]
     draw.text(
-        ((WIDTH - fw) // 2, HEIGHT - 90),
+        (content_x + (max_width - fw) // 2, y),
         footer,
         font=TITLE_FONT,
         fill=SUBTLE_TEXT

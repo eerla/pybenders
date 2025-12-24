@@ -9,6 +9,7 @@ def main():
         questions_data = json.load(f)
         questions = [Question(**q) for q in questions_data]
     output_dir = Path("output/images/questions")
+    # output_dir = Path("output/images/carousels")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for question in questions:
