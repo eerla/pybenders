@@ -11,7 +11,7 @@ class ReelGenerator:
         self.image_renderer = image_renderer or ImageRenderer()
         self.video_renderer = video_renderer or VideoRenderer()
     
-    def generate(self, questions_per_run: int = 3) -> Path:
+    def generate(self, questions_per_run: int) -> Path:
         print("🚀 Starting reel generation pipeline")
 
         metadata_path = self.image_renderer.main(questions_per_run=questions_per_run)
@@ -29,6 +29,6 @@ class ReelGenerator:
 
         return updated_metadata_path
 
-if __name__ == "__main__":
-    reel_generator = ReelGenerator()
-    reel_generator.generate(questions_per_run=1)
+# if __name__ == "__main__":
+#     reel_generator = ReelGenerator()
+#     reel_generator.generate(questions_per_run=1)
