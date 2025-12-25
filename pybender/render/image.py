@@ -1035,7 +1035,7 @@ class ImageRenderer:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
 
-    def main(self):
+    def main(self, questions_per_run: int = 3) -> Path:
 
         # --------------------------------------------------
         # Run context
@@ -1049,10 +1049,10 @@ class ImageRenderer:
         # --------------------------------------------------
         # Generate questions
         # --------------------------------------------------
-        # questions, topic = generate_questions(n=2)  # get from LLM
-        with open("output/data/questions/20251224/questions_20251224_145650.json", "r") as f:
-            questions_data = json.load(f)
-            questions = [Question(**q) for q in questions_data]
+        questions, topic = generate_questions(questions_per_run)  # get from LLM
+        # with open("output/data/questions/20251224/questions_20251224_145650.json", "r") as f:
+        #     questions_data = json.load(f)
+        #     questions = [Question(**q) for q in questions_data]
         
 
         # Assign stable question IDs
@@ -1094,9 +1094,9 @@ class ImageRenderer:
             answer_img = answer_dir / f"{q.question_id}_answer.png"
             single_img = single_dir / f"{q.question_id}_single.png"
 
-            renderer.render_question_image(q, question_img)
-            renderer.render_answer_image(q, answer_img)
-            renderer.render_single_post_image(q, single_img)
+            self.render_question_image(q, question_img)
+            self.render_answer_image(q, answer_img)
+            self.render_single_post_image(q, single_img)
 
             metadata["questions"].append({
                 "question_id": q.question_id,
@@ -1123,11 +1123,12 @@ class ImageRenderer:
             json.dump(metadata, f, indent=2)
 
         print(f"Metadata written to {metadata_path}")
-        renderer.render_day1_cta_image()
-        renderer.render_day2_cta_image()
-        renderer.render_welcome_image()
+        self.render_day1_cta_image()
+        self.render_day2_cta_image()
+        self.render_welcome_image()
         print("Image rendering process completed successfully")
+        return metadata_path
 
-if __name__ == "__main__":
-    renderer = ImageRenderer()
-    renderer.main()
+# if __name__ == "__main__":
+#     renderer = ImageRenderer()
+#     renderer.main(2)
