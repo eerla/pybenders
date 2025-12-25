@@ -370,4 +370,8 @@ class VideoRenderer:
         return metadata_path
 
 
+# if __name__ == "__main__":
+#     renderer = VideoRenderer()
+#     test_metadata_path = Path("output/runs/2025-12-24_213141/metadata.json")
+#     renderer.main(test_metadata_path)
 
