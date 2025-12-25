@@ -7,23 +7,15 @@ from openai import OpenAI
 from pybender.config.settings import OPENAI_API_KEY, MODEL
 from pybender.generator.schema import Question
 from pybender.generator.prompt_loader import load_prompt
+from pybender.generator.content_registry import CONTENT_REGISTRY
+from pybender.prompts.templates import PROMPT_TEMPLATES
+from pybender.validation.validate_questions import validate_questions
+
 
 class ValidationError(Exception):
     pass
 
 class QuestionGenerator:
-    PYTHON_TOPICS = [
-        "Python internals and memory model",
-        "List comprehensions and generators",
-        "Variable scope and closures",
-        "Mutability and immutability",
-        "Decorators",
-        "Async and await",
-        "Threading and GIL",
-        "Standard library gotchas",
-        "Object-oriented Python internals",
-        "Python truthiness and comparisons"
-    ]
 
     def __init__(self):
         self.client = OpenAI(api_key=OPENAI_API_KEY)
@@ -32,31 +24,7 @@ class QuestionGenerator:
         self.model = "gpt-4o-mini"
         self.MAX_RETRIES = 2
 
-    @staticmethod
-    def validate_question(q: dict) -> None:
-        if len(q["title"].split()) > 8:
-            raise ValidationError("Title too long")
-
-        if q["code"].count("\n") >= 8:
-            raise ValidationError("Code too long")
-
-        # # crude but effective single-sentence check
-        # if q["question"].count(".") != 2:
-        #     raise ValidationError("Question must be exactly one sentence")
-
-        if any(len(opt) > 60 for opt in q["options"]):
-            raise ValidationError("Option too long")
-
-        if len(q["explanation"]) > 180:
-            raise ValidationError("Explanation too long")
-
-    def generate_questions(self, n: int) -> tuple[list[Question], str]:
-        topic = random.choice(self.PYTHON_TOPICS)
-        prompt_template = load_prompt("python_mcq.txt")
-
-        prompt = prompt_template.replace("{{topic}}", topic)\
-                                 .replace("{{n}}", str(n))
-
+    def get_llm_response(self, prompt: str) -> str:
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
@@ -64,55 +32,75 @@ class QuestionGenerator:
                 {"role": "user", "content": prompt}
             ]
         )
+        return response.choices[0].message.content
 
-        raw = response.choices[0].message.content
-        validated_questions = []
+    def generate_questions(self, n: int, subject: str = "python") -> tuple[list[Question], str]:
+        
+        spec = CONTENT_REGISTRY[subject]
+        topic = random.choice(spec.topics)
+        content_type = spec.content_type
+        prompt_template = PROMPT_TEMPLATES[content_type]
+
+        prompt = (
+            prompt_template
+            .replace("{{subject}}", subject)
+            .replace("{{topic}}", topic)
+            .replace("{{n}}", str(n))
+        )
+
         try:
+            raw = self.get_llm_response(prompt)
             data = json.loads(raw)
-            for q in data:
-                q = self.validate_with_retry(q)
-                validated_questions.append(Question(**q))
-
         except json.JSONDecodeError:
             raise ValueError("LLM returned invalid JSON")
 
-        return validated_questions, topic
+        valid, failed = validate_questions(data, content_type)
 
-    def regenerate_question(self, original_q: dict, error: str) -> dict:
-        prompt = f"""
-            The following Python MCQ violates formatting rules.
+        attempt = 0
+        while failed and attempt < self.MAX_RETRIES:
+            attempt += 1
+            print(f"🔁 Retry {attempt}: regenerating {len(failed)} invalid questions")
 
-            Error: {error}
+            regenerated = self.regenerate_failed_questions(
+                failed,
+                subject=subject,
+                content_type=content_type
+            )
 
-            Original question (JSON):
-            {json.dumps(original_q, indent=2)}
+            valid_retry, failed = validate_questions(regenerated, content_type)
+            valid.extend(valid_retry)
 
-            Fix ONLY the formatting issues.
-            Do NOT change the core idea.
-            Follow all original constraints strictly.
-            Return ONLY valid JSON for a single question.
-        """
+        if failed:
+            print(f"⚠️ Dropping {len(failed)} questions after {self.MAX_RETRIES} retries")
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "You output only valid JSON."},
-                {"role": "user", "content": prompt}
-            ],
+        return [Question(**q) for q in valid], topic, content_type
+
+    def regenerate_failed_questions(
+            self,
+            failed: list[dict],
+            subject: str,
+            content_type: str
+        ) -> list[dict]:
+
+        constraint_block = "\n".join(
+            f"- {q.get('_validation_error', 'Unknown error')}"
+            for q in failed
         )
 
-        return json.loads(response.choices[0].message.content)
+        retry_prompt = f"""
+        The following {subject} questions failed formatting validation.
 
-    def validate_with_retry(self, q: dict) -> dict:
-        attempt = 0
-        while attempt <= self.MAX_RETRIES:
-            try:
-                self.validate_question(q)
-                return q
-            except ValidationError as e:
-                if attempt == self.MAX_RETRIES:
-                    raise RuntimeError(
-                        f"Question failed validation after retries: {e}"
-                    )
-                q = self.regenerate_question(q, str(e))
-                attempt += 1
+        Constraints violated:
+        {constraint_block}
+
+        Fix ONLY formatting issues.
+        Do NOT change the core idea.
+        Strictly obey all constraints.
+
+        Return ONLY valid JSON (array of questions).
+
+        Questions:
+        {json.dumps(failed, indent=2)}
+        """
+
+        return json.loads(self.get_llm_response(retry_prompt))

@@ -11,16 +11,16 @@ class ReelGenerator:
         self.image_renderer = image_renderer or ImageRenderer()
         self.video_renderer = video_renderer or VideoRenderer()
     
-    def generate(self, questions_per_run: int) -> Path:
+    def generate(self, questions_per_run: int, subject: str = "python") -> Path:
         print("🚀 Starting reel generation pipeline")
 
-        metadata_path = self.image_renderer.main(questions_per_run=questions_per_run)
+        # metadata_path = self.image_renderer.main(questions_per_run=questions_per_run, subject=subject)
 
         # test with mock data - TODO: add mock data file
-        # import json
-        # metadata_path = Path("output/runs/2025-12-24_213141/metadata.json")
-        # with open(metadata_path, "r") as f:
-        #     metadata = json.load(f)
+        import json
+        metadata_path = Path("output/javascript/runs/2025-12-25_162942/metadata.json")
+        with open(metadata_path, "r") as f:
+            metadata = json.load(f)
         print(f"🖼 Images generated. Metadata at: {metadata_path}")
 
         updated_metadata_path = self.video_renderer.main(metadata_path)

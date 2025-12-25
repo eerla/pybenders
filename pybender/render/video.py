@@ -35,6 +35,7 @@ class VideoRenderer:
     def generate_day1_reel(
         self,
         question_img: Path,
+        out_path: Path,
         **kwargs,
     ):
         """
@@ -44,16 +45,6 @@ class VideoRenderer:
         welcome_img = kwargs.get("welcome_img") or Path("output/images/welcome/welcome.png")
         cta_img = kwargs.get("cta_img") or Path("output/images/cta/day1.png")   
         music_path = kwargs.get("music_path") or Path("pybender/assets/music/chill_loop.mp3")
-        # --------------------------------------------------
-        # Derive question_id from image filename
-        # --------------------------------------------------
-        question_id = self.extract_question_id_from_image(question_img)
-        # --------------------------------------------------
-        # Output Path (timestamped)
-        # --------------------------------------------------
-        out_dir = Path(f"output/reels/day1/{self.RUN_DATE}")
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / f"{question_id}_day1.mp4"
 
         # --------------------------------------------------
         # Durations
@@ -134,6 +125,7 @@ class VideoRenderer:
         # --------------------------------------------------
         # Export
         # --------------------------------------------------
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         final_video.write_videofile(
             str(out_path),
             codec="libx264",
@@ -150,6 +142,7 @@ class VideoRenderer:
         self,
         question_img: Path,
         answer_img: Path,
+        out_path: Path,
         **kwargs,
     ):
         """
@@ -159,17 +152,6 @@ class VideoRenderer:
 
         cta_img = kwargs.get("cta_img") or Path("output/images/cta/day2.png")
         music_path = kwargs.get("music_path") or Path("pybender/assets/music/chill_loop.mp3")
-
-        # --------------------------------------------------
-        # Derive question_id from image filename
-        # --------------------------------------------------
-        question_id = self.extract_question_id_from_image(question_img)
-        # --------------------------------------------------
-        # Output Path (same RUN_TIMESTAMP as Day 1)
-        # --------------------------------------------------
-        out_dir = Path(f"output/reels/day2/{self.RUN_DATE}")
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / f"{question_id}_day2.mp4"
 
         # --------------------------------------------------
         # Durations
@@ -246,6 +228,7 @@ class VideoRenderer:
         # --------------------------------------------------
         # Export
         # --------------------------------------------------
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         final_video.write_videofile(
             str(out_path),
             codec="libx264",
@@ -284,6 +267,7 @@ class VideoRenderer:
                 "question_image": Path(q_assets["question_image"]),
                 "answer_image": Path(q_assets["answer_image"]),
                 "single_post_image": Path(q_assets["single_post_image"]),
+                "subject": metadata.get("subject", ""),
             })
 
         return assets 
@@ -294,23 +278,25 @@ class VideoRenderer:
     def process_question(self, asset: dict) -> dict:
         question_img = asset["question_image"]
         answer_img = asset["answer_image"]
-
+        subject = asset["subject"]
         question_id = self.extract_question_id_from_image(Path(question_img))
 
         # Output paths (must match generate_* logic)
-        day1_path = Path(f"output/reels/day1/{self.RUN_DATE}/{question_id}_day1.mp4")
-        day2_path = Path(f"output/reels/day2/{self.RUN_DATE}/{question_id}_day2.mp4")
+        day1_path = Path(f"output/{subject}/reels/day1/{self.RUN_DATE}/{question_id}_day1.mp4")
+        day2_path = Path(f"output/{subject}/reels/day2/{self.RUN_DATE}/{question_id}_day2.mp4")
 
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = [
                 executor.submit(
                     self.generate_day1_reel,
-                    question_img=Path(question_img)
+                    question_img=Path(question_img),
+                    out_path=day1_path
                 ),
                 executor.submit(
                     self.generate_day2_reel,
                     question_img=Path(question_img),
-                    answer_img=Path(answer_img)
+                    answer_img=Path(answer_img),
+                    out_path=day2_path
                 ),
             ]
 
@@ -333,7 +319,7 @@ class VideoRenderer:
         
         metadata = self.load_metadata(metadata_path)
         assets = self.get_question_assets(metadata)
-
+        subject = metadata.get("subject", "")
          # --------------------------------------------------
         # Run all questions in parallel
         # --------------------------------------------------

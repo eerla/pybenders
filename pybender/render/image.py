@@ -97,7 +97,7 @@ class ImageRenderer:
         return lines
 
 
-    def render_question_image(self, q: Question, out_path: Path) -> None:
+    def render_question_image(self, q: Question, out_path: Path, subject: str) -> None:
         print("Rendering question image...")
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
@@ -123,7 +123,7 @@ class ImageRenderer:
         # Calculate total content height first
         # --------------------------------------------------
         # Header
-        header_text = "Daily Dose of Python"
+        header_text = f"Daily Dose of {subject.capitalize()}"
         header_height = 60
 
         # Title
@@ -239,7 +239,7 @@ class ImageRenderer:
         print(f"question image saved to: {out_path}")
 
 
-    def render_answer_image(self, q: Question, out_path: Path) -> None:
+    def render_answer_image(self, q: Question, out_path: Path, subject: str) -> None:
         """
         Render answer-reveal image highlighting the correct option.
         """
@@ -309,7 +309,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Answer Label
         # --------------------------------------------------
-        answer_text = "Answer"
+        answer_text = f"{subject.capitalize()} Answer"
         aw = draw.textbbox((0, 0), answer_text, font=self.HEADER_FONT)[2]
         draw.text(
             (content_x + (max_width - aw) // 2, y),
@@ -424,7 +424,7 @@ class ImageRenderer:
         print(f"answer image saved to: {out_path}")
 
 
-    def render_single_post_image(self, q: Question, out_path: Path) -> None:
+    def render_single_post_image(self, q: Question, out_path: Path, subject: str) -> None:
         """
         Render a single-post image with question + answer together.
         Output: pybenders/output/images/singles/<slug>.png
@@ -453,7 +453,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Header (Brand) - moved inside card
         # --------------------------------------------------
-        header = "Daily Dose of Python"
+        header = f"Daily Dose of {subject.capitalize()}"
         hw = draw.textbbox((0, 0), header, font=self.HEADER_FONT)[2]
         draw.text(
             (content_x + (max_width - hw) // 2, y),
@@ -1035,7 +1035,7 @@ class ImageRenderer:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
 
-    def main(self, questions_per_run: int = 3) -> Path:
+    def main(self, questions_per_run: int, subject: str = "python") -> Path:
 
         # --------------------------------------------------
         # Run context
@@ -1050,9 +1050,10 @@ class ImageRenderer:
         # Generate questions
         # --------------------------------------------------
         qg = QuestionGenerator()
-        questions, topic = qg.generate_questions(questions_per_run)  # get from LLM
+        questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)  # get from LLM
         # with open("output/data/questions/20251224/questions_20251224_145650.json", "r") as f:
         #     questions_data = json.load(f)
+        #     topic, content_type = "python", "code_output"
         #     questions = [Question(**q) for q in questions_data]
         
 
@@ -1063,18 +1064,20 @@ class ImageRenderer:
         # --------------------------------------------------
         # Output directories (type-based)
         # --------------------------------------------------
-        base_img_dir = Path("output/images")
+        base_img_dir = Path(f"output/{subject}/images")
         question_dir = base_img_dir / "questions"
         answer_dir = base_img_dir / "answers"
         single_dir = base_img_dir / "singles"
-
-        for d in [question_dir, answer_dir, single_dir]:
+        run_dir = Path(f"output/{subject}/runs") / RUN_ID
+        for d in [question_dir, answer_dir, single_dir, run_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
         metadata = {
             "run_id": RUN_ID,
             "run_date": RUN_DATE,
             "run_timestamp": RUN_TIMESTAMP,
+            "subject": subject,
+            "content_type": content_type,
             "generator": {
                 "model": self.MODEL,
                 "topic": topic if topic else "PYTHON" # or return topic from generate_questions()
@@ -1094,10 +1097,10 @@ class ImageRenderer:
             question_img = question_dir / f"{q.question_id}_question.png"
             answer_img = answer_dir / f"{q.question_id}_answer.png"
             single_img = single_dir / f"{q.question_id}_single.png"
-
-            self.render_question_image(q, question_img)
-            self.render_answer_image(q, answer_img)
-            self.render_single_post_image(q, single_img)
+            # TODO: send in subject as input to create subject-specific images if needed
+            self.render_question_image(q, question_img, subject)
+            self.render_answer_image(q, answer_img, subject)
+            self.render_single_post_image(q, single_img, subject)
 
             metadata["questions"].append({
                 "question_id": q.question_id,
@@ -1116,14 +1119,12 @@ class ImageRenderer:
         # --------------------------------------------------
         # Write metadata.json (single source of truth)
         # --------------------------------------------------
-        run_dir = Path("output/runs") / RUN_ID
-        run_dir.mkdir(parents=True, exist_ok=True)
-
         metadata_path = run_dir / "metadata.json"
         with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
 
         print(f"Metadata written to {metadata_path}")
+        # TODO: create separate welcome pages per subject
         self.render_day1_cta_image()
         self.render_day2_cta_image()
         self.render_welcome_image()
