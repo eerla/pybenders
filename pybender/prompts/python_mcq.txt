@@ -1,22 +1,43 @@
-You are a senior Python language expert.
+You are a Senior Python expert creating SHORT-FORM content for Instagram reels.
 
-Generate {{n}} tricky multiple-choice questions on Python internals related to {{topic}}.
+Generate {{n}} tricky Python multiple-choice questions about {{topic}}.
 
-Rules:
-- Each question must have exactly 4 options labeled A–D
-- Only ONE option must be correct
-- Focus on Python internals (mutability, closures, evaluation order, NaN, iterators, identity, classes, functions, methods, objects)
-- Code must fit inside an Instagram post
-- No trick wording, only conceptual traps
+STRICT RULES (must follow):
+- Return ONLY valid JSON
+- No text outside JSON
+- Keep content concise and reel-friendly
+- Do NOT exceed length limits below
 
-Return STRICT JSON array matching this schema:
+Each question MUST contain:
+- title: max 8 words
+- code: max 8 lines, no comments, no blank lines
+- question: exactly 1 sentence
+- options: exactly 4 items, each under 60 characters
+- correct: one of "A", "B", "C", "D"
+- explanation: max 2 short sentences, under 180 characters total
+
+Additional constraints:
+- Avoid long variable names
+- Avoid nested examples or edge-case-heavy code
+- Prefer clarity over completeness
+- Assume viewer has intermediate Python knowledge
+- Before responding, verify that every field obeys the length limits.
+If any limit is exceeded, shorten it.
+- Code must fit within a single screen on a mobile device.
+- Explanation should sound like a spoken voiceover, not documentation.
+
+
+JSON format:
 [
   {
-    "title": "Context of the question in max 3 words",
+    "id": "q01",
+    "title": "...",
     "code": "...",
-    "question": "What is the output?",
+    "question": "...",
     "options": ["...", "...", "...", "..."],
     "correct": "B",
     "explanation": "..."
   }
 ]
+
+

@@ -1,0 +1,129 @@
+{
+  "run_id": "2025-12-24_174726",
+  "run_date": "2025-12-24",
+  "run_timestamp": "174726",
+  "generator": {
+    "model": "gpt-4o-mini",
+    "topic": "PYTHON"
+  },
+  "questions": [
+    {
+      "question_id": "2025-12-24_174726_q01",
+      "title": "NaN Comparisons",
+      "slug": "nan_comparisons",
+      "content": {
+        "question_id": "2025-12-24_174726_q01",
+        "title": "NaN Comparisons",
+        "code": "import math\nx = float('nan')\nprint(x == x, x != x, x < x, math.isnan(x))",
+        "question": "What is the output?",
+        "options": [
+          "True False False True",
+          "False True False True",
+          "False False True False",
+          "False True True False"
+        ],
+        "correct": "B",
+        "explanation": "NaN is not equal to itself, so x == x is False and x != x is True. Comparisons like x < x are always False. math.isnan(x) returns True because x is NaN."
+      },
+      "assets": {
+        "question_image": "output\\images\\questions\\2025-12-24_174726_q01_question.png",
+        "answer_image": "output\\images\\answers\\2025-12-24_174726_q01_answer.png",
+        "single_post_image": "output\\images\\singles\\2025-12-24_174726_q01_single.png"
+      }
+    },
+    {
+      "question_id": "2025-12-24_174726_q02",
+      "title": "Function vs Method Identity",
+      "slug": "function_vs_method_identity",
+      "content": {
+        "question_id": "2025-12-24_174726_q02",
+        "title": "Function vs Method Identity",
+        "code": "class C:\n    def f(self): pass\n\na, b = C.f, C().f\nprint(a == b, a is b, callable(a), callable(b))",
+        "question": "What is the output?",
+        "options": [
+          "True False True True",
+          "False True True True",
+          "False False True True",
+          "True True True False"
+        ],
+        "correct": "C",
+        "explanation": "C.f is an unbound function, while C().f is a bound method. They compare unequal and are distinct objects, so a == b and a is b are False. Both are callable."
+      },
+      "assets": {
+        "question_image": "output\\images\\questions\\2025-12-24_174726_q02_question.png",
+        "answer_image": "output\\images\\answers\\2025-12-24_174726_q02_answer.png",
+        "single_post_image": "output\\images\\singles\\2025-12-24_174726_q02_single.png"
+      }
+    }
+  ]
+}
+
+
+STEP 2 RESULT WITH REELS ADDED:
+{
+  "run_id": "2025-12-24_175633",
+  "run_date": "2025-12-24",
+  "run_timestamp": "175633",
+  "generator": {
+    "model": "gpt-4o-mini",
+    "topic": "PYTHON"
+  },
+  "questions": [
+    {
+      "question_id": "2025-12-24_175633_q01",
+      "title": "NaN Comparisons",
+      "slug": "nan_comparisons",
+      "content": {
+        "question_id": "2025-12-24_175633_q01",
+        "title": "NaN Comparisons",
+        "code": "import math\nx = float('nan')\nprint(x == x, x != x, x < x, math.isnan(x))",
+        "question": "What is the output?",
+        "options": [
+          "True False False True",
+          "False True False True",
+          "False False True False",
+          "False True True False"
+        ],
+        "correct": "B",
+        "explanation": "NaN is not equal to itself, so x == x is False and x != x is True. Comparisons like x < x are always False. math.isnan(x) returns True because x is NaN."
+      },
+      "assets": {
+        "question_image": "output\\images\\questions\\2025-12-24_175633_q01_question.png",
+        "answer_image": "output\\images\\answers\\2025-12-24_175633_q01_answer.png",
+        "single_post_image": "output\\images\\singles\\2025-12-24_175633_q01_single.png",
+        "reels": {
+          "day1": "output\\reels\\day1\\20251224\\2025-12-24_175633_q01_day1.mp4",
+          "day2": "output\\reels\\day2\\20251224\\2025-12-24_175633_q01_day2.mp4"
+        }
+      }
+    },
+    {
+      "question_id": "2025-12-24_175633_q02",
+      "title": "Function vs Method Identity",
+      "slug": "function_vs_method_identity",
+      "content": {
+        "question_id": "2025-12-24_175633_q02",
+        "title": "Function vs Method Identity",
+        "code": "class C:\n    def f(self): pass\n\na, b = C.f, C().f\nprint(a == b, a is b, callable(a), callable(b))",
+        "question": "What is the output?",
+        "options": [
+          "True False True True",
+          "False True True True",
+          "False False True True",
+          "True True True False"
+        ],
+        "correct": "C",
+        "explanation": "C.f is an unbound function, while C().f is a bound method. They compare unequal and are distinct objects, so a == b and a is b are False. Both are callable."
+      },
+      "assets": {
+        "question_image": "output\\images\\questions\\2025-12-24_175633_q02_question.png",
+        "answer_image": "output\\images\\answers\\2025-12-24_175633_q02_answer.png",
+        "single_post_image": "output\\images\\singles\\2025-12-24_175633_q02_single.png",
+        "reels": {
+          "day1": "output\\reels\\day1\\20251224\\2025-12-24_175633_q02_day1.mp4",
+          "day2": "output\\reels\\day2\\20251224\\2025-12-24_175633_q02_day2.mp4"
+        }
+      }
+    }
+  ]
+}

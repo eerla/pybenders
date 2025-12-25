@@ -37,5 +37,31 @@
         ],
         "correct": "A",
         "explanation": "The default argument x is a mutable list that persists across function calls. The first call appends 0 (length of empty list), so it prints [0]. Subsequent calls would append increasing numbers."
+    },
+    {
+        "title": "Closure variable binding",
+        "code": "def make_funcs():\n    return [lambda x: x + i for i in range(3)]\nfuncs = make_funcs()\nresults = [f(10) for f in funcs]\nprint(results)",
+        "question": "What is the output?",
+        "options": [
+            "[10, 11, 12]",
+            "[12, 12, 12]",
+            "[10, 10, 10]",
+            "[11, 12, 13]"
+        ],
+        "correct": "B",
+        "explanation": "The lambdas capture the variable 'i' by reference, not by value. When the functions are called later, 'i' is 2 (last loop value), so all return x + 2 = 12."
+    },
+    {
+        "title": "Mutable default scope",
+        "code": "def append_to(val, lst=[]):\n    lst.append(val)\n    return lst\nprint(append_to(1))\nprint(append_to(2))",
+        "question": "What is the output?",
+        "options": [
+            "[1]\n[2]",
+            "[1]\n[1, 2]",
+            "[1, 2]\n[1, 2]",
+            "Error at second call"
+        ],
+        "correct": "B",
+        "explanation": "Default mutable argument lst is shared across calls. The second call appends 2 to the same list used in the first call, resulting in [1, 2]."
     }
 ]
