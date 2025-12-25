@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 from pybender.generator.schema import Question
-from pybender.generator.question_gen import generate_questions
+from pybender.generator.question_gen import QuestionGenerator
 import json
 from datetime import datetime
 
@@ -1049,7 +1049,8 @@ class ImageRenderer:
         # --------------------------------------------------
         # Generate questions
         # --------------------------------------------------
-        questions, topic = generate_questions(questions_per_run)  # get from LLM
+        qg = QuestionGenerator()
+        questions, topic = qg.generate_questions(questions_per_run)  # get from LLM
         # with open("output/data/questions/20251224/questions_20251224_145650.json", "r") as f:
         #     questions_data = json.load(f)
         #     questions = [Question(**q) for q in questions_data]
