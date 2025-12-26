@@ -284,19 +284,25 @@ class VideoRenderer:
         # Output paths (must match generate_* logic)
         day1_path = Path(f"output/{subject}/reels/day1/{self.RUN_DATE}/{question_id}_day1.mp4")
         day2_path = Path(f"output/{subject}/reels/day2/{self.RUN_DATE}/{question_id}_day2.mp4")
+        welcome_img = Path(f"output/{subject}/images/welcome/welcome.png")
+        cta_day1_img = Path(f"output/{subject}/images/cta/day1.png")
+        cta_day2_img = Path(f"output/{subject}/images/cta/day2.png")
 
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = [
                 executor.submit(
                     self.generate_day1_reel,
                     question_img=Path(question_img),
-                    out_path=day1_path
+                    out_path=day1_path,
+                    welcome_img=welcome_img,
+                    cta_img=cta_day1_img
                 ),
                 executor.submit(
                     self.generate_day2_reel,
                     question_img=Path(question_img),
                     answer_img=Path(answer_img),
-                    out_path=day2_path
+                    out_path=day2_path,
+                    cta_img=cta_day2_img
                 ),
             ]
 

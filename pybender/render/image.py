@@ -603,13 +603,12 @@ class ImageRenderer:
         img.save(out_path)
         print(f"Single post image saved → {out_path}")
 
-    
-    def render_day1_cta_image(self) -> None:
+    def render_day1_cta_image(self, subject: str) -> None:
         """
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = Path("output/images/cta/day1_carousel.png")
+        out_path = Path(f"output/{subject}/images/cta/day1.png")
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
@@ -656,7 +655,7 @@ class ImageRenderer:
         # --------------------------------------------------
         title_text = "What's Your Answer?"
         body_text = "Drop A, B, C, or D below!\n\nAnswer drops tomorrow"
-        follow_text = "Follow for daily Python challenges"
+        follow_text = f"Follow for daily {subject.capitalize()} challenges"
 
         # --------------------------------------------------
         # Text Positions
@@ -701,12 +700,12 @@ class ImageRenderer:
         print(f"CTA image rendered at: {out_path}")
 
 
-    def render_day2_cta_image(self) -> None:
+    def render_day2_cta_image(self, subject: str) -> None:
         """
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = Path("output/images/cta/day2_carousel.png")
+        out_path = Path(f"output/{subject}/images/cta/day2.png")
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
@@ -754,7 +753,7 @@ class ImageRenderer:
             "Hope that one made you think.",
             "",
             "Follow for daily",
-            "Python tricky questions."
+            f"{subject.capitalize()} tricky questions."
         ]
 
         for line in body_lines:
@@ -789,11 +788,11 @@ class ImageRenderer:
         print(f"Day 2 CTA image saved → {out_path}")
 
 
-    def render_welcome_image(self) -> None:
+    def render_welcome_image(self, subject: str) -> None:
         """
         Render a welcome image: 'Welcome to Daily Dose of Python'
         """
-        out_path = Path("output/images/welcome/welcome_carousel.png")
+        out_path = Path(f"output/{subject}/images/welcome/welcome.png")
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
@@ -833,7 +832,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Brand Name
         # --------------------------------------------------
-        brand = "Daily Dose of Python"
+        brand = f"Daily Dose of {subject.capitalize()}"
         bw = draw.textbbox((0, 0), brand, font=self.TITLE_FONT)[2]
         draw.text(
             (content_x + (max_width - bw) // 2, y),
@@ -861,7 +860,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Subtitle
         # --------------------------------------------------
-        subtitle = "Bite-sized Python challenges.\nThink. Comment. Learn."
+        subtitle = f"Bite-sized {subject.capitalize()} challenges.\nThink. Comment. Learn."
         for line in subtitle.split("\n"):
             lw = draw.textbbox((0, 0), line, font=self.TITLE_FONT)[2]
             draw.text(
@@ -1125,9 +1124,9 @@ class ImageRenderer:
 
         print(f"Metadata written to {metadata_path}")
         # TODO: create separate welcome pages per subject
-        self.render_day1_cta_image()
-        self.render_day2_cta_image()
-        self.render_welcome_image()
+        self.render_day1_cta_image(subject)
+        self.render_day2_cta_image(subject)
+        self.render_welcome_image(subject)
         print("Image rendering process completed successfully")
         return metadata_path
 
