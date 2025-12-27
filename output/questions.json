@@ -1,67 +1,16 @@
 [
     {
-        "title": "Python Internals",
-        "code": "def make_funcs():\n    funcs = []\n    for i in range(3):\n        def f():\n            return i\n        funcs.append(f)\n    return funcs\n\nfuncs = make_funcs()\nresults = [f() for f in funcs]\nprint(results)",
-        "question": "What is printed?",
+        "question_id": "2025-12-25_113540_q01",
+        "title": "Threading and GIL Challenge",
+        "code": "import threading\n\ndef task():\n    print('Task')\n\nthreads = [threading.Thread(target=task) for _ in range(2)]\nfor t in threads:\n    t.start()",
+        "question": "What will be printed by the code above?",
         "options": [
-            "[0, 1, 2]",
-            "[2, 2, 2]",
-            "[0, 0, 0]",
-            "[None, None, None]"
+          "Task",
+          "TaskTask",
+          "Task\nTask",
+          "No output"
         ],
-        "correct": "B",
-        "explanation": "The function f closes over the variable i, which is looked up when f is called, not when it is defined. Since i ends at 2 after the loop, all functions return 2."
-    },
-    {
-        "title": "List Comprehensions",
-        "code": "squares = [x**2 for x in range(5) if x % 2 == 0]\nprint(squares)",
-        "question": "What is the output of the code?",
-        "options": [
-            "[0, 1, 4, 9, 16]",
-            "[0, 4, 16]",
-            "[1, 9]",
-            "[2, 4]"
-        ],
-        "correct": "B",
-        "explanation": "The list comprehension generates squares of even numbers from 0 to 4. The even numbers are 0, 2, and 4, whose squares are 0, 4, and 16."
-    },
-    {
-        "title": "Default Mutable Arguments",
-        "code": "def f(x=[]):\n    x.append(len(x))\n    return x\n\nprint(f())",
-        "question": "What is printed?",
-        "options": [
-            "[0]",
-            "[1]",
-            "[0, 1]",
-            "[1, 2]"
-        ],
-        "correct": "A",
-        "explanation": "The default argument x is a mutable list that persists across function calls. The first call appends 0 (length of empty list), so it prints [0]. Subsequent calls would append increasing numbers."
-    },
-    {
-        "title": "Closure variable binding",
-        "code": "def make_funcs():\n    return [lambda x: x + i for i in range(3)]\nfuncs = make_funcs()\nresults = [f(10) for f in funcs]\nprint(results)",
-        "question": "What is the output?",
-        "options": [
-            "[10, 11, 12]",
-            "[12, 12, 12]",
-            "[10, 10, 10]",
-            "[11, 12, 13]"
-        ],
-        "correct": "B",
-        "explanation": "The lambdas capture the variable 'i' by reference, not by value. When the functions are called later, 'i' is 2 (last loop value), so all return x + 2 = 12."
-    },
-    {
-        "title": "Mutable default scope",
-        "code": "def append_to(val, lst=[]):\n    lst.append(val)\n    return lst\nprint(append_to(1))\nprint(append_to(2))",
-        "question": "What is the output?",
-        "options": [
-            "[1]\n[2]",
-            "[1]\n[1, 2]",
-            "[1, 2]\n[1, 2]",
-            "Error at second call"
-        ],
-        "correct": "B",
-        "explanation": "Default mutable argument lst is shared across calls. The second call appends 2 to the same list used in the first call, resulting in [1, 2]."
-    }
+        "correct": "C",
+        "explanation": "Threads may run in parallel, so you could see 'Task' printed twice, each on a new line."
+      }
 ]
