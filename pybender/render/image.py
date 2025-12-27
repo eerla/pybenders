@@ -485,6 +485,62 @@ class ImageRenderer:
     ):
         canvas = self._create_base_canvas(subject)
 
+        # ---------- CALCULATE TOTAL CONTENT HEIGHT ----------
+        # You need to measure all elements before drawing
+        # For each drawing method, calculate its height:
+        header_height = 78  # bbox height + gap
+        title_height = 78   # bbox height + gap
+        
+        # Code block height
+        code_height = 0
+        if layout_profile.has_code and question.code:
+            code_lines = self.normalize_code(question.code)
+            wrapped_lines = []
+            for line in code_lines:
+                wrapped_lines.extend(self.wrap_code_line(self.draw, line, self.CODE_FONT, self.WIDTH - 120 - 40))
+            code_height = len(wrapped_lines) * 48 + 40 + 40  # line_height + padding + gap
+        
+        # Question height
+        scenario_lines = self.wrap_text(self.draw, question.question, self.TEXT_FONT, self.WIDTH - 120)
+        scenario_height = len(scenario_lines) * 50 + 20  # line_height + gap
+        
+        # Options height
+        options_height = 0
+        if layout_profile.has_options:
+            for opt in question.options:
+                opt = opt.replace("\\n", "\n")
+                raw_lines = opt.split("\n")
+                wrapped = []
+                for line in raw_lines:
+                    wrapped.extend(self.wrap_text(self.draw, line, self.TEXT_FONT, self.WIDTH - 120 - 60))
+                block_height = len(wrapped) * 50 + 36  # line_height + padding
+                options_height += block_height + 14  # option_gap
+        
+        # Explanation height
+        explanation_height = 0
+        if layout_profile.has_explanation and mode in (RenderMode.ANSWER, RenderMode.SINGLE):
+            explanation_lines = self.wrap_text(self.draw, question.explanation, self.TEXT_FONT, self.WIDTH - 120)
+            explanation_height = 18 + 55 + len(explanation_lines) * 50  # divider + label + lines
+        
+        total_content_height = (
+            header_height + title_height + code_height + 
+            scenario_height + options_height + explanation_height + 20
+        )
+        
+        # Available space in card (from _create_base_canvas: card_y=80, card_h=HEIGHT-120)
+        card_y = 80
+        card_h = self.HEIGHT - 120
+        available_height = card_h - 80  # Account for top and bottom padding
+        
+        # Calculate starting y to center content
+        if available_height > total_content_height:
+            start_y = card_y + (available_height - total_content_height) // 2
+        else:
+            start_y = card_y + 40  # Fallback to top if content is too large
+        
+        self.y_cursor = start_y
+
+
         # ---------- HEADER ----------
         if mode == RenderMode.QUESTION:
             header = f"Daily dose of {subject}"
