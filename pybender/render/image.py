@@ -905,12 +905,12 @@ class ImageRenderer:
         # Generate questions
         # --------------------------------------------------
         qg = QuestionGenerator()
-        # questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)  # get from LLM
-        with open("output/questions.json", "r") as f:
-            questions_data = json.load(f)
-            topic, content_type = "python", "code_output"
-            # topic, content_type = "javascript", "code_output"
-            questions = [Question(**q) for q in questions_data]
+        questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)  # get from LLM
+        # with open("output/questions.json", "r") as f:
+        #     questions_data = json.load(f)
+        #     topic, content_type = "python", "code_output"
+        #     # topic, content_type = "javascript", "code_output"
+        #     questions = [Question(**q) for q in questions_data]
         
 
         # Assign stable question IDs
@@ -987,6 +987,6 @@ class ImageRenderer:
         print("Image rendering process completed successfully")
         return metadata_path
 
-if __name__ == "__main__":
-    renderer = ImageRenderer()
-    renderer.main(1, subject="python")
+# if __name__ == "__main__":
+#     renderer = ImageRenderer()
+#     renderer.main(1, subject="python")
