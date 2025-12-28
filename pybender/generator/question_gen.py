@@ -52,7 +52,8 @@ class QuestionGenerator:
             raw = self.get_llm_response(prompt)
             data = json.loads(raw)
         except json.JSONDecodeError:
-            raise ValueError("LLM returned invalid JSON")
+            raise ValueError(f"LLM returned invalid JSON for subject {subject} on topic {topic} \
+                                \n raw response: {raw}")
 
         valid, failed = validate_questions(data, content_type)
 

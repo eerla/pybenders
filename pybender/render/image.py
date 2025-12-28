@@ -39,14 +39,14 @@ class ImageRenderer:
         self.SUBJECT_ACCENTS = {
             "python": (76, 201, 240), # cyan
             "sql": (99, 179, 237), # blue
-            "regex": (247, 201, 72), # yellow
+            "regex": (255, 230, 130), # yellow
             "linux": (72, 187, 120), # green
+            "javascript": (255, 223, 99), # gold
+            "rust": (237, 125, 49), # orange
         }
-
 
         # Fonts
         self.FONT_DIR = Path("pybender/assets/fonts")
-        # pybender/assets/fonts/Inter-4.1/extras/ttf/Inter-Regular.ttf
         self.INTER_FONT_DIR = self.FONT_DIR / "Inter-4.1" / "extras" / "ttf"
         self.JETBRAINS_MONO_FONT_DIR = self.FONT_DIR / "JetBrainsMono-2.304" / "fonts" / "ttf"
         self.TITLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 48)
@@ -59,8 +59,6 @@ class ImageRenderer:
         self.BADGE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 36)
         self.SMALL_LABEL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 32)
         # self.REGEX_FONT = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "FiraCode-Regular.ttf"), 48)
-
-        # pybenders\pybender\assets\fonts\JetBrainsMono-2.304\fonts\ttf\JetBrainsMono-Regular.ttf
 
     # ---------- BASE CANVAS ----------
     def _create_base_canvas(self, subject: str) -> Image.Image:
@@ -343,7 +341,7 @@ class ImageRenderer:
                     (self.PADDING_X, self.y_cursor),
                     wline,
                     font=font,
-                    fill="#A6E22E",  # terminal green
+                    fill=(166, 226, 46),  # terminal green
                 )
                 self.y_cursor += line_height
 
@@ -795,9 +793,9 @@ class ImageRenderer:
 
         # ---------- HEADER ----------
         if mode == RenderMode.QUESTION:
-            header = f"Daily dose of {subject}"
+            header = f"Daily dose of {subject.capitalize()}"
         elif mode == RenderMode.ANSWER:
-            header = f"{subject} Answer"
+            header = f"{subject.capitalize()} Answer"
         else:
             header = subject.upper()
 
@@ -832,7 +830,7 @@ class ImageRenderer:
             self._draw_explanation(canvas, question.explanation)
 
         # ---------- FOOTER ----------
-        self._draw_footer(canvas, subject)
+        self._draw_footer(canvas, subject.capitalize())
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
         canvas.save(out_path)
@@ -844,7 +842,7 @@ class ImageRenderer:
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = Path(f"output/{subject}/images/cta/day1.png")
+        out_path = Path(f"output/{subject}/images/cta/day1_new.png")
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
@@ -867,12 +865,7 @@ class ImageRenderer:
 
         # Rounded card
         draw.rounded_rectangle(
-            [
-                card_x,
-                card_y,
-                card_x + card_w,
-                card_y + card_h,
-            ],
+            [card_x, card_y, card_x + card_w, card_y + card_h],
             radius=radius,
             fill=self.CARD_COLOR,
         )
@@ -880,11 +873,12 @@ class ImageRenderer:
         # --------------------------------------------------
         # Fonts (adjust paths as needed)
         # --------------------------------------------------
-        FONT_DIR = Path("pybender/assets/fonts")
+        # FONT_DIR = Path("pybender/assets/fonts")
+        # INTER_FONT_DIR = Path("pybender/assets/fonts/inter")
 
-        title_font = ImageFont.truetype(str(FONT_DIR / "Inter-Bold.ttf"), 72)
-        body_font = ImageFont.truetype(str(FONT_DIR / "Inter-SemiBold.ttf"), 50)
-        follow_font = ImageFont.truetype(str(FONT_DIR / "Inter-Regular.ttf"), 44)
+        title_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Bold.ttf"), 72)
+        body_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 50)
+        follow_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 44)
 
         # --------------------------------------------------
         # Text Content
@@ -912,7 +906,7 @@ class ImageRenderer:
             title_text,
             title_font,
             card_y + 90,
-            self.ACCENT_COLOR,
+            self.SUBJECT_ACCENTS.get(subject, self.ACCENT_COLOR),
         )
 
         draw_centered_text(
@@ -941,14 +935,14 @@ class ImageRenderer:
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = Path(f"output/{subject}/images/cta/day2.png")
+        out_path = Path(f"output/{subject}/images/cta/day2_new.png")
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
 
-        TITLE_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-SemiBold.ttf"), 84)
-        TEXT_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-Regular.ttf"), 48)
-        SUBTLE_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-Regular.ttf"), 42)
+        TITLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 84)
+        TEXT_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 48)
+        SUBTLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 42)
 
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
@@ -978,7 +972,7 @@ class ImageRenderer:
             (card_x + (card_w - tw) // 2, y),
             title,
             font=TITLE_FONT,
-            fill=self.ACCENT_COLOR
+            fill= self.SUBJECT_ACCENTS.get(subject, self.ACCENT_COLOR)
         )
         y += 120
 
@@ -1028,11 +1022,12 @@ class ImageRenderer:
         """
         Render a welcome image: 'Welcome to Daily Dose of Python'
         """
-        out_path = Path(f"output/{subject}/images/welcome/welcome.png")
+        out_path = Path(f"output/{subject}/images/welcome/welcome_new.png")
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
 
+        overlay_path = Path(f"pybender/assets/backgrounds/{subject}_img.png")
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
 
@@ -1041,6 +1036,7 @@ class ImageRenderer:
         # --------------------------------------------------
         card_x, card_y = 60, 220
         card_w, card_h = self.WIDTH - 120, self.HEIGHT - 440
+        accent_color = self.SUBJECT_ACCENTS.get(subject, self.ACCENT_COLOR)
 
         draw.rounded_rectangle(
             [card_x, card_y, card_x + card_w, card_y + card_h],
@@ -1074,7 +1070,7 @@ class ImageRenderer:
             (content_x + (max_width - bw) // 2, y),
             brand,
             font=self.TITLE_FONT,
-            fill=self.ACCENT_COLOR
+            fill=accent_color
         )
         y += 90
 
@@ -1082,13 +1078,8 @@ class ImageRenderer:
         # Divider
         # --------------------------------------------------
         draw.line(
-            [
-                content_x + 120,
-                y,
-                content_x + max_width - 120,
-                y
-            ],
-            fill=self.ACCENT_COLOR,
+            [content_x + 120, y, content_x + max_width - 120, y],
+            fill=accent_color,
             width=2
         )
         y += 150
@@ -1110,7 +1101,6 @@ class ImageRenderer:
         # --------------------------------------------------
         # Overlay Image
         # --------------------------------------------------
-        overlay_path = Path("output/images/welcome/media/pyimg.png")
         overlay_h = 0
         if overlay_path.exists():
             overlay = Image.open(overlay_path).convert("RGBA")
@@ -1239,4 +1229,9 @@ class ImageRenderer:
 
 # if __name__ == "__main__":
 #     renderer = ImageRenderer()
-#     renderer.main(1, subject="python")
+#     subjects = [
+#         "python", "sql", "regex", "system_design", "linux"
+#         ,"docker_k8s", "javascript", "rust", "golang"
+#     ]
+#     for subject in subjects:
+#         renderer.render_welcome_image(subject=subject)

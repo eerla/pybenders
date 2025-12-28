@@ -30,35 +30,58 @@ def run_all_subjects():
     start_time = datetime.now()
     print("Running reel generation for all subjects with 1 question each.")
     subjects = [
-        "python", "sql", "regex", "system_design", "linux"
-        ,"docker_k8s", "javascript", "rust", "golang"
+        "python", "sql", "regex", "system_design", "linux",
+        "docker_k8s", "javascript", "rust", "golang"
     ]
     
     runtimes = {
         subject: None for subject in subjects
     }
+    
+    failed_subjects = []
 
-    try:
-        for subject in subjects:
-            subject_start_time = datetime.now()
-            print(f"\nGenerating reel for: {subject}")
+    for subject in subjects:
+        subject_start_time = datetime.now()
+        print(f"\n{'='*50}")
+        print(f"Generating reel for: {subject}")
+        print(f"{'='*50}")
+        
+        try:
             generator = ReelGenerator()
             generator.generate(questions_per_run=1, subject=subject)
             subject_elapsed_time = (datetime.now() - subject_start_time).total_seconds() / 60
             runtimes[subject] = subject_elapsed_time
-            print(f"Time taken for {subject}: {subject_elapsed_time:.2f} minutes")
-
-        print("\nAll subjects processed.")
-    except OSError as e:
-        if "WinError 6" in str(e):
-            print("\nAll subjects processed (ignoring subprocess cleanup warning).")
+            print(f"✅ {subject} completed in {subject_elapsed_time:.2f} minutes")
+        except ValueError as e:
+            print(f"❌ {subject} failed: {e}")
+            failed_subjects.append((subject, str(e)))
+            runtimes[subject] = "FAILED"
+        except Exception as e:
+            print(f"❌ {subject} failed with unexpected error: {type(e).__name__}: {e}")
+            failed_subjects.append((subject, f"{type(e).__name__}: {e}"))
+            runtimes[subject] = "FAILED"
+    
+    # Summary
+    elapsed_time = (datetime.now() - start_time).total_seconds() / 60
+    print(f"\n{'='*50}")
+    print("SUMMARY")
+    print(f"{'='*50}")
+    print(f"Total time taken: {elapsed_time:.2f} minutes")
+    print(f"\nSuccessful: {len([r for r in runtimes.values() if r != 'FAILED'])}/{len(subjects)}")
+    print(f"Failed: {len(failed_subjects)}/{len(subjects)}")
+    
+    if failed_subjects:
+        print("\n❌ Failed subjects:")
+        for subj, error in failed_subjects:
+            print(f"  - {subj}: {error}")
+    
+    print("\nIndividual subject runtimes:")
+    for subj, runtime in runtimes.items():
+        if runtime == "FAILED":
+            print(f"  {subj}: FAILED")
         else:
-            raise
-    finally:
-        elapsed_time = (datetime.now() - start_time).total_seconds() / 60
-        print(f"Total time taken: {elapsed_time:.2f} minutes")
-        print("Individual subject runtimes:", runtimes)
-
+            print(f"  {subj}: {runtime:.2f} minutes")
+            
 if __name__ == "__main__":
     # main()
     run_all_subjects()
