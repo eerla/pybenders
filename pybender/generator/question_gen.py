@@ -50,6 +50,9 @@ class QuestionGenerator:
         try:
             print(f"🧠 Generating {n} questions via LLM for {subject} on topic: {topic}")
             raw = self.get_llm_response(prompt)
+            if not raw or not raw.strip():
+                raise ValueError(f"LLM returned empty response for subject {subject} on topic {topic}")
+            
             data = json.loads(raw)
         except json.JSONDecodeError:
             raise ValueError(f"LLM returned invalid JSON for subject {subject} on topic {topic} \

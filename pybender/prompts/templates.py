@@ -106,45 +106,78 @@ PROMPT_TEMPLATES = {
                     - Keep content concise and reel-friendly
                     - Everything must fit cleanly on a standard mobile phone screen (vertical reel)
                     - Do NOT exceed length limits below
-                    - Make each of the {{n}} questions unique in test string, pattern style, or trick angle
-                    - Avoid repeating similar inputs, regex shapes, or gotchas across questions
+                    - Make each of the {{n}} questions unique in pattern, operation, test string, or concept angle
+                    - Avoid repeating similar patterns or gotchas across questions
+                    - ALWAYS ask "What does this return?" or "What gets matched/captured/replaced?" - NEVER ask "which pattern is correct"
+                    - The pattern and input are already in the code - focus on understanding the OUTPUT
 
                     Each question MUST contain:
                     - title: max 6 words
-                    - input: single-line test string, under 80 characters
-                    - regex: under 40 characters, no verbose mode
-                    - code: 1–3 lines showing how the regex is applied
-                    - question: exactly 1 sentence, under 155 characters
-                    - options: exactly 4 items, each under 60 characters
+                    - code: Complete Python code showing pattern + input + operation (1-3 lines, total under 120 chars)
+                    - question: Ask about the OUTPUT/RESULT, exactly 1 sentence, under 155 characters
+                    - options: exactly 4 items showing possible outputs, each under 60 characters
                     - correct: one of "A", "B", "C", "D"
-                    - explanation: max 2 short sentences, under 155 characters total
+                    - explanation: max 2 short sentences explaining WHY, under 155 characters total
+
+                    Question formats to rotate through:
+                    1. "What does this return?" - for findall, search, match results
+                    2. "What gets captured by group(1)?" - for capture groups
+                    3. "What's the output?" - for sub replacements
+                    4. "How many matches?" - for findall with counting
+                    5. "Which text gets matched?" - for specific match behavior
+
+                    Code variety (rotate through different operations):
+                    - re.findall(r'pattern', 'test string')
+                    - re.search(r'pattern', 'test').group()
+                    - re.sub(r'pattern', 'replacement', 'text')
+                    - re.match(r'pattern', 'test string')
+                    - re.split(r'pattern', 'test string')
+                    - m = re.search(r'(group)', 'text'); m.group(1)
 
                     Additional constraints:
+                    - Pattern under 40 characters, test string under 80 characters
                     - Avoid exotic backreferences that hurt readability
-                    - Prefer lookarounds only when essential
-                    - Vary contexts: emails, logs, filenames, URLs, phone numbers, code snippets, etc.
-                    - Use different real-world strings and subtle twists each time
+                    - Use lookarounds only when demonstrating the specific topic feature
+                    - Vary contexts: emails, logs, filenames, URLs, phone numbers, code snippets, dates, etc.
+                    - Options should be realistic outputs (lists, strings, None, numbers) not vague descriptions
                     - Before output, verify all fields fit mobile screen and feel distinctly different
-                    - If anything feels repetitive or too long, rework it for freshness and brevity
                     - Explanation must sound natural and spoken—like reel voiceover
                     - If any limit is exceeded, shorten it before responding
 
-                    JSON format:
+                    JSON format examples (rotate through these styles):
                     [
                     {
                         "id": "q01",
-                        "title": "...",
-                        "input": "...",
-                        "regex": "...",
-                        "code": "import re\nbool(re.search(r'...', '...'))",
-                        "question": "...",
-                        "options": ["...", "...", "...", "..."],
+                        "title": "Greedy vs Lazy Quantifier",
+                        "code": "import re\\nre.findall(r'<.*?>', '<a><b><c>')",
+                        "question": "What does this return?",
+                        "options": ["['<a>', '<b>', '<c>']", "['<a><b><c>']", "['a', 'b', 'c']", "[]"],
                         "correct": "A",
-                        "explanation": "..."
+                        "explanation": "The lazy quantifier .*? stops at first >, capturing each tag separately instead of everything."
+                    },
+                    {
+                        "id": "q02",
+                        "title": "Named Capture Group",
+                        "code": "import re\\nm = re.search(r'(?P<user>\\\\w+)@(?P<dom>\\\\w+)', 'bob@site')\\nm.group('dom')",
+                        "question": "What does this return?",
+                        "options": ["'site'", "'bob'", "'bob@site'", "Error"],
+                        "correct": "A",
+                        "explanation": "Named groups extract parts by name. 'dom' captures text after @, giving us the domain."
+                    },
+                    {
+                        "id": "q03",
+                        "title": "Backreference Swap",
+                        "code": "import re\\nre.sub(r'(\\\\w+)@(\\\\w+)', r'\\\\2.\\\\1', 'alice@example')",
+                        "question": "What does this return?",
+                        "options": ["'example.alice'", "'alice.example'", "'alice@example'", "'\\\\2.\\\\1'"],
+                        "correct": "A",
+                        "explanation": "\\\\2 is domain (second group), \\\\1 is user (first). sub() swaps their order with a dot."
                     }
                     ]
-                    """,
 
+                    DO NOT copy these examples - create completely new questions about {{topic}}.
+                    """,
+                    
     "scenario": """
                 You are a Senior {{subject}} (system design) expert creating SHORT-FORM content for Instagram reels.
 
@@ -212,7 +245,7 @@ PROMPT_TEMPLATES = {
                     - title: max 6 words
                     - code: shell command(s), max 4 lines, no sudo/destructive ops
                     - output: short expected output, max 3 lines, under 80 characters each
-                    - question: exactly 1 sentence, under 115 characters
+                    - question: exactly 1 sentence, under 120 characters
                     - options: exactly 4 items, each under 55 characters
                     - correct: one of "A", "B", "C", "D"
                     - explanation: max 2 short sentences, under 155 characters total

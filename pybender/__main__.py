@@ -29,9 +29,12 @@ def run_all_subjects():
     """Execute main with questions=1 for each subject"""
     start_time = datetime.now()
     print("Running reel generation for all subjects with 1 question each.")
+    # subjects = [
+    #     "python", "sql", "regex", "system_design", "linux",
+    #     "docker_k8s", "javascript", "rust", "golang"
+    # ]
     subjects = [
-        "python", "sql", "regex", "system_design", "linux",
-        "docker_k8s", "javascript", "rust", "golang"
+        "linux"
     ]
     
     runtimes = {
