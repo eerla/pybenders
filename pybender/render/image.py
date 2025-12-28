@@ -20,6 +20,10 @@ class ImageRenderer:
         # WIDTH, HEIGHT = 1080, 1080
         self.PADDING_X = 60
         self.PADDING_Y = 60
+        self.CODE_BLOCK_PADDING = 20
+        self.CODE_LINE_HEIGHT = 48
+        self.CODE_INNER_PADDING_X = 24
+        self.CODE_MAX_WIDTH = self.WIDTH - (self.PADDING_X * 2) - 40
         # Colors (match CTA theme)
         self.BG_COLOR = (9, 12, 24)
         self.CARD_COLOR = (11, 18, 32)
@@ -31,13 +35,32 @@ class ImageRenderer:
         self.SUCCESS_COLOR = (72, 187, 120)
         self.TEXT_PRIMARY = (255, 255, 255)
         self.TEXT_SECONDARY = (160, 174, 192)
+        self.DIVIDER_COLOR = (30, 41, 59)  # subtle line
+        self.SUBJECT_ACCENTS = {
+            "python": (76, 201, 240),
+            "sql": (99, 179, 237),
+            "regex": (247, 201, 72),
+            "linux": (72, 187, 120),
+        }
+
+
         # Fonts
         self.FONT_DIR = Path("pybender/assets/fonts")
+        # pybender/assets/fonts/Inter-4.1/extras/ttf/Inter-Regular.ttf
+        self.INTER_FONT_DIR = self.FONT_DIR / "Inter-4.1" / "extras" / "ttf"
+        self.JETBRAINS_MONO_FONT_DIR = self.FONT_DIR / "JetBrainsMono-2.304" / "fonts" / "ttf"
+        self.TITLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 48)
+        self.TEXT_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 48)
+        self.CODE_FONT = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "JetBrainsMono-Regular.ttf"), 48)
+        self.HEADER_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 48)
+        self.FOOTER_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 36)
+        self.TABLE_HEADER_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 36)
+        self.TABLE_CELL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 36)
+        self.BADGE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 36)
+        self.SMALL_LABEL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 32)
+        # self.REGEX_FONT = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "FiraCode-Regular.ttf"), 48)
 
-        self.TITLE_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-SemiBold.ttf"), 48)
-        self.TEXT_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-Regular.ttf"), 48)
-        self.CODE_FONT = ImageFont.truetype(str(self.FONT_DIR / "JetBrainsMono-Regular.ttf"), 48)
-        self.HEADER_FONT = ImageFont.truetype(str(self.FONT_DIR / "Inter-Regular.ttf"), 48)
+        # pybenders\pybender\assets\fonts\JetBrainsMono-2.304\fonts\ttf\JetBrainsMono-Regular.ttf
 
     # ---------- BASE CANVAS ----------
     def _create_base_canvas(self, subject: str) -> Image.Image:
@@ -58,6 +81,10 @@ class ImageRenderer:
         self.y_cursor = card_y + 40
         self.content_x = card_x + 40
         self.max_width = card_w - 80
+        self.ACCENT_COLOR = self.SUBJECT_ACCENTS.get(
+            subject, self.ACCENT_COLOR
+            )
+
         
         return canvas
 
@@ -94,27 +121,288 @@ class ImageRenderer:
         
         self.y_cursor += 20
 
-    # ---------- CODE ----------
-    def _draw_code(self, canvas, code: str, style: str):
-        draw = self.draw
-        font = self.CODE_FONT
-        max_width = self.WIDTH - (self.PADDING_X * 2) - 40
-        line_height = 48
-        padding = 20
+    # ---------- SQL RESULT TABLE ----------
+    # def _draw_sql_result_table(self, canvas, table: dict):
+    #     font_header = self.CODE_FONT
+    #     font_cell = self.CODE_FONT
+    #     line_height = 44
+    #     padding = 20
 
-        # Normalize
-        code = code.replace("\\n", "\n").replace("\t", "    ")
-        raw_lines = code.split("\n")
+    #     columns = table["columns"]
+    #     rows = table["rows"]
 
-        wrapped_lines = []
-        for line in raw_lines:
-            wrapped_lines.extend(
-                self.wrap_code_line(draw, line, font, max_width)
-            )
+    #     col_count = len(columns)
+    #     table_width = self.WIDTH - (self.PADDING_X * 2)
+    #     col_width = table_width // col_count
 
-        block_height = len(wrapped_lines) * line_height + padding * 2
+    #     # Calculate height
+    #     table_height = (len(rows) + 1) * line_height + padding * 2
+
+    #     # Background
+    #     self.draw.rounded_rectangle(
+    #         [
+    #             self.PADDING_X,
+    #             self.y_cursor,
+    #             self.WIDTH - self.PADDING_X,
+    #             self.y_cursor + table_height,
+    #         ],
+    #         radius=18,
+    #         fill=self.CODE_BG,
+    #     )
+
+    #     y = self.y_cursor + padding
+    #     x_start = self.PADDING_X + padding
+
+    #     # Header row
+    #     for i, col in enumerate(columns):
+    #         self.draw.text(
+    #             (x_start + i * col_width, y),
+    #             col,
+    #             font=font_header,
+    #             fill=self.ACCENT_COLOR,
+    #         )
+
+    #     y += line_height
+
+    #     # Divider
+    #     self.draw.line(
+    #         [
+    #             self.PADDING_X + padding,
+    #             y,
+    #             self.WIDTH - self.PADDING_X - padding,
+    #             y,
+    #         ],
+    #         fill="#444",
+    #         width=2,
+    #     )
+    #     y += 12
+
+    #     # Data rows
+    #     for row in rows:
+    #         for i, cell in enumerate(row):
+    #             self.draw.text(
+    #                 (x_start + i * col_width, y),
+    #                 str(cell),
+    #                 font=font_cell,
+    #                 fill=self.TEXT_COLOR,
+    #             )
+    #         y += line_height
+
+    #     self.y_cursor += table_height + 20
+
+    def _draw_sql_result_table(self, canvas, table: dict | None):
+        if not table:
+            return
+
+        columns = table.get("columns", [])
+        rows = table.get("rows", [])
+
+        if not columns or not rows:
+            return
+
+        font_header = self.TABLE_HEADER_FONT
+        font_cell = self.TABLE_CELL_FONT
+
+        cell_padding_x = 18
+        cell_padding_y = 12
+        row_height = 52
+
+        # Calculate column widths
+        col_widths = []
+        for col_idx, col in enumerate(columns):
+            max_text_width = self.draw.textlength(col, font=font_header)
+            for row in rows:
+                cell_text = str(row[col_idx])
+                max_text_width = max(
+                    max_text_width,
+                    self.draw.textlength(cell_text, font=font_cell),
+                )
+            col_widths.append(max_text_width + cell_padding_x * 2)
+
+        table_width = sum(col_widths)
+        x = (self.WIDTH - table_width) // 2
+        y = self.y_cursor
 
         # Background
+        total_height = row_height * (len(rows) + 1)
+        self.draw.rounded_rectangle(
+            [x, y, x + table_width, y + total_height],
+            radius=16,
+            fill=self.CODE_BG,
+        )
+
+        # Accent bar
+        self.draw.rectangle(
+            [x, y, x + 6, y + total_height],
+            fill=self.ACCENT_COLOR,
+        )
+
+        # Header row
+        cx = x
+        for idx, col in enumerate(columns):
+            self.draw.text(
+                (cx + cell_padding_x, y + cell_padding_y),
+                col,
+                font=font_header,
+                fill=self.TEXT_COLOR,
+            )
+            cx += col_widths[idx]
+
+        # Divider
+        y += row_height
+        self.draw.line(
+            [x, y, x + table_width, y],
+            fill=self.DIVIDER_COLOR,
+            width=2,
+        )
+
+        # Data rows
+        for row in rows:
+            cx = x
+            for idx, cell in enumerate(row):
+                self.draw.text(
+                    (cx + cell_padding_x, y + cell_padding_y),
+                    str(cell),
+                    font=font_cell,
+                    fill=self.TEXT_COLOR,
+                )
+                cx += col_widths[idx]
+            y += row_height
+
+        self.y_cursor += total_height + 28
+
+    # ---------- REGEX MATCH ----------
+    # def _draw_regex_match(self, canvas, pattern: str, input_text: str, match: str):
+    #     font = self.CODE_FONT
+    #     line_height = 44
+    #     padding = 20
+    #     block_height = line_height * 3 + padding * 2
+
+    #     self.draw.rounded_rectangle(
+    #         [
+    #             self.PADDING_X,
+    #             self.y_cursor,
+    #             self.WIDTH - self.PADDING_X,
+    #             self.y_cursor + block_height,
+    #         ],
+    #         radius=18,
+    #         fill=self.CODE_BG,
+    #     )
+
+    #     y = self.y_cursor + padding
+
+    #     # Pattern
+    #     self.draw.text(
+    #         (self.PADDING_X + padding, y),
+    #         f"Regex: {pattern}",
+    #         font=font,
+    #         fill=self.ACCENT_COLOR,
+    #     )
+    #     y += line_height
+
+    #     # Input
+    #     self.draw.text(
+    #         (self.PADDING_X + padding, y),
+    #         f"Input: {input_text}",
+    #         font=font,
+    #         fill=self.TEXT_COLOR,
+    #     )
+    #     y += line_height
+
+    #     # Match
+    #     self.draw.text(
+    #         (self.PADDING_X + padding, y),
+    #         f"Match: {match}",
+    #         font=font,
+    #         fill="#00ff99",
+    #     )
+
+    #     self.y_cursor += block_height + 20
+    def _draw_regex_match(
+        self,
+        canvas,
+        pattern: str,
+        input_text: str,
+        match_text: str,
+    ):
+        font_label = self.SMALL_LABEL_FONT
+        font_code = self.CODE_FONT
+
+        block_padding = 20
+        line_height = 48
+        max_width = self.WIDTH - (self.PADDING_X * 2) - 40
+
+        def draw_block(label, content, color):
+            nonlocal max_width
+
+            # Label
+            self.draw.text(
+                (self.PADDING_X, self.y_cursor),
+                label,
+                font=font_label,
+                fill=color,
+            )
+            self.y_cursor += 30
+
+            # Wrapped content
+            lines = self.wrap_text(self.draw, content, font_code, max_width)
+            block_height = line_height * len(lines) + block_padding * 2
+
+            # Background
+            self.draw.rounded_rectangle(
+                [
+                    self.PADDING_X,
+                    self.y_cursor,
+                    self.WIDTH - self.PADDING_X,
+                    self.y_cursor + block_height,
+                ],
+                radius=16,
+                fill=self.CODE_BG,
+            )
+
+            # Accent bar
+            self.draw.rectangle(
+                [
+                    self.PADDING_X,
+                    self.y_cursor,
+                    self.PADDING_X + 6,
+                    self.y_cursor + block_height,
+                ],
+                fill=color,
+            )
+
+            y = self.y_cursor + block_padding
+            for line in lines:
+                self.draw.text(
+                    (self.PADDING_X + 24, y),
+                    line,
+                    font=font_code,
+                    fill=self.TEXT_COLOR,
+                )
+                y += line_height
+
+            self.y_cursor += block_height + 24
+
+        draw_block("Pattern", pattern, "#F7C948")
+        draw_block("Input", input_text, "#5DA9E9")
+        draw_block("Match", match_text, "#4ADE80")
+
+
+    # ---------- CODE ----------
+    def _draw_editor_code(self, canvas, code: str):
+        font = self.CODE_FONT
+        line_height = 48
+        max_width = self.WIDTH - (self.PADDING_X * 2) - 40
+
+        # -------- Measure total height first --------
+        wrapped_lines = []
+        for line in code:
+            wrapped = self.wrap_code_line(self.draw, line, font, max_width)
+            wrapped_lines.extend(wrapped)
+
+        block_height = len(wrapped_lines) * line_height + 30
+
+        # -------- Background --------
         self.draw.rounded_rectangle(
             [
                 self.PADDING_X,
@@ -126,7 +414,7 @@ class ImageRenderer:
             fill=self.CODE_BG,
         )
 
-        # Accent bar
+        # -------- Accent bar --------
         self.draw.rectangle(
             [
                 self.PADDING_X,
@@ -137,18 +425,131 @@ class ImageRenderer:
             fill=self.ACCENT_COLOR,
         )
 
-        y = self.y_cursor + padding
-        for line in wrapped_lines:
+        # -------- Draw code text --------
+        text_x = self.PADDING_X + 20
+        text_y = self.y_cursor + 15
+
+        for wline in wrapped_lines:
             self.draw.text(
-                (self.PADDING_X + 40, y),
-                line,
+                (text_x, text_y),
+                wline,
                 font=font,
                 fill=self.TEXT_COLOR,
             )
-            y += line_height
+            text_y += line_height
 
-        self.y_cursor += block_height + 40
+        self.y_cursor += block_height + 20
 
+    def _draw_terminal_code(self, canvas, code: str):
+        font = self.CODE_FONT
+        line_height = 48
+        max_width = self.WIDTH - (self.PADDING_X * 2) - 40 
+
+        bg_height_start = self.y_cursor
+
+        for line in code:
+            line = line.strip()
+            if line:
+                line = f"$ {line}"
+
+            wrapped = self.wrap_code_line(self.draw, line, font, max_width)
+            for wline in wrapped:
+                self.draw.text(
+                    (self.PADDING_X, self.y_cursor),
+                    wline,
+                    font=font,
+                    fill="#A6E22E",  # terminal green
+                )
+                self.y_cursor += line_height
+
+        # Optional: terminal block padding
+        self.y_cursor += 20
+
+    # def _draw_query_code(self, canvas, code: str):
+    #     """
+    #     SQL query rendering.
+    #     Reuses editor style with subtle SQL accent.
+    #     """
+    #     # Optional: SQL badge
+    #     self._draw_inline_badge("SQL", color="#3ECF8E")
+
+    #     # Slightly different background accent (optional)
+    #     original_accent = self.ACCENT_COLOR
+    #     self.ACCENT_COLOR = "#3ECF8E"
+
+    #     self._draw_editor_code(canvas, code)
+    #     self._draw_sql_result_table(canvas, question.table if hasattr(question, "table") else None)
+    #     self.ACCENT_COLOR = original_accent
+
+    # def _draw_regex_code(self, canvas, code: str):
+    #     """
+    #     Regex pattern rendering.
+    #     Emphasize compactness & pattern nature.
+    #     """
+    #     self._draw_inline_badge("REGEX", color="#F7C948")
+
+    #     # Regex patterns should never wrap aggressively
+    #     self.CODE_FONT = self.REGEX_FONT  # narrower monospace if you have it
+
+    #     # self._draw_editor_code(canvas, code)
+    #     self._draw_regex_match(
+    #         canvas,
+    #         question.pattern if hasattr(question, "pattern") else None,
+    #         question.input if hasattr(question, "input") else None,
+    #         question.match if hasattr(question, "match") else None,
+    #     )
+
+    #     self.CODE_FONT = self.DEFAULT_CODE_FONT
+
+    # def _draw_inline_badge(self, text: str, color: str):
+    #     font = self.BADGE_FONT
+    #     padding = 12
+    #     text_w = self.draw.textlength(text, font=font)
+    #     box_w = text_w + padding * 2
+    #     box_h = 36
+
+    #     self.draw.rounded_rectangle(
+    #         [
+    #             self.PADDING_X,
+    #             self.y_cursor,
+    #             self.PADDING_X + box_w,
+    #             self.y_cursor + box_h,
+    #         ],
+    #         radius=12,
+    #         fill=color,
+    #     )
+
+    #     self.draw.text(
+    #         (self.PADDING_X + padding, self.y_cursor + 6),
+    #         text,
+    #         font=font,
+    #         fill="#000000",
+    #     )
+
+    #     self.y_cursor += box_h + 12
+
+    def _draw_code(self, canvas, code, code_style: str | None):
+        if code_style is None:
+            return
+
+        # Normalize code first (fix \t and escaped \n)
+        code = self._normalize_code(code)
+
+        if code_style == "terminal": # linux - terminal commands -fixed
+            self._draw_terminal_code(canvas, code)
+        # elif code_style == "query_result": # sql - queries
+        #     self._draw_editor_code(canvas, content.get("query", ""))
+        #     self._draw_sql_result_table(canvas, content.get("result_table", ""))
+        # elif code_style == "regex_highlight": # regex - patterns
+        #     self._draw_regex_match(
+        #         canvas,
+        #         pattern=content.get("pattern", ""),
+        #         input_text=content.get("input", ""),
+        #         match=content.get("match", ""),
+        #     )   # stub for now
+        else:
+            self._draw_editor_code(canvas, code) 
+            # default editor style - all programming languages + system design + docker_k8s
 
     # ---------- OPTIONS ----------
     def _draw_options(self, canvas, options: list[str]):
@@ -444,7 +845,7 @@ class ImageRenderer:
         return lines
 
     @staticmethod
-    def normalize_code(code: str) -> list[str]:
+    def _normalize_code(code: str) -> list[str]:
         """
         Normalize code string into clean lines:
         - Converts escaped newlines (\\n) to real newlines
@@ -494,7 +895,7 @@ class ImageRenderer:
         # Code block height
         code_height = 0
         if layout_profile.has_code and question.code:
-            code_lines = self.normalize_code(question.code)
+            code_lines = self._normalize_code(question.code)
             wrapped_lines = []
             for line in code_lines:
                 wrapped_lines.extend(self.wrap_code_line(self.draw, line, self.CODE_FONT, self.WIDTH - 120 - 40))
@@ -940,8 +1341,6 @@ class ImageRenderer:
             },
             "questions": []
         }
-
-
         # --------------------------------------------------
         # Render assets
         # --------------------------------------------------

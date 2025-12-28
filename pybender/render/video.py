@@ -51,8 +51,8 @@ class VideoRenderer:
         # --------------------------------------------------
         WELCOME_DUR = 3.0
         QUESTION_DUR = 7.0
-        CTA_DUR = 4.0
-        FADE_DUR = 0.6
+        CTA_DUR = 3.0
+        FADE_DUR = 0.4
 
         # --------------------------------------------------
         # Welcome Clip
@@ -156,9 +156,9 @@ class VideoRenderer:
         # --------------------------------------------------
         # Durations
         # --------------------------------------------------
-        QUESTION_DUR = 3.0
-        ANSWER_DUR = 5.0
-        CTA_DUR = 4.0
+        QUESTION_DUR = 4.0
+        ANSWER_DUR = 6.0
+        CTA_DUR = 3.0
         FADE_DUR = 0.4
 
         # --------------------------------------------------
@@ -288,7 +288,7 @@ class VideoRenderer:
         cta_day1_img = Path(f"output/{subject}/images/cta/day1.png")
         cta_day2_img = Path(f"output/{subject}/images/cta/day2.png")
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=2) as executor: # Day 1 and Day 2 in parallel
             futures = [
                 executor.submit(
                     self.generate_day1_reel,
@@ -331,7 +331,7 @@ class VideoRenderer:
         # --------------------------------------------------
         reel_results = []
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=4) as executor: # 4 questions in parallel
             futures = [executor.submit(self.process_question, asset) for asset in assets]
 
             for future in as_completed(futures):

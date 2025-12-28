@@ -49,6 +49,7 @@ class QuestionGenerator:
         )
 
         try:
+            print(f"🧠 Generating {n} questions via LLM for {subject} on topic: {topic}")
             raw = self.get_llm_response(prompt)
             data = json.loads(raw)
         except json.JSONDecodeError:

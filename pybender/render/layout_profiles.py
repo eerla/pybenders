@@ -23,7 +23,7 @@ QA = LayoutProfile(
     has_code=False,
     has_options=True,
     has_explanation=True,
-    code_style=None,
+    code_style="terminal",
 )
 
 SCENARIO = LayoutProfile(

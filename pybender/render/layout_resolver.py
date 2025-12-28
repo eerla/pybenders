@@ -3,9 +3,11 @@ from pybender.render.layout_profiles import LAYOUT_PROFILES
 
 CONTENT_TYPE_TO_PROFILE = {
     "code_output": "code_output",
+    # "query_output": "query_output",
+    # "pattern_match": "pattern_match",
     "query_output": "code_output",
     "pattern_match": "code_output",
-    "command_output": "code_output",
+    "command_output": "command_output",
     "qa": "qa",
     "scenario": "scenario",
 }
