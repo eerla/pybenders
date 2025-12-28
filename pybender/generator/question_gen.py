@@ -6,7 +6,6 @@ from openai import OpenAI
 
 from pybender.config.settings import OPENAI_API_KEY, MODEL
 from pybender.generator.schema import Question
-from pybender.generator.prompt_loader import load_prompt
 from pybender.generator.content_registry import CONTENT_REGISTRY
 from pybender.prompts.templates import PROMPT_TEMPLATES
 from pybender.validation.validate_questions import validate_questions
