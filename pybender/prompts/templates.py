@@ -161,14 +161,15 @@ PROMPT_TEMPLATES = {
 
                 Each question MUST contain:
                 - title: max 8 words
-                - scenario: concise setup/requirements, under 115 characters  # Keep this short for quick hook
-                - code: ""  (always empty — no code or snippets needed)
+                - scenario: concise but COMPLETE setup with key requirements, scale, and workload (under 120 chars). This is the hook — it MUST provide enough context to answer the question correctly without external knowledge.                - code: ""  (always empty — no code or snippets needed)
                 - question: exactly 1 sentence, under 280 characters  # Big increase — now the star
+                - code: "" (always empty)
                 - options: exactly 4 items, each under 75 characters
                 - correct: one of "A", "B", "C", "D"
-                - explanation: max 2 short sentences, under 210 characters total
+                - explanation: 1-2 short confident sentences, like reel voiceover (under 210 chars total)
 
                 Additional constraints:
+                - Focus on practical real-world trade-offs, not theoretical designs
                 - Always highlight real-world trade-offs: scalability, consistency, latency, availability, cost, complexity
                 - Use diverse contexts: social feeds, messaging, e-commerce, analytics, gaming, IoT, etc.
                 - Vary scale and constraints: high reads vs writes, global vs regional, spiky vs steady traffic
@@ -176,8 +177,8 @@ PROMPT_TEMPLATES = {
                 - Before output, verify all fields are mobile-friendly and questions feel distinctly fresh
                 - If anything feels repetitive or too long, rework for variety and brevity
                 - Explanation must sound confident and spoken, like a quick reel voiceover
-                - Never include code snippets — focus entirely on scenarios, architecture decisions, and trade-offs
-
+                - No code snippets, no diagrams — pure scenario + decision
+                
                 JSON format:
                 [
                 {
@@ -252,7 +253,7 @@ PROMPT_TEMPLATES = {
         STRICT RULES (must follow):
         - Return ONLY valid JSON
         - No text outside JSON
-        - Keep content concise and reel-friendly
+        - Keep content concise and mobile reel-friendly
         - Everything must fit cleanly on a standard mobile phone screen
         - Do NOT exceed length limits below
         - Make each of the {{n}} questions unique in scenario, failure mode, or trade-off angle
@@ -260,28 +261,30 @@ PROMPT_TEMPLATES = {
 
         Each question MUST contain:
         - title: max 7 words
-        - code: "" or a tiny relevant snippet under 40 characters (e.g., "kubectl get pod", "limits: 512Mi")
-        - question: exactly 1 sentence, under 280 characters
+        - scenario: concise but COMPLETE context (e.g., config snippet, symptoms, cluster state). Under 120 characters. This is essential — the question must be answerable from this alone.
+        - code: short relevant snippet (under 50 chars) OR "" if not needed
+        - question: exactly 1 sentence, under 280 characters. Must reference the scenario (e.g., "In this case,", "Given this config,", "What should you do when...")
         - options: exactly 4 items, each under 75 characters
         - correct: one of "A", "B", "C", "D"
-        - explanation: max 2 short sentences, under 210 characters total
+        - explanation: 1-2 short confident sentences, like reel voiceover (under 210 chars total)
 
         Additional constraints:
         - If the {{topic}} starts with "What does" or "What is", generate a definition/purpose quiz: ask what the command, status, or resource primarily does, with one correct description and three plausible but incorrect alternatives.
         - Focus on real-world production scenarios: scaling, rollouts, alerts, incidents, observability, recovery
         - Use diverse contexts: web apps, microservices, databases, CI/CD, batch jobs, multi-region, etc.
-        - Vary failure types: OOM, crashes, network partitions, config errors, node loss, traffic spikes
+        - Vary failure types: OOM, crashes, network partitions, config errors, node loss, traffic spikes, image pull failures, node pressure, taints, affinity issues, etc.
         - Prefer practical over theoretical — highlight trade-offs, gotchas, and debugging insights
         - Before output, verify questions are mobile-friendly and feel distinctly different
         - If anything feels repetitive or too generic, rework for freshness and specificity
-        - Explanation must sound confident, conversational, and spoken — perfect for reel voiceover
-        - Never include code snippets — focus entirely on scenarios, architecture decisions, and trade-offs
-
+        - Explanation must sound confident, conversational, and spoken — perfect for reel voiceover - practical and insightful
+        - When {{topic}} suggests definition (e.g., "What is a PodDisruptionBudget"), you may keep scenario very short or use it for purpose clarification
+        
         JSON format:
         [
         {
             "id": "q01",
             "title": "...",
+            "scenario": "...",
             "code": "",
             "question": "...",
             "options": ["...", "...", "...", "..."],

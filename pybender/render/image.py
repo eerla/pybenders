@@ -103,173 +103,198 @@ class ImageRenderer:
 
 
     # ---------- SCENARIO ----------
-    def _draw_scenario(self, canvas, scenario_text: str):
+    def _draw_scenario(self, canvas, scenario_text: str, prefix: str = "Q:"):
         scenario_text = scenario_text.replace("\\n", " ")
-        lines = self.wrap_text(self.draw, scenario_text, self.TEXT_FONT, self.max_width)
+        # Measure the prefix in pixels and wrap the first line using the reduced width.
+        prefix_width = self.draw.textlength(f"{prefix} ", font=self.TEXT_FONT)
+        lines = self.wrap_text_with_prefix(
+            self.draw,
+            scenario_text,
+            self.TEXT_FONT,
+            self.max_width,
+            prefix_width,
+        )
         
         for i, line in enumerate(lines):
-            prefix = "Q. " if i == 0 else ""
-            self.draw.text(
-                (self.content_x, self.y_cursor),
-                prefix + line,
-                font=self.TEXT_FONT,
-                fill=self.TEXT_COLOR
-            )
+            line_prefix = f"{prefix} " if i == 0 else ""
+            if line_prefix:
+                # Draw prefix in accent color
+                self.draw.text(
+                    (self.content_x, self.y_cursor),
+                    line_prefix,
+                    font=self.TEXT_FONT,
+                    fill=self.ACCENT_COLOR
+                )
+                # Draw rest of line in regular text color
+                prefix_width = self.draw.textlength(line_prefix, font=self.TEXT_FONT)
+                self.draw.text(
+                    (self.content_x + prefix_width, self.y_cursor),
+                    line,
+                    font=self.TEXT_FONT,
+                    fill=self.TEXT_COLOR
+                )
+            else:
+                self.draw.text(
+                    (self.content_x, self.y_cursor),
+                    line,
+                    font=self.TEXT_FONT,
+                    fill=self.TEXT_COLOR
+                )
             self.y_cursor += 50
         
         self.y_cursor += 20
 
     # ---------- SQL RESULT TABLE ----------
-    # def _draw_sql_result_table(self, canvas, table: dict | None):
-    #     if not table:
-    #         return
+    def _draw_sql_result_table(self, canvas, table: dict | None): # not used currently
+        if not table:
+            return
 
-    #     columns = table.get("columns", [])
-    #     rows = table.get("rows", [])
+        columns = table.get("columns", [])
+        rows = table.get("rows", [])
 
-    #     if not columns or not rows:
-    #         return
+        if not columns or not rows:
+            return
 
-    #     font_header = self.TABLE_HEADER_FONT
-    #     font_cell = self.TABLE_CELL_FONT
+        font_header = self.TABLE_HEADER_FONT
+        font_cell = self.TABLE_CELL_FONT
 
-    #     cell_padding_x = 18
-    #     cell_padding_y = 12
-    #     row_height = 52
+        cell_padding_x = 18
+        cell_padding_y = 12
+        row_height = 52
 
-    #     # Calculate column widths
-    #     col_widths = []
-    #     for col_idx, col in enumerate(columns):
-    #         max_text_width = self.draw.textlength(col, font=font_header)
-    #         for row in rows:
-    #             cell_text = str(row[col_idx])
-    #             max_text_width = max(
-    #                 max_text_width,
-    #                 self.draw.textlength(cell_text, font=font_cell),
-    #             )
-    #         col_widths.append(max_text_width + cell_padding_x * 2)
+        # Calculate column widths
+        col_widths = []
+        for col_idx, col in enumerate(columns):
+            max_text_width = self.draw.textlength(col, font=font_header)
+            for row in rows:
+                cell_text = str(row[col_idx])
+                max_text_width = max(
+                    max_text_width,
+                    self.draw.textlength(cell_text, font=font_cell),
+                )
+            col_widths.append(max_text_width + cell_padding_x * 2)
 
-    #     table_width = sum(col_widths)
-    #     x = (self.WIDTH - table_width) // 2
-    #     y = self.y_cursor
+        table_width = sum(col_widths)
+        x = (self.WIDTH - table_width) // 2
+        y = self.y_cursor
 
-    #     # Background
-    #     total_height = row_height * (len(rows) + 1)
-    #     self.draw.rounded_rectangle(
-    #         [x, y, x + table_width, y + total_height],
-    #         radius=16,
-    #         fill=self.CODE_BG,
-    #     )
+        # Background
+        total_height = row_height * (len(rows) + 1)
+        self.draw.rounded_rectangle(
+            [x, y, x + table_width, y + total_height],
+            radius=16,
+            fill=self.CODE_BG,
+        )
 
-    #     # Accent bar
-    #     self.draw.rectangle(
-    #         [x, y, x + 6, y + total_height],
-    #         fill=self.ACCENT_COLOR,
-    #     )
+        # Accent bar
+        self.draw.rectangle(
+            [x, y, x + 6, y + total_height],
+            fill=self.ACCENT_COLOR,
+        )
 
-    #     # Header row
-    #     cx = x
-    #     for idx, col in enumerate(columns):
-    #         self.draw.text(
-    #             (cx + cell_padding_x, y + cell_padding_y),
-    #             col,
-    #             font=font_header,
-    #             fill=self.TEXT_COLOR,
-    #         )
-    #         cx += col_widths[idx]
+        # Header row
+        cx = x
+        for idx, col in enumerate(columns):
+            self.draw.text(
+                (cx + cell_padding_x, y + cell_padding_y),
+                col,
+                font=font_header,
+                fill=self.TEXT_COLOR,
+            )
+            cx += col_widths[idx]
 
-    #     # Divider
-    #     y += row_height
-    #     self.draw.line(
-    #         [x, y, x + table_width, y],
-    #         fill=self.DIVIDER_COLOR,
-    #         width=2,
-    #     )
+        # Divider
+        y += row_height
+        self.draw.line(
+            [x, y, x + table_width, y],
+            fill=self.DIVIDER_COLOR,
+            width=2,
+        )
 
-    #     # Data rows
-    #     for row in rows:
-    #         cx = x
-    #         for idx, cell in enumerate(row):
-    #             self.draw.text(
-    #                 (cx + cell_padding_x, y + cell_padding_y),
-    #                 str(cell),
-    #                 font=font_cell,
-    #                 fill=self.TEXT_COLOR,
-    #             )
-    #             cx += col_widths[idx]
-    #         y += row_height
+        # Data rows
+        for row in rows:
+            cx = x
+            for idx, cell in enumerate(row):
+                self.draw.text(
+                    (cx + cell_padding_x, y + cell_padding_y),
+                    str(cell),
+                    font=font_cell,
+                    fill=self.TEXT_COLOR,
+                )
+                cx += col_widths[idx]
+            y += row_height
 
-    #     self.y_cursor += total_height + 28
+        self.y_cursor += total_height + 28
 
-    # ---------- REGEX MATCH ----------
-    # def _draw_regex_match(
-    #     self,
-    #     canvas,
-    #     pattern: str,
-    #     input_text: str,
-    #     match_text: str,
-    # ):
-    #     font_label = self.SMALL_LABEL_FONT
-    #     font_code = self.CODE_FONT
+    # ---------- REGEX MATCH ---------- not used currently
+    def _draw_regex_match( 
+        self,
+        canvas,
+        pattern: str,
+        input_text: str,
+        match_text: str,
+    ):
+        font_label = self.SMALL_LABEL_FONT
+        font_code = self.CODE_FONT
 
-    #     block_padding = 20
-    #     line_height = 48
-    #     max_width = self.WIDTH - (self.PADDING_X * 2) - 40
+        block_padding = 20
+        line_height = 48
+        max_width = self.WIDTH - (self.PADDING_X * 2) - 40
 
-    #     def draw_block(label, content, color):
-    #         nonlocal max_width
+        def draw_block(label, content, color):
+            nonlocal max_width
 
-    #         # Label
-    #         self.draw.text(
-    #             (self.PADDING_X, self.y_cursor),
-    #             label,
-    #             font=font_label,
-    #             fill=color,
-    #         )
-    #         self.y_cursor += 30
+            # Label
+            self.draw.text(
+                (self.PADDING_X, self.y_cursor),
+                label,
+                font=font_label,
+                fill=color,
+            )
+            self.y_cursor += 30
 
-    #         # Wrapped content
-    #         lines = self.wrap_text(self.draw, content, font_code, max_width)
-    #         block_height = line_height * len(lines) + block_padding * 2
+            # Wrapped content
+            lines = self.wrap_text(self.draw, content, font_code, max_width)
+            block_height = line_height * len(lines) + block_padding * 2
 
-    #         # Background
-    #         self.draw.rounded_rectangle(
-    #             [
-    #                 self.PADDING_X,
-    #                 self.y_cursor,
-    #                 self.WIDTH - self.PADDING_X,
-    #                 self.y_cursor + block_height,
-    #             ],
-    #             radius=16,
-    #             fill=self.CODE_BG,
-    #         )
+            # Background
+            self.draw.rounded_rectangle(
+                [
+                    self.PADDING_X,
+                    self.y_cursor,
+                    self.WIDTH - self.PADDING_X,
+                    self.y_cursor + block_height,
+                ],
+                radius=16,
+                fill=self.CODE_BG,
+            )
 
-    #         # Accent bar
-    #         self.draw.rectangle(
-    #             [
-    #                 self.PADDING_X,
-    #                 self.y_cursor,
-    #                 self.PADDING_X + 6,
-    #                 self.y_cursor + block_height,
-    #             ],
-    #             fill=color,
-    #         )
+            # Accent bar
+            self.draw.rectangle(
+                [
+                    self.PADDING_X,
+                    self.y_cursor,
+                    self.PADDING_X + 6,
+                    self.y_cursor + block_height,
+                ],
+                fill=color,
+            )
 
-    #         y = self.y_cursor + block_padding
-    #         for line in lines:
-    #             self.draw.text(
-    #                 (self.PADDING_X + 24, y),
-    #                 line,
-    #                 font=font_code,
-    #                 fill=self.TEXT_COLOR,
-    #             )
-    #             y += line_height
+            y = self.y_cursor + block_padding
+            for line in lines:
+                self.draw.text(
+                    (self.PADDING_X + 24, y),
+                    line,
+                    font=font_code,
+                    fill=self.TEXT_COLOR,
+                )
+                y += line_height
 
-    #         self.y_cursor += block_height + 24
+            self.y_cursor += block_height + 24
 
-    #     draw_block("Pattern", pattern, "#F7C948")
-    #     draw_block("Input", input_text, "#5DA9E9")
-    #     draw_block("Match", match_text, "#4ADE80")
+        draw_block("Pattern", pattern, "#F7C948")
+        draw_block("Input", input_text, "#5DA9E9")
+        draw_block("Match", match_text, "#4ADE80")
 
     # ---------- CODE ----------
     def _draw_editor_code(self, canvas, code: str):
@@ -348,32 +373,32 @@ class ImageRenderer:
         # Optional: terminal block padding
         self.y_cursor += 20
 
-    # def _draw_inline_badge(self, text: str, color: str):
-    #     font = self.BADGE_FONT
-    #     padding = 12
-    #     text_w = self.draw.textlength(text, font=font)
-    #     box_w = text_w + padding * 2
-    #     box_h = 36
+    def _draw_inline_badge(self, text: str, color: str): # not used currently
+        font = self.BADGE_FONT
+        padding = 12
+        text_w = self.draw.textlength(text, font=font)
+        box_w = text_w + padding * 2
+        box_h = 36
 
-    #     self.draw.rounded_rectangle(
-    #         [
-    #             self.PADDING_X,
-    #             self.y_cursor,
-    #             self.PADDING_X + box_w,
-    #             self.y_cursor + box_h,
-    #         ],
-    #         radius=12,
-    #         fill=color,
-    #     )
+        self.draw.rounded_rectangle(
+            [
+                self.PADDING_X,
+                self.y_cursor,
+                self.PADDING_X + box_w,
+                self.y_cursor + box_h,
+            ],
+            radius=12,
+            fill=color,
+        )
 
-    #     self.draw.text(
-    #         (self.PADDING_X + padding, self.y_cursor + 6),
-    #         text,
-    #         font=font,
-    #         fill="#000000",
-    #     )
+        self.draw.text(
+            (self.PADDING_X + padding, self.y_cursor + 6),
+            text,
+            font=font,
+            fill="#000000",
+        )
 
-    #     self.y_cursor += box_h + 12
+        self.y_cursor += box_h + 12
 
     def _draw_code(self, canvas, code, code_style: str | None):
         if code_style is None:
@@ -384,7 +409,9 @@ class ImageRenderer:
 
         if code_style == "terminal": # linux - terminal commands -fixed
             self._draw_terminal_code(canvas, code)
-        # elif code_style == "query_result": # sql - queries
+        
+        # TODO: implement other code styles later
+        # elif code_style == "query_result": # sql - queries + result table 
         #     self._draw_editor_code(canvas, content.get("query", ""))
         #     self._draw_sql_result_table(canvas, content.get("result_table", ""))
         # elif code_style == "regex_highlight": # regex - patterns
@@ -694,6 +721,38 @@ class ImageRenderer:
         return lines
 
     @staticmethod
+    def wrap_text_with_prefix(draw, text, font, max_width, prefix_width):
+        """
+        Wrap text where the first line has reduced available width due to a prefix.
+        Subsequent lines use the full max_width.
+        """
+        if not text:
+            return [""]
+
+        words = text.split(" ")
+        lines = []
+        current = ""
+
+        # First line accounts for the prefix width
+        line_limit = max_width - (prefix_width or 0)
+
+        for word in words:
+            test = current + (" " if current else "") + word
+            if draw.textlength(test, font=font) <= line_limit:
+                current = test
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+                # After the first break, use full width for subsequent lines
+                line_limit = max_width
+
+        if current:
+            lines.append(current)
+
+        return lines
+
+    @staticmethod
     def _normalize_code(code: str) -> list[str]:
         """
         Normalize code string into clean lines:
@@ -727,7 +786,7 @@ class ImageRenderer:
 
     def render_image(
         self,
-        question: dict,
+        question: Question,
         out_path: Path,
         layout_profile,
         subject: str,
@@ -741,7 +800,19 @@ class ImageRenderer:
         header_height = 78  # bbox height + gap
         title_height = 78   # bbox height + gap
         
-        # Code block height
+        # Scenario block height (drawn inline for QUESTION and SINGLE modes)
+        scenario_height = 0
+        if layout_profile.has_scenario and question.scenario and mode in (RenderMode.QUESTION, RenderMode.SINGLE):
+            scenario_lines = self.wrap_text_with_prefix(
+                self.draw,
+                question.scenario.replace("\\n", " "),
+                self.TEXT_FONT,
+                self.max_width,
+                self.draw.textlength("Setup: ", font=self.TEXT_FONT),
+            )
+            scenario_height = len(scenario_lines) * 50 + 20  # line_height + gap
+        
+        # Code block height (comes after scenario for scenario-based questions)
         code_height = 0
         if layout_profile.has_code and question.code:
             code_lines = self._normalize_code(question.code)
@@ -749,10 +820,16 @@ class ImageRenderer:
             for line in code_lines:
                 wrapped_lines.extend(self.wrap_code_line(self.draw, line, self.CODE_FONT, self.WIDTH - 120 - 40))
             code_height = len(wrapped_lines) * 48 + 40 + 40  # line_height + padding + gap
-        
+
         # Question height
-        scenario_lines = self.wrap_text(self.draw, question.question, self.TEXT_FONT, self.WIDTH - 120)
-        scenario_height = len(scenario_lines) * 50 + 20  # line_height + gap
+        question_lines = self.wrap_text_with_prefix(
+            self.draw,
+            question.question,
+            self.TEXT_FONT,
+            self.max_width,
+            self.draw.textlength("Q: ", font=self.TEXT_FONT),
+        )
+        question_height = len(question_lines) * 50 + 20  # line_height + gap
         
         # Options height
         options_height = 0
@@ -773,8 +850,8 @@ class ImageRenderer:
             explanation_height = 18 + 55 + len(explanation_lines) * 50  # divider + label + lines
         
         total_content_height = (
-            header_height + title_height + code_height + 
-            scenario_height + options_height + explanation_height + 20
+            header_height + title_height + code_height + scenario_height + question_height + 
+            options_height + explanation_height + 20
         )
         
         # Available space in card (from _create_base_canvas: card_y=80, card_h=HEIGHT-120)
@@ -793,9 +870,9 @@ class ImageRenderer:
 
         # ---------- HEADER ----------
         if mode == RenderMode.QUESTION:
-            header = f"Daily dose of {subject.capitalize()}"
+            header = f"Daily dose of {subject.replace('_', ' ').title()}"
         elif mode == RenderMode.ANSWER:
-            header = f"{subject.capitalize()} Answer"
+            header = f"{subject.replace('_', ' ').title()} Answer"
         else:
             header = subject.upper()
 
@@ -803,7 +880,14 @@ class ImageRenderer:
         self._draw_title(question.title)
 
         # ---------- BODY ----------
+        # ----------- SCENARIO TEXT ---------- 
+        # Scenario included inline for docker_k8s/system_design in QUESTION and SINGLE modes
+        # (has_code is false for these, so scenario replaces code position)
+        if layout_profile.has_scenario and question.scenario and mode in (RenderMode.QUESTION, RenderMode.SINGLE):
+            self._draw_scenario(canvas, question.scenario, prefix="Setup:")
+
         # ---------- CODE BLOCK ----------
+        # Code comes after scenario for scenario-based questions (docker_k8s, system_design)
         if layout_profile.has_code and question.code:
             self._draw_code(canvas, question.code, layout_profile.code_style)
 
@@ -830,12 +914,11 @@ class ImageRenderer:
             self._draw_explanation(canvas, question.explanation)
 
         # ---------- FOOTER ----------
-        self._draw_footer(canvas, subject.capitalize())
+        self._draw_footer(canvas, subject.replace('_', ' ').title())
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
         canvas.save(out_path)
         print(f"image saved to: {out_path}")
-
 
     def render_day1_cta_image(self, subject: str) -> None:
         """
@@ -871,11 +954,8 @@ class ImageRenderer:
         )
 
         # --------------------------------------------------
-        # Fonts (adjust paths as needed)
+        # Fonts 
         # --------------------------------------------------
-        # FONT_DIR = Path("pybender/assets/fonts")
-        # INTER_FONT_DIR = Path("pybender/assets/fonts/inter")
-
         title_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Bold.ttf"), 72)
         body_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 50)
         follow_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 44)
@@ -885,7 +965,7 @@ class ImageRenderer:
         # --------------------------------------------------
         title_text = "What's Your Answer?"
         body_text = "Drop A, B, C, or D below!\n\nAnswer drops tomorrow"
-        follow_text = f"Follow for daily {subject.capitalize()} challenges"
+        follow_text = f"Follow for daily {subject.replace('_', ' ').title()} challenges"
 
         # --------------------------------------------------
         # Text Positions
@@ -983,7 +1063,7 @@ class ImageRenderer:
             "Hope that one made you think.",
             "",
             "Follow for daily",
-            f"{subject.capitalize()} tricky questions."
+            f"{subject.replace('_', ' ').title()} tricky questions."
         ]
 
         for line in body_lines:
@@ -1064,7 +1144,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Brand Name
         # --------------------------------------------------
-        brand = f"Daily Dose of {subject.capitalize()}"
+        brand = f"Daily Dose of {subject.replace('_', ' ').title()}"
         bw = draw.textbbox((0, 0), brand, font=self.TITLE_FONT)[2]
         draw.text(
             (content_x + (max_width - bw) // 2, y),
@@ -1087,7 +1167,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Subtitle
         # --------------------------------------------------
-        subtitle = f"Bite-sized {subject.capitalize()} challenges.\nThink. Comment. Learn."
+        subtitle = f"Bite-sized {subject.replace('_', ' ').title()} challenges.\nThink. Comment. Learn."
         for line in subtitle.split("\n"):
             lw = draw.textbbox((0, 0), line, font=self.TITLE_FONT)[2]
             draw.text(
@@ -1166,6 +1246,7 @@ class ImageRenderer:
         question_dir = base_img_dir / "questions"
         answer_dir = base_img_dir / "answers"
         single_dir = base_img_dir / "singles"
+
         run_dir = Path(f"output/{subject}/runs") / RUN_ID
         for d in [question_dir, answer_dir, single_dir, run_dir]:
             d.mkdir(parents=True, exist_ok=True)
@@ -1190,13 +1271,16 @@ class ImageRenderer:
         for q in questions:
             q_slug = self.slugify(q.title)
 
+            layout_profile = resolve_layout_profile(content_type)
+
             question_img_out_path = question_dir / f"{q.question_id}_question.png"
             answer_img_out_path = answer_dir / f"{q.question_id}_answer.png"
             single_img_out_path = single_dir / f"{q.question_id}_single.png"
 
-            self.render_image(q, question_img_out_path, resolve_layout_profile(content_type), subject, RenderMode.QUESTION)
-            self.render_image(q, answer_img_out_path, resolve_layout_profile(content_type), subject, RenderMode.ANSWER)
-            self.render_image(q, single_img_out_path, resolve_layout_profile(content_type), subject, RenderMode.SINGLE)
+            # Render all three standard images (scenario included inline for QUESTION/SINGLE when applicable)
+            self.render_image(q, question_img_out_path, layout_profile, subject, RenderMode.QUESTION)
+            self.render_image(q, answer_img_out_path, layout_profile, subject, RenderMode.ANSWER)
+            self.render_image(q, single_img_out_path, layout_profile, subject, RenderMode.SINGLE)
 
             metadata["questions"].append({
                 "question_id": q.question_id,
@@ -1229,9 +1313,10 @@ class ImageRenderer:
 
 # if __name__ == "__main__":
 #     renderer = ImageRenderer()
+#     # subjects = ["python", "system_design", "docker_k8s"]
 #     subjects = [
 #         "python", "sql", "regex", "system_design", "linux"
 #         ,"docker_k8s", "javascript", "rust", "golang"
 #     ]
 #     for subject in subjects:
-#         renderer.render_welcome_image(subject=subject)
+#         renderer.main(1, subject)

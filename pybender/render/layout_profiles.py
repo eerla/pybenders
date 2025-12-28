@@ -7,6 +7,7 @@ class LayoutProfile:
     has_code: bool
     has_options: bool
     has_explanation: bool
+    has_scenario: bool
     code_style: str | None  # editor | terminal | none
 
 
@@ -15,6 +16,7 @@ CODE_OUTPUT = LayoutProfile(
     has_code=True,
     has_options=True,
     has_explanation=True,
+    has_scenario=False,
     code_style="editor",
 )
 
@@ -23,6 +25,7 @@ QA = LayoutProfile(
     has_code=False,
     has_options=True,
     has_explanation=True,
+    has_scenario=True,
     code_style="terminal",
 )
 
@@ -31,6 +34,7 @@ SCENARIO = LayoutProfile(
     has_code=False,
     has_options=True,
     has_explanation=True,
+    has_scenario=True,
     code_style=None,
 )
 
@@ -39,6 +43,7 @@ COMMAND_OUTPUT = LayoutProfile(
     has_code=True,
     has_options=True,
     has_explanation=True,
+    has_scenario=False,
     code_style="terminal",
 )
 
@@ -47,6 +52,7 @@ PATTERN_MATCH = LayoutProfile(
     has_code=True,
     has_options=True,
     has_explanation=True,
+    has_scenario=False,
     code_style="regex_highlight",
 )
 
@@ -55,6 +61,7 @@ QUERY_OUTPUT = LayoutProfile(
     has_code=True,
     has_options=True,
     has_explanation=True,
+    has_scenario=False,
     code_style="query_result",
 )
 
