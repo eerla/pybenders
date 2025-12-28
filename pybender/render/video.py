@@ -62,8 +62,7 @@ class VideoRenderer:
             .resized(height=self.VIDEO_H)
             .with_duration(WELCOME_DUR)
             .with_fps(self.FPS)
-            .with_effects([vfx.Resize(1.02), vfx.FadeOut(FADE_DUR)])
-        )
+            .with_effects([vfx.FadeOut(FADE_DUR)]))
 
         # --------------------------------------------------
         # Question Clip
@@ -169,7 +168,7 @@ class VideoRenderer:
             .resized(height=self.VIDEO_H)
             .with_duration(QUESTION_DUR)
             .with_fps(self.FPS)
-            .with_effects([vfx.Resize(1.02), vfx.FadeOut(FADE_DUR)])
+            .with_effects([vfx.FadeOut(FADE_DUR)])
         )
 
         # --------------------------------------------------
@@ -181,8 +180,6 @@ class VideoRenderer:
             .with_duration(ANSWER_DUR)
             .with_fps(self.FPS)
             .with_start(QUESTION_DUR - FADE_DUR)
-            # subtle pop-in effect
-            .with_effects([vfx.Resize(1.04)])
             .with_effects([vfx.FadeIn(FADE_DUR), vfx.FadeOut(FADE_DUR)])
         )
 
@@ -195,7 +192,7 @@ class VideoRenderer:
             .with_duration(CTA_DUR)
             .with_fps(self.FPS)
             .with_start(QUESTION_DUR + ANSWER_DUR - (FADE_DUR * 2))
-            .with_effects([vfx.Resize(1.02), vfx.FadeIn(FADE_DUR)])
+            .with_effects([vfx.FadeIn(FADE_DUR)])
         )
 
         # --------------------------------------------------
