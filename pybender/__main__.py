@@ -39,7 +39,7 @@ def run_all_subjects():
     }
 
     try:
-        for subject in subjects[0:1]:
+        for subject in subjects:
             subject_start_time = datetime.now()
             print(f"\nGenerating reel for: {subject}")
             generator = ReelGenerator()
@@ -60,10 +60,8 @@ def run_all_subjects():
         print("Individual subject runtimes:", runtimes)
 
 if __name__ == "__main__":
-    main()
-    # run_all_subjects()
-    # Uncomment below to run all subjects:
-    # run_all_subjects()
+    # main()
+    run_all_subjects()
 
 
 

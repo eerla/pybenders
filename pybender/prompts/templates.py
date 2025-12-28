@@ -2,13 +2,15 @@ PROMPT_TEMPLATES = {
     "code_output": """
                     You are a Senior {{subject}} expert creating SHORT-FORM content for Instagram reels.
 
-                    Generate {{n}} tricky {{subject}} multiple-choice questions about {{topic}}.
+                    Generate {{n}} DIFFERENT and VARIED tricky {{subject}} multiple-choice questions about {{topic}}.
 
                     STRICT RULES (must follow):
                     - Return ONLY valid JSON
                     - No text outside JSON
                     - Keep content concise and reel-friendly
                     - Do NOT exceed length limits below
+                    - Make each of the {{n}} questions noticeably unique in scenario, code style, or trick angle
+                    - Avoid repeating the same pattern, variable usage, or example structure across questions
 
                     Each question MUST contain:
                     - title: max 8 words
@@ -23,10 +25,12 @@ PROMPT_TEMPLATES = {
                     - Avoid nested examples or edge-case-heavy code
                     - Prefer clarity over completeness
                     - Assume viewer has intermediate {{subject}} knowledge
-                    - Before responding, verify that every field obeys the length limits.
-                    If any limit is exceeded, shorten it.
-                    - Code must fit within a single screen on a mobile device.
-                    - Explanation should sound like a spoken voiceover, not documentation.
+                    - Vary the context or twist: use different real-world scenarios, error symptoms, or subtle variations of the concept
+                    - Before responding, think: "Are these {{n}} questions clearly different from each other and from common tutorial examples?"
+                    - If they feel too similar, rework one or more for freshness
+                    - Code must fit within a single screen on a mobile device
+                    - Explanation should sound like a spoken voiceover, not documentation
+                    - Before final output, double-check every field obeys length limits. Shorten if needed.
 
                     JSON format:
                     [
@@ -45,38 +49,44 @@ PROMPT_TEMPLATES = {
     "query_output": """
                     You are a Senior {{subject}} (SQL) expert creating SHORT-FORM content for Instagram reels.
 
-                    Generate {{n}} bite-sized SQL multiple-choice questions about {{topic}}.
+                    Generate {{n}} DIFFERENT and VARIED bite-sized SQL multiple-choice questions about {{topic}}.
 
                     STRICT RULES (must follow):
                     - Return ONLY valid JSON
                     - No text outside JSON
                     - Keep content concise and reel-friendly
+                    - Everything must fit cleanly on a standard mobile phone screen (vertical reel)
                     - Do NOT exceed length limits below
+                    - Make each of the {{n}} questions unique in schema, trick angle, or query style
+                    - Avoid repeating similar table structures, join patterns, or gotchas
 
                     Each question MUST contain:
                     - title: max 8 words
-                    - schema: concise table definitions (<= 3 tables, <= 120 chars)
-                    - query: max 6 lines, no comments; avoid long CTE chains
-                    - code: copy the query here for rendering (same as query)
-                    - question: exactly 1 sentence, under 120 characters
+                    - schema: concise table definitions (<= 3 tables, <= 120 chars total)
+                    - query: max 6 lines, no comments, no blank lines, no long CTEs
+                    - code: exact copy of query (for rendering)
+                    - question: exactly 1 sentence, under 110 characters
                     - options: exactly 4 items, each under 60 characters
                     - correct: one of "A", "B", "C", "D"
-                    - explanation: max 2 short sentences, under 180 characters total
+                    - explanation: max 2 short sentences, under 170 characters total
 
                     Additional constraints:
-                    - Prefer portable SQL (ANSI over vendor-specific features)
-                    - Keep data realistic but simple (small schemas, short identifiers)
-                    - Avoid giant SELECT lists; focus on reasoning about result shape
-                    - If a limit is exceeded, shorten it before responding
+                    - Prefer portable ANSI SQL; avoid dialect-specific syntax
+                    - Use short, clear table/column names (e.g., users, orders, id, name)
+                    - Keep data realistic and minimal — focus on logic, not volume
+                    - Vary scenarios: different domains (sales, logs, employees, etc.), join types, NULL behaviors, aggregates, etc.
+                    - Before output, verify all fields fit mobile screen and are distinctly different
+                    - If anything feels repetitive or too long, rework it for freshness and brevity
+                    - Explanation must sound natural and spoken (like reel voiceover)
 
                     JSON format:
                     [
                     {
                         "id": "q01",
                         "title": "...",
-                        "schema": "CREATE TABLE ...",
-                        "query": "SELECT ...",
-                        "code": "SELECT ...",
+                        "schema": "...",
+                        "query": "...",
+                        "code": "...",
                         "question": "...",
                         "options": ["...", "...", "...", "..."],
                         "correct": "C",
@@ -88,27 +98,35 @@ PROMPT_TEMPLATES = {
     "pattern_match": """
                     You are a Senior {{subject}} (regex) expert creating SHORT-FORM content for Instagram reels.
 
-                    Generate {{n}} regex pattern-matching multiple-choice questions about {{topic}}.
+                    Generate {{n}} DIFFERENT and VARIED regex pattern-matching multiple-choice questions about {{topic}}.
 
                     STRICT RULES (must follow):
                     - Return ONLY valid JSON
                     - No text outside JSON
                     - Keep content concise and reel-friendly
+                    - Everything must fit cleanly on a standard mobile phone screen (vertical reel)
                     - Do NOT exceed length limits below
+                    - Make each of the {{n}} questions unique in test string, pattern style, or trick angle
+                    - Avoid repeating similar inputs, regex shapes, or gotchas across questions
 
                     Each question MUST contain:
                     - title: max 6 words
                     - input: single-line test string, under 80 characters
                     - regex: under 40 characters, no verbose mode
                     - code: 1–3 lines showing how the regex is applied
-                    - question: exactly 1 sentence, under 140 characters
+                    - question: exactly 1 sentence, under 155 characters
                     - options: exactly 4 items, each under 60 characters
                     - correct: one of "A", "B", "C", "D"
-                    - explanation: max 2 short sentences, under 160 characters total
+                    - explanation: max 2 short sentences, under 155 characters total
 
                     Additional constraints:
                     - Avoid exotic backreferences that hurt readability
                     - Prefer lookarounds only when essential
+                    - Vary contexts: emails, logs, filenames, URLs, phone numbers, code snippets, etc.
+                    - Use different real-world strings and subtle twists each time
+                    - Before output, verify all fields fit mobile screen and feel distinctly different
+                    - If anything feels repetitive or too long, rework it for freshness and brevity
+                    - Explanation must sound natural and spoken—like reel voiceover
                     - If any limit is exceeded, shorten it before responding
 
                     JSON format:
@@ -118,7 +136,7 @@ PROMPT_TEMPLATES = {
                         "title": "...",
                         "input": "...",
                         "regex": "...",
-                        "code": "import re\\nbool(re.search(r'...', '...'))",
+                        "code": "import re\nbool(re.search(r'...', '...'))",
                         "question": "...",
                         "options": ["...", "...", "...", "..."],
                         "correct": "A",
@@ -130,27 +148,35 @@ PROMPT_TEMPLATES = {
     "scenario": """
                 You are a Senior {{subject}} (system design) expert creating SHORT-FORM content for Instagram reels.
 
-                Generate {{n}} lightweight system design scenarios about {{topic}}.
+                Generate {{n}} DIFFERENT and VARIED lightweight system design scenarios about {{topic}}.
 
                 STRICT RULES (must follow):
                 - Return ONLY valid JSON
                 - No text outside JSON
                 - Keep content concise and reel-friendly
+                - Everything must fit cleanly on a standard mobile phone screen
                 - Do NOT exceed length limits below
+                - Make each of the {{n}} questions unique in application context, workload type, or trade-off focus
+                - Avoid repeating similar services, data patterns, or classic examples
 
                 Each question MUST contain:
                 - title: max 8 words
-                - scenario: concise setup/requirements, under 120 characters
-                - code: leave as an empty string ("") for this content type
-                - question: exactly 1 sentence, under 220 characters
-                - options: exactly 4 items, each under 80 characters
+                - scenario: concise setup/requirements, under 115 characters  # Keep this short for quick hook
+                - code: ""  (always empty — no code or snippets needed)
+                - question: exactly 1 sentence, under 280 characters  # Big increase — now the star
+                - options: exactly 4 items, each under 75 characters
                 - correct: one of "A", "B", "C", "D"
-                - explanation: max 2 short sentences, under 200 characters total
+                - explanation: max 2 short sentences, under 210 characters total
 
                 Additional constraints:
-                - Focus on trade-offs (scalability, latency, consistency, cost)
-                - Avoid deep dives; keep it single-screen friendly
-                - If any limit is exceeded, shorten it before responding
+                - Always highlight real-world trade-offs: scalability, consistency, latency, availability, cost, complexity
+                - Use diverse contexts: social feeds, messaging, e-commerce, analytics, gaming, IoT, etc.
+                - Vary scale and constraints: high reads vs writes, global vs regional, spiky vs steady traffic
+                - Keep it lightweight — no diagrams or deep math, just sharp insight
+                - Before output, verify all fields are mobile-friendly and questions feel distinctly fresh
+                - If anything feels repetitive or too long, rework for variety and brevity
+                - Explanation must sound confident and spoken, like a quick reel voiceover
+                - Never include code snippets — focus entirely on scenarios, architecture decisions, and trade-offs
 
                 JSON format:
                 [
@@ -168,82 +194,102 @@ PROMPT_TEMPLATES = {
                 """,
 
     "command_output": """
-                        You are a Senior {{subject}} (Linux) expert creating SHORT-FORM content for Instagram reels.
+                    You are a Senior {{subject}} (Linux) expert creating SHORT-FORM content for Instagram reels.
 
-                        Generate {{n}} Linux command-output multiple-choice questions about {{topic}}.
+                    Generate {{n}} DIFFERENT and VARIED Linux command-output multiple-choice questions about {{topic}}.
 
-                        STRICT RULES (must follow):
-                        - Return ONLY valid JSON
-                        - No text outside JSON
-                        - Keep content concise and reel-friendly
-                        - Do NOT exceed length limits below
+                    STRICT RULES (must follow):
+                    - Return ONLY valid JSON
+                    - No text outside JSON
+                    - Keep content concise and reel-friendly
+                    - Everything must fit cleanly on a standard mobile phone screen
+                    - Do NOT exceed length limits below
+                    - Make each of the {{n}} questions unique in command style, input data, or trick angle
+                    - Avoid repeating similar commands or patterns
 
-                        Each question MUST contain:
-                        - title: max 6 words
-                        - code: shell command(s), max 4 lines, no sudo/destructive ops
-                        - output: short expected output, max 3 lines, under 80 characters each
-                        - question: exactly 1 sentence, under 120 characters
-                        - options: exactly 4 items, each under 60 characters
-                        - correct: one of "A", "B", "C", "D"
-                        - explanation: max 2 short sentences, under 160 characters total
+                    Each question MUST contain:
+                    - title: max 6 words
+                    - code: shell command(s), max 4 lines, no sudo/destructive ops
+                    - output: short expected output, max 3 lines, under 80 characters each
+                    - question: exactly 1 sentence, under 115 characters
+                    - options: exactly 4 items, each under 55 characters
+                    - correct: one of "A", "B", "C", "D"
+                    - explanation: max 2 short sentences, under 155 characters total
 
-                        Additional constraints:
-                        - Prefer portable POSIX commands (awk/sed/grep/coreutils)
-                        - Avoid irreversible operations; keep examples safe/read-only
-                        - If any limit is exceeded, shorten it before responding
+                    Additional constraints:
+                    - If the {{topic}} starts with "What does" followed by a common Linux command (e.g., "What does grep do?", "What does ls do?"), generate a command-purpose quiz: show the plain command (or simple safe usage), ask what it primarily does, with one correct description and three plausible but incorrect ones.
+                    - Commands must be self-contained — NEVER assume unseen files or prior state
+                    - Always use here-strings (<<<), here-docs (<<EOF), or inline data when input is needed
+                    - Preferred patterns: echo "data" | cmd, cmd <<< "input", cat <<EOF ... EOF
+                    - If a file is used, create it inline first (e.g., cat >file <<< "content"; cmd file)
+                    - Prefer portable POSIX commands (grep, awk, sed, cut, sort, uniq, wc, etc.)
+                    - Avoid irreversible, dangerous, or environment-dependent operations
+                    - Vary input data: logs, lists, tables, paths, process output, etc.
+                    - Before output, verify: "Can a viewer understand the output without any prior context?"
+                    - If anything feels unclear or assumes hidden state, rework it to be fully self-contained
+                    - Explanation must sound natural and spoken, like a quick reel voiceover
 
-                        JSON format:
-                        [
-                        {
-                            "id": "q01",
-                            "title": "...",
-                            "code": "wc -l file.txt",
-                            "output": "42",
-                            "question": "...",
-                            "options": ["...", "...", "...", "..."],
-                            "correct": "B",
-                            "explanation": "..."
-                        }
-                        ]
-                        """,
+                    JSON format:
+                    [
+                    {
+                        "id": "q01",
+                        "title": "...",
+                        "code": "echo \"hello\\nworld\\nhello\" | sort | uniq -c",
+                        "output": "      2 hello\\n      1 world",
+                        "question": "...",
+                        "options": ["...", "...", "...", "..."],
+                        "correct": "B",
+                        "explanation": "..."
+                    }
+                    ]
+                    """,
 
     "qa": """
-           You are a Senior {{subject}} (DevOps/SRE) expert creating SHORT-FORM content for Instagram reels.
+        You are a Senior {{subject}} (DevOps/SRE) expert creating SHORT-FORM content for Instagram reels.
 
-           Generate {{n}} concise DevOps/SRE multiple-choice questions about {{topic}}.
+        Generate {{n}} DIFFERENT and VARIED concise DevOps/SRE multiple-choice questions about {{topic}}.
 
-           STRICT RULES (must follow):
-           - Return ONLY valid JSON
-           - No text outside JSON
-           - Keep content concise and reel-friendly
-           - Do NOT exceed length limits below
+        STRICT RULES (must follow):
+        - Return ONLY valid JSON
+        - No text outside JSON
+        - Keep content concise and reel-friendly
+        - Everything must fit cleanly on a standard mobile phone screen
+        - Do NOT exceed length limits below
+        - Make each of the {{n}} questions unique in scenario, failure mode, or trade-off angle
+        - Avoid repeating similar services, tools, or classic textbook examples
 
-           Each question MUST contain:
-           - title: max 7 words
-           - code: either empty string ("") or a tiny snippet under 40 characters
-           - question: exactly 1 sentence, under 180 characters
-           - options: exactly 4 items, each under 70 characters
-           - correct: one of "A", "B", "C", "D"
-           - explanation: max 2 short sentences, under 200 characters total
+        Each question MUST contain:
+        - title: max 7 words
+        - code: "" or a tiny relevant snippet under 40 characters (e.g., "kubectl get pod", "limits: 512Mi")
+        - question: exactly 1 sentence, under 280 characters
+        - options: exactly 4 items, each under 75 characters
+        - correct: one of "A", "B", "C", "D"
+        - explanation: max 2 short sentences, under 210 characters total
 
-           Additional constraints:
-           - Favor practical, production-minded scenarios (alerts, rollbacks, scaling)
-           - Keep the tone conversational, like a voiceover
-           - If any limit is exceeded, shorten it before responding
+        Additional constraints:
+        - If the {{topic}} starts with "What does" or "What is", generate a definition/purpose quiz: ask what the command, status, or resource primarily does, with one correct description and three plausible but incorrect alternatives.
+        - Focus on real-world production scenarios: scaling, rollouts, alerts, incidents, observability, recovery
+        - Use diverse contexts: web apps, microservices, databases, CI/CD, batch jobs, multi-region, etc.
+        - Vary failure types: OOM, crashes, network partitions, config errors, node loss, traffic spikes
+        - Prefer practical over theoretical — highlight trade-offs, gotchas, and debugging insights
+        - Before output, verify questions are mobile-friendly and feel distinctly different
+        - If anything feels repetitive or too generic, rework for freshness and specificity
+        - Explanation must sound confident, conversational, and spoken — perfect for reel voiceover
+        - Never include code snippets — focus entirely on scenarios, architecture decisions, and trade-offs
 
-           JSON format:
-           [
-           {
-               "id": "q01",
-               "title": "...",
-               "code": "",
-               "question": "...",
-               "options": ["...", "...", "...", "..."],
-               "correct": "A",
-               "explanation": "..."
-           }
-           ]
-           """
+        JSON format:
+        [
+        {
+            "id": "q01",
+            "title": "...",
+            "code": "",
+            "question": "...",
+            "options": ["...", "...", "...", "..."],
+            "correct": "A",
+            "explanation": "..."
+        }
+        ]
+        """
 }
 
 
