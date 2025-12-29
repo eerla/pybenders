@@ -115,12 +115,15 @@ PROMPT_TEMPLATES = {
                     - Avoid repeating similar patterns or gotchas across questions
                     - ALWAYS ask "What does this return?" or "What gets matched/captured/replaced?" - NEVER ask "which pattern is correct"
                     - The pattern and input are already in the code - focus on understanding the OUTPUT
-                    - CRITICAL: Use proper JSON escaping - \\d, \\w, \\s for regex (not single backslash), \\\\ for backslash
-
+                    - CRITICAL JSON ESCAPING: In the code field, ALWAYS escape backslashes as \\\\ (four backslashes in JSON become one in the pattern)
+                        - Write \\\\d, \\\\w, \\\\s, \\\\b, \\\\B, \\\\( etc. in JSON code strings
+                        - This applies EVEN when the code uses r'...' raw strings
+                        - Example: "code": "re.findall(r'(\\\\d{3})-(\\\\d{3})', '123-456')"
+                        
                     Each question MUST contain:
                     - title: max 6 words
                     - code: Complete Python code showing pattern + input + operation (1-3 lines, total under 120 chars)
-                      IMPORTANT: Escape backslashes correctly in JSON: use \\d, \\w, \\s (two backslashes)
+                    - CRITICAL: Escape ALL backslashes in JSON as \\\\ - do NOT use single backslash \\d, use \\\\d
                     - question: Ask about the OUTPUT/RESULT, exactly 1 sentence, under 155 characters
                     - options: exactly 4 items showing possible outputs, each under 60 characters
                     - correct: one of "A", "B", "C", "D"
@@ -151,23 +154,23 @@ PROMPT_TEMPLATES = {
                     - Explanation must sound natural and spoken—like reel voiceover
                     - If any limit is exceeded, shorten it before responding
 
-                    JSON format example (note the double backslashes in regex patterns):
+                    JSON format example (CRITICAL: note the \\\\ for backslashes):
                     [
                     {
                         "id": "q01",
-                        "title": "Greedy vs Lazy Quantifier",
-                        "code": "import re\\nre.findall(r'<.*?>', '<a><b><c>')",
+                        "title": "Capturing vs Non-Capturing Groups",
+                        "code": "import re\\nre.findall(r'(?:\\\\d{3})-(\\\\d{3})', '123-456 789-012')",
                         "question": "What does this return?",
-                        "options": ["['<a>', '<b>', '<c>']", "['<a><b><c>']", "['a', 'b', 'c']", "[]"],
+                        "options": ["['456', '012']", "['123', '789']", "['456']", "[]"],
                         "correct": "A",
-                        "explanation": "The lazy quantifier .*? stops at first >, capturing each tag separately instead of everything."
+                        "explanation": "The (?:\\\\d{3}) non-capturing group matches but doesn't capture. findall returns only group(1), the captured digits."
                     }
                     ]
 
                     DO NOT copy this example - create completely new questions about {{topic}}.
                     Generate EXACTLY {{n}} questions.
                     """,
-
+                    
     "scenario": """
                 You are a Senior {{subject}} (system design) expert creating SHORT-FORM content for Instagram reels.
 
