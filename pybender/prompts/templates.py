@@ -31,7 +31,7 @@ PROMPT_TEMPLATES = {
                     - Code must fit within a single screen on a mobile device
                     - Explanation should sound like a spoken voiceover, not documentation
                     - Before final output, double-check every field obeys length limits and JSON escaping. Shorten if needed.
-                    - Escape regex backslashes and other special characters correctly: use \\d, \\w, \\s
+                    - Escape regex backslashes and other special characters correctly to fit json format
 
                     JSON format:
                     [

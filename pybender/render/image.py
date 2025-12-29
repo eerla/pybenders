@@ -1,4 +1,5 @@
 import json
+import random
 from pathlib import Path
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
@@ -62,6 +63,12 @@ class ImageRenderer:
         self.BADGE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 36)
         self.SMALL_LABEL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 32)
         # self.REGEX_FONT = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "FiraCode-Regular.ttf"), 48)
+
+        # Logo config
+        self.LOGO_PATH = Path("pybender/assets/backgrounds/ddop1.PNG")
+        self.LOGO_HEIGHT = 40  # 40x120 pixels
+        self.LOGO_WIDTH = 60  # 40x120 pixels
+        self.LOGO_PADDING = 20  # 20px from edges
 
     # ---------- BASE CANVAS ----------
     def _create_base_canvas(self, subject: str) -> Image.Image:
@@ -665,6 +672,97 @@ class ImageRenderer:
             fill=self.SUBTLE_TEXT,
         )
 
+    # ---------- LOGO ----------
+    def _draw_logo(self, canvas):
+        """
+        Draw DDOP logo in the bottom-right corner of the card.
+        Logo has transparent background, no shadow added.
+        """
+        if not self.LOGO_PATH.exists():
+            return canvas
+
+        # Card bounds
+        card_x, card_y = 40, 80
+        card_w, card_h = self.WIDTH - 80, self.HEIGHT - 120
+
+        # Load and resize logo
+        try:
+            logo = Image.open(self.LOGO_PATH).convert("RGBA")
+            logo = logo.resize((self.LOGO_WIDTH, self.LOGO_HEIGHT), Image.Resampling.LANCZOS)
+        except Exception as e:
+            print(f"Warning: Could not load logo: {e}")
+            return canvas
+
+        # Position: bottom-right corner of card with padding
+        logo_x = card_x + card_w - self.LOGO_WIDTH - self.LOGO_PADDING
+        logo_y = card_y + card_h - self.LOGO_HEIGHT - self.LOGO_PADDING
+
+        # Apply slight transparency to logo (75% opacity)
+        logo.putalpha(int(255 * 0.75))
+
+        # Composite logo directly onto canvas
+        canvas_rgba = canvas.convert("RGBA")
+        canvas_rgba.paste(logo, (logo_x, logo_y), logo)
+
+        return canvas_rgba.convert("RGB")
+
+    # ---------- WATERMARK ----------
+    def _draw_watermark(self, canvas):
+        """
+        Draw a subtle tiled diagonal watermark across the card area.
+        Uses 'DDOP' text with low opacity (~12-18%) to make removal difficult.
+        """
+        # Card bounds (from _create_base_canvas)
+        card_x, card_y = 40, 80
+        card_w, card_h = self.WIDTH - 80, self.HEIGHT - 120
+
+        # Watermark config
+        watermark_text = "DDOP"
+        watermark_font = ImageFont.truetype(
+            str(self.JETBRAINS_MONO_FONT_DIR / "JetBrainsMono-Regular.ttf"), 72
+        )
+        base_opacity = 54  # Base alpha value (out of 255)
+        tile_spacing_x = 220  # Horizontal spacing between tiles
+        tile_spacing_y = 180  # Vertical spacing between tiles
+        rotation_angle = -30  # Diagonal tilt in degrees
+
+        # Create a transparent overlay for the watermark
+        overlay = Image.new("RGBA", (self.WIDTH, self.HEIGHT), (0, 0, 0, 0))
+        overlay_draw = ImageDraw.Draw(overlay)
+
+        # Tile the watermark across the card area
+        for y in range(card_y, card_y + card_h, tile_spacing_y):
+            for x in range(card_x, card_x + card_w, tile_spacing_x):
+                # Add slight opacity jitter (±3 alpha) for each tile
+                alpha = base_opacity + random.randint(-3, 3)
+                alpha = max(8, min(255, alpha))  # Clamp between 8-255
+
+                # Create a temporary image for rotated text
+                text_bbox = overlay_draw.textbbox((0, 0), watermark_text, font=watermark_font)
+                text_width = text_bbox[2] - text_bbox[0]
+                text_height = text_bbox[3] - text_bbox[1]
+
+                # Create text image with padding for rotation
+                text_img = Image.new("RGBA", (text_width + 40, text_height + 40), (0, 0, 0, 0))
+                text_draw = ImageDraw.Draw(text_img)
+                text_draw.text(
+                    (20, 20),
+                    watermark_text,
+                    font=watermark_font,
+                    fill=(255, 255, 255, alpha)
+                )
+
+                # Rotate the text
+                rotated = text_img.rotate(rotation_angle, expand=True)
+
+                # Paste onto overlay at tile position
+                overlay.paste(rotated, (x, y), rotated)
+
+        # Composite watermark onto canvas and return modified canvas
+        canvas_rgba = canvas.convert("RGBA")
+        watermarked = Image.alpha_composite(canvas_rgba, overlay)
+        return watermarked.convert("RGB")
+
 
     @staticmethod
     def slugify(text: str) -> str:
@@ -804,7 +902,7 @@ class ImageRenderer:
                 self.draw.textlength("Setup: ", font=self.TEXT_FONT),
             )
             scenario_height = len(scenario_lines) * 50 + 20  # line_height + gap
-        
+
         # Code block height (comes after scenario for scenario-based questions)
         code_height = 0
         if layout_profile.has_code and question.code:
@@ -908,6 +1006,12 @@ class ImageRenderer:
 
         # ---------- FOOTER ----------
         self._draw_footer(canvas, subject.replace('_', ' ').title())
+
+        # ---------- WATERMARK ----------
+        canvas = self._draw_watermark(canvas)
+
+        # ---------- LOGO ----------
+        canvas = self._draw_logo(canvas)
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
         canvas.save(out_path)
@@ -1299,20 +1403,21 @@ class ImageRenderer:
 
         print(f"Metadata written to {metadata_path}")
         # TODO: create separate welcome pages per subject
-        self.render_day1_cta_image(subject)
-        self.render_day2_cta_image(subject)
-        self.render_welcome_image(subject)
+        # self.render_day1_cta_image(subject)
+        # self.render_day2_cta_image(subject)
+        # self.render_welcome_image(subject)
         print("Image rendering process completed successfully")
         return metadata_path
 
 # if __name__ == "__main__":
 #     renderer = ImageRenderer()
-#     # subjects = ["python", "system_design", "docker_k8s"]
-#     subjects = [
-#         "python", "sql", "regex", "system_design", "linux"
-#         ,"docker_k8s", "javascript", "rust", "golang"
-#     ]
+#     subjects = ["system_design"]
+#     # subjects = [
+#     #     "python", "sql", "regex", "system_design", "linux"
+#     #     ,"docker_k8s", "javascript", "rust", "golang"
+#     # ]
 #     for subject in subjects:
 #         # renderer.render_welcome_image(subject)
-#         renderer.render_day1_cta_image(subject)
-#         renderer.render_day2_cta_image(subject)
+#         # renderer.render_day1_cta_image(subject)
+#         # renderer.render_day2_cta_image(subject)
+#         renderer.main(1, subject=subject)
