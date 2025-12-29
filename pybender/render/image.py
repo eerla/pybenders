@@ -777,16 +777,6 @@ class ImageRenderer:
 
         return lines
 
-    @staticmethod
-    def normalize_option_text(option: str) -> list[str]:
-        """
-        Normalize option text into wrapped lines.
-        Supports explicit newlines + auto wrapping.
-        """
-        option = option.replace("\\n", "\n")
-        return option.split("\n")
-
-
     def render_image(
         self,
         question: Question,

@@ -30,7 +30,8 @@ PROMPT_TEMPLATES = {
                     - If they feel too similar, rework one or more for freshness
                     - Code must fit within a single screen on a mobile device
                     - Explanation should sound like a spoken voiceover, not documentation
-                    - Before final output, double-check every field obeys length limits. Shorten if needed.
+                    - Before final output, double-check every field obeys length limits and JSON escaping. Shorten if needed.
+                    - Escape regex backslashes and other special characters correctly: use \\d, \\w, \\s
 
                     JSON format:
                     [
@@ -98,11 +99,12 @@ PROMPT_TEMPLATES = {
     "pattern_match": """
                     You are a Senior {{subject}} (regex) expert creating SHORT-FORM content for Instagram reels.
 
-                    Generate {{n}} DIFFERENT and VARIED regex pattern-matching multiple-choice questions about {{topic}}.
+                    Generate EXACTLY {{n}} DIFFERENT and VARIED regex pattern-matching multiple-choice questions about {{topic}}.
 
                     STRICT RULES (must follow):
                     - Return ONLY valid JSON
                     - No text outside JSON
+                    - Generate EXACTLY {{n}} questions, no more, no less
                     - Keep content concise and reel-friendly
                     - Everything must fit cleanly on a standard mobile phone screen (vertical reel)
                     - Do NOT exceed length limits below
@@ -110,10 +112,12 @@ PROMPT_TEMPLATES = {
                     - Avoid repeating similar patterns or gotchas across questions
                     - ALWAYS ask "What does this return?" or "What gets matched/captured/replaced?" - NEVER ask "which pattern is correct"
                     - The pattern and input are already in the code - focus on understanding the OUTPUT
+                    - CRITICAL: Use proper JSON escaping - \\d, \\w, \\s for regex (not \d, \s, \w), \\\\ for backslash
 
                     Each question MUST contain:
                     - title: max 6 words
                     - code: Complete Python code showing pattern + input + operation (1-3 lines, total under 120 chars)
+                      IMPORTANT: Escape backslashes correctly in JSON: use \\d, \\w, \\s (two backslashes)
                     - question: Ask about the OUTPUT/RESULT, exactly 1 sentence, under 155 characters
                     - options: exactly 4 items showing possible outputs, each under 60 characters
                     - correct: one of "A", "B", "C", "D"
@@ -144,7 +148,7 @@ PROMPT_TEMPLATES = {
                     - Explanation must sound natural and spoken—like reel voiceover
                     - If any limit is exceeded, shorten it before responding
 
-                    JSON format examples (rotate through these styles):
+                    JSON format example (note the double backslashes in regex patterns):
                     [
                     {
                         "id": "q01",
@@ -154,28 +158,11 @@ PROMPT_TEMPLATES = {
                         "options": ["['<a>', '<b>', '<c>']", "['<a><b><c>']", "['a', 'b', 'c']", "[]"],
                         "correct": "A",
                         "explanation": "The lazy quantifier .*? stops at first >, capturing each tag separately instead of everything."
-                    },
-                    {
-                        "id": "q02",
-                        "title": "Named Capture Group",
-                        "code": "import re\\nm = re.search(r'(?P<user>\\\\w+)@(?P<dom>\\\\w+)', 'bob@site')\\nm.group('dom')",
-                        "question": "What does this return?",
-                        "options": ["'site'", "'bob'", "'bob@site'", "Error"],
-                        "correct": "A",
-                        "explanation": "Named groups extract parts by name. 'dom' captures text after @, giving us the domain."
-                    },
-                    {
-                        "id": "q03",
-                        "title": "Backreference Swap",
-                        "code": "import re\\nre.sub(r'(\\\\w+)@(\\\\w+)', r'\\\\2.\\\\1', 'alice@example')",
-                        "question": "What does this return?",
-                        "options": ["'example.alice'", "'alice.example'", "'alice@example'", "'\\\\2.\\\\1'"],
-                        "correct": "A",
-                        "explanation": "\\\\2 is domain (second group), \\\\1 is user (first). sub() swaps their order with a dot."
                     }
                     ]
 
-                    DO NOT copy these examples - create completely new questions about {{topic}}.
+                    DO NOT copy this example - create completely new questions about {{topic}}.
+                    Generate EXACTLY {{n}} questions.
                     """,
 
     "scenario": """
