@@ -1314,14 +1314,14 @@ class ImageRenderer:
         print("Image rendering process completed successfully")
         return metadata_path
 
-if __name__ == "__main__":
-    renderer = ImageRenderer()
-    # subjects = ["python", "system_design", "docker_k8s"]
-    subjects = [
-        "python", "sql", "regex", "system_design", "linux"
-        ,"docker_k8s", "javascript", "rust", "golang"
-    ]
-    for subject in subjects:
-        # renderer.render_welcome_image(subject)
-        renderer.render_day1_cta_image(subject)
-        renderer.render_day2_cta_image(subject)
+# if __name__ == "__main__":
+#     renderer = ImageRenderer()
+#     # subjects = ["python", "system_design", "docker_k8s"]
+#     subjects = [
+#         "python", "sql", "regex", "system_design", "linux"
+#         ,"docker_k8s", "javascript", "rust", "golang"
+#     ]
+#     for subject in subjects:
+#         # renderer.render_welcome_image(subject)
+#         renderer.render_day1_cta_image(subject)
+#         renderer.render_day2_cta_image(subject)

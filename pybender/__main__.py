@@ -1,6 +1,7 @@
 import argparse
 from datetime import datetime
 from pybender.render.reel_generator import ReelGenerator
+import traceback
 
 def main():
     parser = argparse.ArgumentParser(description="Generate daily Python reels")
@@ -24,17 +25,21 @@ def main():
 
     generator = ReelGenerator()
     generator.generate(questions_per_run=args.questions, subject=args.subject)
-
+    
 def run_all_subjects():
     """Execute main with questions=1 for each subject"""
     start_time = datetime.now()
     print("Running reel generation for all subjects with 1 question each.")
-    # subjects = [ 
-        # "docker_k8s", "golang", "javascript", "linux", "python", 
-    #     "regex", "rust", "sql", "system_design"
-    # ]
-    subjects = [
-        "sql"
+    subjects = [ 
+        "docker_k8s", 
+        "golang", 
+        "javascript", 
+        "linux", 
+        "python", 
+        "regex", 
+        "rust", 
+        "sql", 
+        "system_design"
     ]
     
     runtimes = {
@@ -55,13 +60,10 @@ def run_all_subjects():
             subject_elapsed_time = (datetime.now() - subject_start_time).total_seconds() / 60
             runtimes[subject] = subject_elapsed_time
             print(f"✅ {subject} completed in {subject_elapsed_time:.2f} minutes")
-        except ValueError as e:
-            print(f"❌ {subject} failed: {e}")
-            failed_subjects.append((subject, str(e)))
-            runtimes[subject] = "FAILED"
         except Exception as e:
-            print(f"❌ {subject} failed with unexpected error: {type(e).__name__}: {e}")
-            failed_subjects.append((subject, f"{type(e).__name__}: {e}"))
+            print(f"❌ {subject} failed: {type(e).__name__}: {e}")
+            print(traceback.format_exc())
+            failed_subjects.append((subject, str(e)))
             runtimes[subject] = "FAILED"
     
     # Summary
@@ -86,12 +88,4 @@ def run_all_subjects():
             print(f"  {subj}: {runtime:.2f} minutes")
             
 if __name__ == "__main__":
-    # main()
     run_all_subjects()
-
-
-
-# import sys
-# print("RUNNING __main__.py")
-# print("sys.path:", sys.path)
-# python -m pybender --questions 1 --subject python
