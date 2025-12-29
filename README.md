@@ -2,28 +2,30 @@
 
 **AI-powered short-form content generator for programming MCQs and brain teasers**
 
-PyBenders automatically generates daily video reels featuring Python quiz questions with explanations. The pipeline creates visually engaging content from question generation to final video output.
+PyBenders generates daily short-form reels across multiple subjects (code, SQL, regex, system design, DevOps) with question cards, answers, and explanations. The pipeline goes from LLM prompt → validation → rendered images → stitched video.
 
 ## Features
 
-- **AI Question Generation**: Uses OpenAI GPT-4 to generate Python MCQs with explanations
-- **Image Rendering**: Creates styled question/answer cards with syntax highlighting
-- **Video Pipeline**: Assembles images into short-form reels with transitions
-- **Batch Processing**: Generate multiple questions per run with metadata tracking
-- **Modular Design**: Separate components for generation, rendering, and video assembly
+- **Multi-subject support**: Python, SQL, regex, system design, Linux, Docker/K8s, JavaScript, Rust, Go
+- **AI question generation**: Subject-aware prompt templates per content type (code, SQL query, regex, scenario, command output, DevOps Q&A)
+- **Validation pass**: Content-type-specific validators keep outputs within length/shape rules
+- **Image rendering**: Styled question/answer cards with syntax highlighting and CTA frames
+- **Video pipeline**: Assembles cards into reels with transitions; metadata tracked per run
+- **Batch processing**: Generate multiple questions per run; sweep all subjects in one command
 
-## Current Focus
+## Supported Subjects
 
-**Python MCQs** covering:
-- Python internals & memory model
-- List comprehensions & generators
-- Variable scope & closures
-- Mutability & immutability
-- Decorators, async/await
-- Threading & GIL
-- Standard library gotchas
-- OOP internals
-- Truthiness & comparisons
+- Python (code_output)
+- JavaScript (code_output)
+- Rust (code_output)
+- Go (code_output)
+- SQL (query_output)
+- Regex (pattern_match)
+- System Design (scenario)
+- Linux commands (command_output)
+- Docker/K8s (qa)
+
+Each subject maps to a content type that controls the prompt, validator, and renderer.
 
 ## Quick Start
 
@@ -35,25 +37,37 @@ pip install -r requirements.txt
 cp .env.example .env
 # Add your OPENAI_API_KEY to .env
 
-# Generate reels
-python -m pybender --questions 2
+# Generate reels for Python
+python -m pybender --questions 2 --subject python
+
+# Run a full sweep (1 question per subject)
+python -m pybender
 ```
 
 ## Project Structure
 
 ```
 pybender/
-├── generator/       # AI question generation
-├── render/          # Image & video rendering
+├── generator/       # Content registry, LLM orchestration, validators
+├── prompts/         # Prompt templates keyed by content type
+├── render/          # Image & video rendering (cards, CTA, reels)
 ├── config/          # Settings & env config
 ├── assets/          # Fonts, backgrounds, music
-└── prompts/         # LLM prompt templates
 
 output/
-├── images/          # Generated question cards
-├── reels/           # Final video output
-└── runs/            # Metadata per generation run
+├── images/<subject>/runs/<ts>/   # Generated question/answer cards
+├── reels/<subject>/runs/<ts>/    # Final video output
+└── runs/<subject>/<ts>/metadata.json  # Render manifest
 ```
+
+## Pipeline (high level)
+
+subject → content registry → content_type → prompt_templates[content_type] → LLM → validator[content_type] → renderer[content_type] → video stitcher
+
+- Content registry: maps subjects to content types and topic pools
+- Prompt templates: tailored per content type (code_output, query_output, pattern_match, scenario, command_output, qa)
+- Validators: enforce field/length/shape constraints before rendering
+- Renderers: build question/answer cards and CTA frames; video renderer stitches into reels
 
 ## Requirements
 
@@ -64,7 +78,7 @@ output/
 ## Future Roadmap
 
 ### Additional Programming Languages
-- JavaScript/TypeScript quirks
+- TypeScript/JavaScript quirks
 - Java memory & concurrency
 - C++ edge cases
 - Rust ownership puzzles
@@ -101,6 +115,12 @@ output/
 - Machine learning puzzles
 - Algorithm visualization
 - Code optimization challenges
+
+## Outputs
+
+- Images: saved under `output/images/<subject>/runs/<timestamp>/`
+- Reels: saved under `output/reels/<subject>/runs/<timestamp>/`
+- Metadata: `output/runs/<subject>/<timestamp>/metadata.json` describes generated assets
 
 ## Architecture Goals
 

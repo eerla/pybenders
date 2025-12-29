@@ -51,8 +51,8 @@ class VideoRenderer:
         # --------------------------------------------------
         WELCOME_DUR = 3.0
         QUESTION_DUR = 7.0
-        CTA_DUR = 4.0
-        FADE_DUR = 0.6
+        CTA_DUR = 3.0
+        FADE_DUR = 0.4
 
         # --------------------------------------------------
         # Welcome Clip
@@ -62,8 +62,7 @@ class VideoRenderer:
             .resized(height=self.VIDEO_H)
             .with_duration(WELCOME_DUR)
             .with_fps(self.FPS)
-            .with_effects([vfx.Resize(1.02), vfx.FadeOut(FADE_DUR)])
-        )
+            .with_effects([vfx.FadeOut(FADE_DUR)]))
 
         # --------------------------------------------------
         # Question Clip
@@ -156,9 +155,9 @@ class VideoRenderer:
         # --------------------------------------------------
         # Durations
         # --------------------------------------------------
-        QUESTION_DUR = 3.0
-        ANSWER_DUR = 5.0
-        CTA_DUR = 4.0
+        QUESTION_DUR = 4.0
+        ANSWER_DUR = 6.0
+        CTA_DUR = 3.0
         FADE_DUR = 0.4
 
         # --------------------------------------------------
@@ -169,7 +168,7 @@ class VideoRenderer:
             .resized(height=self.VIDEO_H)
             .with_duration(QUESTION_DUR)
             .with_fps(self.FPS)
-            .with_effects([vfx.Resize(1.02), vfx.FadeOut(FADE_DUR)])
+            .with_effects([vfx.FadeOut(FADE_DUR)])
         )
 
         # --------------------------------------------------
@@ -181,8 +180,6 @@ class VideoRenderer:
             .with_duration(ANSWER_DUR)
             .with_fps(self.FPS)
             .with_start(QUESTION_DUR - FADE_DUR)
-            # subtle pop-in effect
-            .with_effects([vfx.Resize(1.04)])
             .with_effects([vfx.FadeIn(FADE_DUR), vfx.FadeOut(FADE_DUR)])
         )
 
@@ -195,7 +192,7 @@ class VideoRenderer:
             .with_duration(CTA_DUR)
             .with_fps(self.FPS)
             .with_start(QUESTION_DUR + ANSWER_DUR - (FADE_DUR * 2))
-            .with_effects([vfx.Resize(1.02), vfx.FadeIn(FADE_DUR)])
+            .with_effects([vfx.FadeIn(FADE_DUR)])
         )
 
         # --------------------------------------------------
@@ -288,7 +285,7 @@ class VideoRenderer:
         cta_day1_img = Path(f"output/{subject}/images/cta/day1.png")
         cta_day2_img = Path(f"output/{subject}/images/cta/day2.png")
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=2) as executor: # Day 1 and Day 2 in parallel
             futures = [
                 executor.submit(
                     self.generate_day1_reel,
@@ -331,7 +328,7 @@ class VideoRenderer:
         # --------------------------------------------------
         reel_results = []
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=4) as executor: # 4 questions in parallel
             futures = [executor.submit(self.process_question, asset) for asset in assets]
 
             for future in as_completed(futures):

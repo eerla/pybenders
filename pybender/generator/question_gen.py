@@ -6,7 +6,6 @@ from openai import OpenAI
 
 from pybender.config.settings import OPENAI_API_KEY, MODEL
 from pybender.generator.schema import Question
-from pybender.generator.prompt_loader import load_prompt
 from pybender.generator.content_registry import CONTENT_REGISTRY
 from pybender.prompts.templates import PROMPT_TEMPLATES
 from pybender.validation.validate_questions import validate_questions
@@ -49,10 +48,15 @@ class QuestionGenerator:
         )
 
         try:
+            print(f"🧠 Generating {n} questions via LLM for {subject} on topic: {topic}")
             raw = self.get_llm_response(prompt)
+            if not raw or not raw.strip():
+                raise ValueError(f"LLM returned empty response for subject {subject} on topic {topic}")
+            
             data = json.loads(raw)
         except json.JSONDecodeError:
-            raise ValueError("LLM returned invalid JSON")
+            raise ValueError(f"LLM returned invalid JSON for subject {subject} on topic {topic} \
+                                \n raw response: {raw}")
 
         valid, failed = validate_questions(data, content_type)
 
