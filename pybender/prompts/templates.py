@@ -112,7 +112,7 @@ PROMPT_TEMPLATES = {
                     - Avoid repeating similar patterns or gotchas across questions
                     - ALWAYS ask "What does this return?" or "What gets matched/captured/replaced?" - NEVER ask "which pattern is correct"
                     - The pattern and input are already in the code - focus on understanding the OUTPUT
-                    - CRITICAL: Use proper JSON escaping - \\d, \\w, \\s for regex (not \d, \s, \w), \\\\ for backslash
+                    - CRITICAL: Use proper JSON escaping - \\d, \\w, \\s for regex (not single backslash), \\\\ for backslash
 
                     Each question MUST contain:
                     - title: max 6 words
