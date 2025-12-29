@@ -3,34 +3,7 @@ from datetime import datetime
 from pybender.render.reel_generator import ReelGenerator
 import traceback
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate daily Python reels")
-    parser.add_argument(
-        "--questions",
-        type=int,
-        default=2,
-        help="Number of questions to generate per run"
-    )
-    parser.add_argument(
-        "--subject",
-        type=str,
-        default="python",
-        choices=[
-            "python", "sql", "regex", "system_design", "linux", 
-            "docker_k8s", "javascript", "rust", "golang"],
-        help="Subject for the reels (default: python)"
-    )
-
-    args = parser.parse_args()
-
-    generator = ReelGenerator()
-    generator.generate(questions_per_run=args.questions, subject=args.subject)
-    
-def run_all_subjects():
-    """Execute main with questions=1 for each subject"""
-    start_time = datetime.now()
-    print("Running reel generation for all subjects with 1 question each.")
-    subjects = [ 
+SUBJECTS = [ 
         "docker_k8s", 
         "golang", 
         "javascript", 
@@ -41,14 +14,47 @@ def run_all_subjects():
         "sql", 
         "system_design"
     ]
-    # subjects = ["rust"]
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate daily Python reels")
+    parser.add_argument(
+        "--questions",
+        type=int,
+        default=1,
+        help="Number of questions to generate per run"
+    )
+    parser.add_argument(
+        "--subject",
+        type=str,
+        default="",
+        choices=[
+            "python", "sql", "regex", "system_design", "linux", 
+            "docker_k8s", "javascript", "rust", "golang"],
+        help="Subject for the reels (default: run all subjects)"
+    )
+
+    args = parser.parse_args()
+    qs = min(1 if not args.questions else args.questions, 4)  # Cap at 4 questions per run
+    subject = args.subject
+
+    if not subject:
+        run_all_subjects()
+    else:
+        generator = ReelGenerator()
+        generator.generate(questions_per_run=qs, subject=subject)
+    
+def run_all_subjects():
+    """Execute main with questions=1 for each subject"""
+    start_time = datetime.now()
+    print("Running reel generation for all subjects with 1 question each.")
+    # SUBJECTS = ["rust"]
     runtimes = {
-        subject: None for subject in subjects
+        subject: None for subject in SUBJECTS
     }
     
     failed_subjects = []
 
-    for subject in subjects:
+    for subject in SUBJECTS:
         subject_start_time = datetime.now()
         print(f"\n{'='*50}")
         print(f"Generating reel for: {subject}")
@@ -72,8 +78,8 @@ def run_all_subjects():
     print("SUMMARY")
     print(f"{'='*50}")
     print(f"Total time taken: {elapsed_time:.2f} minutes")
-    print(f"\nSuccessful: {len([r for r in runtimes.values() if r != 'FAILED'])}/{len(subjects)}")
-    print(f"Failed: {len(failed_subjects)}/{len(subjects)}")
+    print(f"\nSuccessful: {len([r for r in runtimes.values() if r != 'FAILED'])}/{len(SUBJECTS)}")
+    print(f"Failed: {len(failed_subjects)}/{len(SUBJECTS)}")
     
     if failed_subjects:
         print("\n❌ Failed subjects:")
@@ -88,4 +94,4 @@ def run_all_subjects():
             print(f"  {subj}: {runtime:.2f} minutes")
             
 if __name__ == "__main__":
-    run_all_subjects()
+    main()
