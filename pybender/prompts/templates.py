@@ -11,10 +11,14 @@ PROMPT_TEMPLATES = {
                     - Do NOT exceed length limits below
                     - Make each of the {{n}} questions noticeably unique in scenario, code style, or trick angle
                     - Avoid repeating the same pattern, variable usage, or example structure across questions
+                                        - Use proper JSON escaping in all string fields:
+                                            - Escape inner double quotes as \\\"\"\\\"
+                                            - Escape backslashes as \\\\ (e.g., r"\\\\d" if present)
+                                            - Use literal \\n for newlines (never actual line breaks in JSON)
 
                     Each question MUST contain:
                     - title: max 8 words
-                    - code: max 8 lines, no comments, no blank lines
+                    - code: max 8 lines, no comments, no blank lines; use \\n for newlines and escape quotes as \\\"\"\\\" and backslashes as \\\\ in JSON
                     - question: exactly 1 sentence
                     - options: exactly 4 items, each under 60 characters
                     - correct: one of "A", "B", "C", "D"
@@ -30,15 +34,14 @@ PROMPT_TEMPLATES = {
                     - If they feel too similar, rework one or more for freshness
                     - Code must fit within a single screen on a mobile device
                     - Explanation should sound like a spoken voiceover, not documentation
-                    - Before final output, double-check every field obeys length limits and JSON escaping. Shorten if needed.
-                    - Escape regex backslashes and other special characters correctly to fit json format
+                    - Before final output, double-check every field obeys length limits and JSON escaping (\\" quotes, \\\\ backslashes, \\n newlines). Shorten if needed.
 
-                    JSON format:
+                    JSON format (note the \\n newlines and \\\" escaped quotes in code):
                     [
                     {
                         "id": "q01",
                         "title": "...",
-                        "code": "...",
+                        "code": "fn main() {\\n    let v = vec![1, 2, 3];\\n    println!(\\\"{:?}\\\", v);\\n}",
                         "question": "...",
                         "options": ["...", "...", "...", "..."],
                         "correct": "B",
