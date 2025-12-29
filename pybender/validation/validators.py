@@ -11,8 +11,12 @@ def validate_code_output(q: dict):
 
 
 def validate_query_output(q: dict):
-    assert q["query"].count("\n") <= 8
-    assert len(q["question"]) <= 120
+    assert len(q["title"].split()) <= 8, "Title too long"
+    assert q["code"].count("\n") <= 8, "Code too long (max 8 lines)"
+    assert "WITH" in q["code"] and "VALUES" in q["code"], "Code must embed sample data via CTE VALUES"
+    assert len(q["question"]) <= 110, "Question too long"
+    assert all(len(opt) <= 60 for opt in q["options"]), "Option too long"
+    assert len(q["explanation"]) <= 170, "Explanation too long"
 
 
 def validate_pattern_match(q: dict):

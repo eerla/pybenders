@@ -57,40 +57,40 @@ PROMPT_TEMPLATES = {
                     - Keep content concise and reel-friendly
                     - Everything must fit cleanly on a standard mobile phone screen (vertical reel)
                     - Do NOT exceed length limits below
-                    - Make each of the {{n}} questions unique in schema, trick angle, or query style
-                    - Avoid repeating similar table structures, join patterns, or gotchas
+                    - Make each of the {{n}} questions unique in logic, filter, aggregate, join, or NULL behavior
+                    - ALWAYS embed up to 3–4 sample rows (and 3–4 columns) inline using a compact CTE (WITH + VALUES) inside "code" if needed to illustrate the logic
+                    - ALWAYS ask about the RESULT of the final SELECT (e.g., value, list, count) — not about the input data
+                    - Options MUST include exactly 1 correct answer and 3 plausible-but-wrong answers derived from the shown sample data
 
                     Each question MUST contain:
                     - title: max 8 words
-                    - schema: concise table definitions (<= 3 tables, <= 120 chars total)
-                    - query: max 6 lines, no comments, no blank lines, no long CTEs
-                    - code: exact copy of query (for rendering)
-                    - question: exactly 1 sentence, under 110 characters
-                    - options: exactly 4 items, each under 60 characters
+                    - code: one compact SQL snippet:
+                      -- single CTE with inline sample data via VALUES
+                      -- final SELECT performing the logic under test
+                      -- under 8 lines total; use literal \n for line breaks and 2-space indentation
+                    - question: exactly 1 sentence, under 110 characters, asking about the SELECT result
+                    - options: exactly 4 items (only ONE correct), each under 60 characters
                     - correct: one of "A", "B", "C", "D"
-                    - explanation: max 2 short sentences, under 170 characters total
+                    - explanation: max 2 short sentences, under 170 characters total, showing why the chosen option matches the data
 
                     Additional constraints:
-                    - Prefer portable ANSI SQL; avoid dialect-specific syntax
-                    - Use short, clear table/column names (e.g., users, orders, id, name)
-                    - Keep data realistic and minimal — focus on logic, not volume
-                    - Vary scenarios: different domains (sales, logs, employees, etc.), join types, NULL behaviors, aggregates, etc.
-                    - Before output, verify all fields fit mobile screen and are distinctly different
-                    - If anything feels repetitive or too long, rework it for freshness and brevity
+                    - Use short, clear column names (e.g., id, name, amount, status)
+                    - Keep data realistic and minimal—focus on logic, not volume
+                    - Wrong options should be plausible mistakes (off-by-one, wrong aggregate, misread LIKE, NULL misinterpretation)
+                    - Verify internally that exactly ONE option matches the result of the final SELECT using the provided sample data
+                    - If more than one option could be correct, adjust the sample data or logic to ensure uniqueness
                     - Explanation must sound natural and spoken (like reel voiceover)
 
                     JSON format:
                     [
                     {
                         "id": "q01",
-                        "title": "...",
-                        "schema": "...",
-                        "query": "...",
-                        "code": "...",
-                        "question": "...",
-                        "options": ["...", "...", "...", "..."],
-                        "correct": "C",
-                        "explanation": "..."
+                        "title": "LIKE Pattern Edge Case",
+                        "code": "WITH t(id, name) AS (\n  VALUES (1,'Alice'), (2,'Mark'), (3,'Sara'), (4,'James')\n)\nSELECT COUNT(*)\nFROM t\nWHERE name LIKE '%a%a%';",
+                        "question": "How many rows match?",
+                        "options": ["0", "1", "2", "3"],
+                        "correct": "B",
+                        "explanation": "Only 'Sara' has two 'a' letters; count is 1."
                     }
                     ]
                     """,
@@ -177,7 +177,7 @@ PROMPT_TEMPLATES = {
 
                     DO NOT copy these examples - create completely new questions about {{topic}}.
                     """,
-                    
+
     "scenario": """
                 You are a Senior {{subject}} (system design) expert creating SHORT-FORM content for Instagram reels.
 

@@ -25,7 +25,7 @@ class ImageRenderer:
         self.CODE_INNER_PADDING_X = 24
         self.CODE_MAX_WIDTH = self.WIDTH - (self.PADDING_X * 2) - 40
         # Colors (match CTA theme)
-        self.BG_COLOR = (9, 12, 24)
+        self.BG_COLOR = (9, 12, 24) # 
         self.CARD_COLOR = (11, 18, 32)
         self.CODE_BG = (15, 23, 42)
         self.TEXT_COLOR = (226, 232, 240)
@@ -37,12 +37,15 @@ class ImageRenderer:
         self.TEXT_SECONDARY = (160, 174, 192)
         self.DIVIDER_COLOR = (30, 41, 59)  # subtle line
         self.SUBJECT_ACCENTS = {
-            "python": (76, 201, 240), # cyan
-            "sql": (99, 179, 237), # blue
-            "regex": (255, 230, 130), # yellow
-            "linux": (72, 187, 120), # green
-            "javascript": (255, 223, 99), # gold
-            "rust": (237, 125, 49), # orange
+            "python": (19, 88, 174),      # cyan
+            "sql": (88, 157, 246),         # azure
+            "regex": (255, 107, 107),       # amber
+            "linux": (72, 187, 120),       # green
+            "javascript": (255, 223, 99),  # gold
+            "rust": (237, 125, 49),        # orange
+            "system_design": (129, 140, 248),  # indigo
+            "docker_k8s": (59, 130, 246),      # kubernetes blue
+            "golang": (0, 173, 216),           # go cyan
         }
 
         # Fonts
@@ -926,9 +929,9 @@ class ImageRenderer:
         Saved once and reused for all reels.
         """
         out_path = Path(f"output/{subject}/images/cta/day1_new.png")
-        if out_path.exists():
-            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-            return
+        # if out_path.exists():
+        #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+        #     return
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1016,9 +1019,9 @@ class ImageRenderer:
         Saved once and reused for all reels.
         """
         out_path = Path(f"output/{subject}/images/cta/day2_new.png")
-        if out_path.exists():
-            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-            return
+        # if out_path.exists():
+        #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+        #     return
 
         TITLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 84)
         TEXT_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 48)
@@ -1103,11 +1106,11 @@ class ImageRenderer:
         Render a welcome image: 'Welcome to Daily Dose of Python'
         """
         out_path = Path(f"output/{subject}/images/welcome/welcome_new.png")
-        if out_path.exists():
-            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-            return
+        # if out_path.exists():
+        #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+        #     return
 
-        overlay_path = Path(f"pybender/assets/backgrounds/{subject}_img.png")
+        overlay_path = Path(f"pybender/assets/backgrounds/{subject}_img_new.png")
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
 
@@ -1210,7 +1213,7 @@ class ImageRenderer:
         # --------------------------------------------------
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
-
+        print(f"Welcome image saved → {out_path}")
 
     def main(self, questions_per_run: int, subject: str = "python") -> Path:
 
@@ -1311,12 +1314,14 @@ class ImageRenderer:
         print("Image rendering process completed successfully")
         return metadata_path
 
-# if __name__ == "__main__":
-#     renderer = ImageRenderer()
-#     # subjects = ["python", "system_design", "docker_k8s"]
-#     subjects = [
-#         "python", "sql", "regex", "system_design", "linux"
-#         ,"docker_k8s", "javascript", "rust", "golang"
-#     ]
-#     for subject in subjects:
-#         renderer.main(1, subject)
+if __name__ == "__main__":
+    renderer = ImageRenderer()
+    # subjects = ["python", "system_design", "docker_k8s"]
+    subjects = [
+        "python", "sql", "regex", "system_design", "linux"
+        ,"docker_k8s", "javascript", "rust", "golang"
+    ]
+    for subject in subjects:
+        # renderer.render_welcome_image(subject)
+        renderer.render_day1_cta_image(subject)
+        renderer.render_day2_cta_image(subject)
