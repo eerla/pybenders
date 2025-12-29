@@ -1240,7 +1240,8 @@ class ImageRenderer:
         answer_dir = base_img_dir / "answers"
         single_dir = base_img_dir / "singles"
 
-        run_dir = Path(f"output/{subject}/runs") / RUN_ID
+        run_dir = Path(f"output/{subject}/runs")
+
         for d in [question_dir, answer_dir, single_dir, run_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
@@ -1292,7 +1293,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Write metadata.json (single source of truth)
         # --------------------------------------------------
-        metadata_path = run_dir / "metadata.json"
+        metadata_path = run_dir / f"{RUN_ID}_metadata.json"
         with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
 
