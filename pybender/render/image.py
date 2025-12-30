@@ -124,7 +124,6 @@ class ImageRenderer:
         self.draw.text((x, self.y_cursor), text, font=self.HEADER_FONT, fill=self.SUBTLE_TEXT)
         self.y_cursor += bbox[3] + 30
 
-
     # --------- TITLE ----------
     def _draw_title(self, title: str):
         bbox = self.draw.textbbox((0, 0), title, font=self.TITLE_FONT)
@@ -132,10 +131,18 @@ class ImageRenderer:
         self.draw.text((x, self.y_cursor), title, font=self.TITLE_FONT, fill=self.ACCENT_COLOR)
         self.y_cursor += bbox[3] + 30
 
-
-    # ---------- SCENARIO ----------
-    def _draw_scenario(self, canvas, scenario_text: str, prefix: str = "Q:"):
+    # ---------- SCENARIO (STYLED) ----------
+    def _draw_scenario_styled(self, canvas, scenario_text: str, prefix: str = "Q:"):
+        """
+        Draw scenario with clean, subtle styling - minimal and modern.
+        Features:
+        - Slightly lighter background (subtle elevation)
+        - Thin accent border (cleaner than heavy bar)
+        - No competing visual elements with options
+        - Compact and professional
+        """
         scenario_text = scenario_text.replace("\\n", " ")
+        
         # Measure the prefix in pixels and wrap the first line using the reduced width.
         prefix_width = self.draw.textlength(f"{prefix} ", font=self.TEXT_FONT)
         lines = self.wrap_text_with_prefix(
@@ -146,34 +153,69 @@ class ImageRenderer:
             prefix_width,
         )
         
+        # Configuration
+        scenario_padding = 16
+        
+        # Calculate block height - match plain version height
+        block_height = len(lines) * 50 + scenario_padding * 2
+        
+        # Draw slightly lighter background (subtle elevation effect)
+        lighter_bg = tuple(min(c + 4, 255) for c in self.CARD_COLOR)
+        self.draw.rounded_rectangle(
+            [
+                self.content_x - 10,
+                self.y_cursor,
+                self.WIDTH - self.content_x + 10,
+                self.y_cursor + block_height,
+            ],
+            radius=16,
+            fill=lighter_bg,
+        )
+        
+        # Draw thin accent border (cleaner than bar)
+        self.draw.rounded_rectangle(
+            [
+                self.content_x - 10,
+                self.y_cursor,
+                self.WIDTH - self.content_x + 10,
+                self.y_cursor + block_height,
+            ],
+            radius=16,
+            outline=self.ACCENT_COLOR,
+            width=1,
+        )
+        
+        # Draw text lines with proper alignment
+        text_y = self.y_cursor + scenario_padding
         for i, line in enumerate(lines):
             line_prefix = f"{prefix} " if i == 0 else ""
             if line_prefix:
                 # Draw prefix in accent color
                 self.draw.text(
-                    (self.content_x, self.y_cursor),
+                    (self.content_x + 8, text_y),
                     line_prefix,
                     font=self.TEXT_FONT,
                     fill=self.ACCENT_COLOR
                 )
                 # Draw rest of line in regular text color
-                prefix_width = self.draw.textlength(line_prefix, font=self.TEXT_FONT)
+                prefix_pixel_width = self.draw.textlength(line_prefix, font=self.TEXT_FONT)
                 self.draw.text(
-                    (self.content_x + prefix_width, self.y_cursor),
+                    (self.content_x + 8 + prefix_pixel_width, text_y),
                     line,
                     font=self.TEXT_FONT,
                     fill=self.TEXT_COLOR
                 )
             else:
                 self.draw.text(
-                    (self.content_x, self.y_cursor),
+                    (self.content_x + 8, text_y),
                     line,
                     font=self.TEXT_FONT,
                     fill=self.TEXT_COLOR
                 )
-            self.y_cursor += 50
+            text_y += 50
         
-        self.y_cursor += 20
+
+        self.y_cursor += block_height + 20
 
     # ---------- SQL RESULT TABLE ----------
     def _draw_sql_result_table(self, canvas, table: dict | None): # not used currently
@@ -714,7 +756,7 @@ class ImageRenderer:
         # font = ImageFont.truetype("assets/fonts/Inter-Regular.ttf", 40)
 
         max_width = self.WIDTH - (self.PADDING_X * 2)
-        line_height = 50
+        line_height = 32
         box_padding_y = 18
         option_gap = 14
 
@@ -783,7 +825,7 @@ class ImageRenderer:
         draw = self.draw
         font = self.TEXT_FONT
         max_width = self.WIDTH - (self.PADDING_X * 2)
-        line_height = 45
+        line_height = 32
         padding = 18
         option_gap = 14
 
@@ -845,7 +887,7 @@ class ImageRenderer:
         draw = self.draw
         font = self.TEXT_FONT
         max_width = self.WIDTH - (self.PADDING_X * 2)
-        line_height = 50
+        line_height = 32
         padding = 18
 
         correct_idx = ord(correct.upper()) - 65
@@ -1236,7 +1278,7 @@ class ImageRenderer:
         elif mode == RenderMode.ANSWER:
             header = f"{subject.replace('_', ' ').title()} Answer"
         else:
-            header = subject.upper()
+            header = subject.replace('_', ' ').title()
 
         self._draw_header(canvas, header)
         self._draw_title(question.title)
@@ -1245,8 +1287,11 @@ class ImageRenderer:
         # ----------- SCENARIO TEXT ---------- 
         # Scenario included inline for docker_k8s/system_design in QUESTION and SINGLE modes
         # (has_code is false for these, so scenario replaces code position)
+        # print("Layout profile:", layout_profile)
+        # print(question.scenario)
         if layout_profile.has_scenario and question.scenario and mode in (RenderMode.QUESTION, RenderMode.SINGLE):
-            self._draw_scenario(canvas, question.scenario, prefix="Setup:")
+            print("Drawing scenario inline...")
+            self._draw_scenario_styled(canvas, question.scenario, prefix="Setup:")
 
         # ---------- CODE BLOCK ----------
         # Code comes after scenario for scenario-based questions (docker_k8s, system_design)
@@ -1254,7 +1299,8 @@ class ImageRenderer:
             self._draw_code(canvas, question.code, layout_profile.code_style, subject=subject)
 
         # ----------- QUESTION TEXT ----------
-        self._draw_scenario(canvas, question.question)
+        self._draw_scenario_styled(canvas, question.question)
+
         # ---------- OPTIONS ----------
         if layout_profile.has_options:
             if mode == RenderMode.QUESTION:
@@ -1271,6 +1317,7 @@ class ImageRenderer:
                     question.options,
                     question.correct,
                 )
+        
         # ---------- EXPLANATION ----------
         if layout_profile.has_explanation and mode in (RenderMode.ANSWER, RenderMode.SINGLE):
             self._draw_explanation(canvas, question.explanation)
@@ -1598,7 +1645,7 @@ class ImageRenderer:
         questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)  # get from LLM
         # with open("output/questions.json", "r") as f:
         #     questions_data = json.load(f)
-        #     topic, content_type = "python", "code_output"
+        #     topic, content_type = "system_design", "scenario"
         #     # topic, content_type = "javascript", "code_output"
         #     questions = [Question(**q) for q in questions_data]
         
@@ -1682,14 +1729,16 @@ class ImageRenderer:
 
 if __name__ == "__main__":
     renderer = ImageRenderer()
-    subjects = ["system_design"]
+    subjects = ["python"]
     # subjects = [
-    #     # "python", "sql", "regex", "system_design", 
+    #     "python", "sql", "regex", "system_design", 
     #     "linux"
     #     ,"docker_k8s", "javascript", "rust", "golang"
     # ]
+    import time
     for subject in subjects:
         # renderer.render_welcome_image(subject)
         # renderer.render_day1_cta_image(subject)
         # renderer.render_day2_cta_image(subject)
         renderer.main(1, subject=subject)
+        time.sleep(2)

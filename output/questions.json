@@ -1,15 +1,12 @@
 [
     {
-        "title": "Closure variable binding",
-        "code": "def make_funcs():\n    return [lambda x: x + i for i in range(3)]\nfuncs = make_funcs()\nresults = [f(10) for f in funcs]\nprint(results)",
-        "question": "What is the output?",
-        "options": [
-            "[10, 11, 12]",
-            "[12, 12, 12]",
-            "[10, 10, 10]",
-            "[11, 12, 13]"
-        ],
+        "id": "q01",
+        "title": "E-commerce Platform RPO vs RTO",
+        "scenario": "E-commerce site with high transaction volume and global reach.",
+        "code": "",
+        "question": "In choosing between RTO and RPO, which focuses on minimizing data loss in case of failure for user orders?",
+        "options": ["RTO", "RPO", "Both are the same", "None of the above"],
         "correct": "B",
-        "explanation": "The lambdas capture the variable 'i' by reference, not by value. When the functions are called later, 'i' is 2 (last loop value), so all return x + 2 = 12."
+        "explanation": "RPO represents the maximum tolerable data loss in terms of time, crucial for preserving user transactions."
     }
 ]
