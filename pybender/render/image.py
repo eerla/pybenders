@@ -358,30 +358,115 @@ class ImageRenderer:
 
         self.y_cursor += block_height + 20
 
+
     def _draw_terminal_code(self, canvas, code: str):
         font = self.CODE_FONT
         line_height = 48
-        max_width = self.WIDTH - (self.PADDING_X * 2) - 40 
-
+        max_width = self.WIDTH - (self.PADDING_X * 2) - 40
+        terminal_padding = 20
+        
+        # Terminal colors (Linux/Ubuntu style)
+        TERMINAL_BG = (24, 24, 24)  # Dark gray/black
+        TERMINAL_BORDER = (51, 51, 51)  # Slightly lighter for border
+        TERMINAL_GREEN = (166, 226, 46)  # Command prompt green
+        TERMINAL_HEADER_BG = (40, 40, 40)  # Header bar color
+        TERMINAL_DOT_CLOSE = (255, 95, 86)  # Red dot
+        TERMINAL_DOT_MINIMIZE = (255, 189, 46)  # Yellow dot
+        TERMINAL_DOT_MAXIMIZE = (40, 201, 64)  # Green dot
+        
         bg_height_start = self.y_cursor
-
+        
+        # Calculate total height needed
+        wrapped_lines = []
         for line in code:
             line = line.strip()
             if line:
                 line = f"$ {line}"
-
             wrapped = self.wrap_code_line(self.draw, line, font, max_width)
-            for wline in wrapped:
-                self.draw.text(
-                    (self.PADDING_X, self.y_cursor),
-                    wline,
-                    font=font,
-                    fill=(166, 226, 46),  # terminal green
-                )
-                self.y_cursor += line_height
+            wrapped_lines.extend(wrapped)
+        
+        # Terminal block dimensions
+        header_height = 40
+        content_height = len(wrapped_lines) * line_height + terminal_padding * 2
+        total_height = header_height + content_height
+        
+        # Draw main terminal background
+        self.draw.rounded_rectangle(
+            [
+                self.PADDING_X,
+                self.y_cursor,
+                self.WIDTH - self.PADDING_X,
+                self.y_cursor + total_height,
+            ],
+            radius=12,
+            fill=TERMINAL_BG,
+            outline=TERMINAL_BORDER,
+            width=2
+        )
+        
+        # Draw terminal header bar (like Ubuntu terminal)
+        self.draw.rounded_rectangle(
+            [
+                self.PADDING_X,
+                self.y_cursor,
+                self.WIDTH - self.PADDING_X,
+                self.y_cursor + header_height,
+            ],
+            radius=12,
+            fill=TERMINAL_HEADER_BG
+        )
+        
+        # Draw window control dots (macOS/Ubuntu style)
+        dot_y = self.y_cursor + header_height // 2
+        dot_radius = 6
+        dot_spacing = 20
+        start_x = self.PADDING_X + 16
+        
+        # Close (red)
+        self.draw.ellipse(
+            [start_x, dot_y - dot_radius, start_x + dot_radius * 2, dot_y + dot_radius],
+            fill=TERMINAL_DOT_CLOSE
+        )
+        # Minimize (yellow)
+        self.draw.ellipse(
+            [start_x + dot_spacing, dot_y - dot_radius, start_x + dot_spacing + dot_radius * 2, dot_y + dot_radius],
+            fill=TERMINAL_DOT_MINIMIZE
+        )
+        # Maximize (green)
+        self.draw.ellipse(
+            [start_x + dot_spacing * 2, dot_y - dot_radius, start_x + dot_spacing * 2 + dot_radius * 2, dot_y + dot_radius],
+            fill=TERMINAL_DOT_MAXIMIZE
+        )
+        
+        # Optional: Terminal title
+        title_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 28)
+        title = "terminal"
+        title_bbox = self.draw.textbbox((0, 0), title, font=title_font)
+        title_x = (self.WIDTH - (title_bbox[2] - title_bbox[0])) // 2
+        self.draw.text(
+            (title_x, self.y_cursor + 8),
+            title,
+            font=title_font,
+            fill=(160, 160, 160)
+        )
+        
+        # Move cursor past header
+        self.y_cursor += header_height + terminal_padding
+        
+        # Draw terminal commands
+        text_x = self.PADDING_X + terminal_padding
+        for wline in wrapped_lines:
+            self.draw.text(
+                (text_x, self.y_cursor),
+                wline,
+                font=font,
+                fill=TERMINAL_GREEN,
+            )
+            self.y_cursor += line_height
+        
+        # Add bottom padding
+        self.y_cursor += terminal_padding + 20
 
-        # Optional: terminal block padding
-        self.y_cursor += 20
 
     def _draw_inline_badge(self, text: str, color: str): # not used currently
         font = self.BADGE_FONT
@@ -1409,15 +1494,15 @@ class ImageRenderer:
         print("Image rendering process completed successfully")
         return metadata_path
 
-# if __name__ == "__main__":
-#     renderer = ImageRenderer()
-#     subjects = ["system_design"]
-#     # subjects = [
-#     #     "python", "sql", "regex", "system_design", "linux"
-#     #     ,"docker_k8s", "javascript", "rust", "golang"
-#     # ]
-#     for subject in subjects:
-#         # renderer.render_welcome_image(subject)
-#         # renderer.render_day1_cta_image(subject)
-#         # renderer.render_day2_cta_image(subject)
-#         renderer.main(1, subject=subject)
+if __name__ == "__main__":
+    renderer = ImageRenderer()
+    subjects = ["linux"]
+    # subjects = [
+    #     "python", "sql", "regex", "system_design", "linux"
+    #     ,"docker_k8s", "javascript", "rust", "golang"
+    # ]
+    for subject in subjects:
+        # renderer.render_welcome_image(subject)
+        # renderer.render_day1_cta_image(subject)
+        # renderer.render_day2_cta_image(subject)
+        renderer.main(1, subject=subject)
