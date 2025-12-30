@@ -49,21 +49,21 @@ class ImageRenderer:
             "golang": (0, 173, 216),           # go cyan
         }
         
-        # self.base_dir = Path("output")
-        self.base_dir = Path(r"G:\My Drive\output")  # Change to google drive path
+        self.base_dir = Path("output")
+        # self.base_dir = Path(r"G:\My Drive\output")  # Change to google drive path
         # Fonts
         self.FONT_DIR = Path("pybender/assets/fonts")
         self.INTER_FONT_DIR = self.FONT_DIR / "Inter-4.1" / "extras" / "ttf"
         self.JETBRAINS_MONO_FONT_DIR = self.FONT_DIR / "JetBrainsMono-2.304" / "fonts" / "ttf"
         self.TITLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 48)
-        self.TEXT_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 48)
-        self.CODE_FONT = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "JetBrainsMono-Regular.ttf"), 48)
-        self.HEADER_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 48)
+        self.TEXT_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 38)
+        self.CODE_FONT = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "JetBrainsMono-Regular.ttf"), 38)
+        self.HEADER_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 44)
         self.FOOTER_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 36)
         self.TABLE_HEADER_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 36)
         self.TABLE_CELL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 36)
         self.BADGE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 36)
-        self.SMALL_LABEL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 32)
+        self.SMALL_LABEL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 38)
         # self.REGEX_FONT = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "FiraCode-Regular.ttf"), 48)
 
         # Logo config
@@ -71,6 +71,25 @@ class ImageRenderer:
         self.LOGO_HEIGHT = 40  # 40x120 pixels
         self.LOGO_WIDTH = 60  # 40x120 pixels
         self.LOGO_PADDING = 20  # 20px from edges
+
+        # IDE-style code config
+        self.IDE_CODE_STYLE = True  # Set to False to use plain code blocks
+        self.IDE_HEADER_HEIGHT = 36
+        self.IDE_GUTTER_WIDTH = 45
+        self.IDE_HEADER_BG = (20, 26, 40)  # Darker than CODE_BG
+        self.IDE_GUTTER_BG = (13, 19, 36)  # Even darker
+        self.IDE_LINE_NUMBER_COLOR = (100, 116, 139)  # Subtle gray
+        self.LANGUAGE_MAP = {
+            "python": "Python",
+            "javascript": "JavaScript",
+            "rust": "Rust",
+            "golang": "Go",
+            "sql": "SQL",
+            "regex": "Regex",
+            "system_design": "Design",
+            "docker_k8s": "YAML",
+            "linux": "Bash",
+        }
 
     # ---------- BASE CANVAS ----------
     def _create_base_canvas(self, subject: str) -> Image.Image:
@@ -308,6 +327,164 @@ class ImageRenderer:
         draw_block("Input", input_text, "#5DA9E9")
         draw_block("Match", match_text, "#4ADE80")
 
+    # ---------- CODE (IDE STYLE) ----------
+    def _draw_editor_code_with_ide(self, canvas, code: str, subject: str):
+        """
+        Draw code with IDE-style header bar and line numbers.
+        Line numbers sync with source lines, not wrapped display lines.
+        Only shows line number on first wrapped line of each source line.
+        """
+        font = self.CODE_FONT
+        line_height = 48
+        max_width = self.WIDTH - (self.PADDING_X * 2) - 40 - self.IDE_GUTTER_WIDTH
+
+        # Wrap code lines and track which source line each wrapped line belongs to
+        wrapped_with_line_map = []  # List of (wrapped_line, source_line_num, is_first_of_source)
+        for src_line_idx, src_line in enumerate(code, start=1):
+            wrapped = self.wrap_code_line(self.draw, src_line, font, max_width)
+            for wrap_idx, wline in enumerate(wrapped):
+                is_first = (wrap_idx == 0)  # Only the first wrapped line gets the line number
+                wrapped_with_line_map.append((wline, src_line_idx, is_first))
+
+        wrapped_lines = [item[0] for item in wrapped_with_line_map]
+        code_block_height = len(wrapped_lines) * line_height + 30
+
+        # Draw unified IDE window (header + code as one block)
+        total_height = self.IDE_HEADER_HEIGHT + code_block_height
+        self.draw.rounded_rectangle(
+            [
+                self.PADDING_X,
+                self.y_cursor,
+                self.WIDTH - self.PADDING_X,
+                self.y_cursor + total_height,
+            ],
+            radius=18,
+            fill=self.CODE_BG,
+        )
+
+        # Draw header section on top
+        self.draw.rectangle(
+            [
+                self.PADDING_X,
+                self.y_cursor,
+                self.WIDTH - self.PADDING_X,
+                self.y_cursor + self.IDE_HEADER_HEIGHT,
+            ],
+            fill=self.IDE_HEADER_BG,
+        )
+
+        # Re-apply rounded corners to header top
+        self.draw.rounded_rectangle(
+            [
+                self.PADDING_X,
+                self.y_cursor,
+                self.WIDTH - self.PADDING_X,
+                self.y_cursor + self.IDE_HEADER_HEIGHT,
+            ],
+            radius=18,
+            fill=self.IDE_HEADER_BG,
+            corners=(True, True, False, False)  # Only round top corners
+        )
+
+        # Draw window control dots in header (macOS/VS Code style)
+        dot_y = self.y_cursor + self.IDE_HEADER_HEIGHT // 2
+        dot_radius = 5
+        dot_spacing = 16
+        start_x = self.PADDING_X + 12
+        
+        # Close (red)
+        self.draw.ellipse(
+            [start_x, dot_y - dot_radius, start_x + dot_radius * 2, dot_y + dot_radius],
+            fill=(255, 95, 86)
+        )
+        # Minimize (yellow)
+        self.draw.ellipse(
+            [start_x + dot_spacing, dot_y - dot_radius, start_x + dot_spacing + dot_radius * 2, dot_y + dot_radius],
+            fill=(255, 189, 46)
+        )
+        # Maximize (green)
+        self.draw.ellipse(
+            [start_x + dot_spacing * 2, dot_y - dot_radius, start_x + dot_spacing * 2 + dot_radius * 2, dot_y + dot_radius],
+            fill=(40, 201, 64)
+        )
+
+        # Draw language badge in header (vertically centered)
+        language = self.LANGUAGE_MAP.get(subject, subject.title())
+        badge_text = f"  daily dose of programming  "
+        
+        # Get text bounding box for vertical centering
+        bbox = self.draw.textbbox((0, 0), badge_text, font=self.SMALL_LABEL_FONT)
+        text_height = bbox[3] - bbox[1]
+        text_width = self.draw.textlength(badge_text, font=self.SMALL_LABEL_FONT)
+        
+        # Calculate dots area width (3 dots + spacing on left side)
+        dots_area_width = 12 + (dot_radius * 2) + dot_spacing + (dot_radius * 2) + dot_spacing + (dot_radius * 2) + 12
+        
+        # Center text horizontally, then shift LEFT by half the dots width to compensate
+        badge_x = (self.WIDTH - text_width) // 2 - (dots_area_width // 2)
+        
+        # Center text vertically in header
+        badge_y = self.y_cursor + (self.IDE_HEADER_HEIGHT - text_height) // 2
+        
+        self.draw.text(
+            (badge_x, badge_y),
+            badge_text,
+            font=self.CODE_FONT,
+            fill=self.SUBTLE_TEXT,
+        )
+
+        # Move cursor to code section
+        code_y_start = self.y_cursor + self.IDE_HEADER_HEIGHT
+
+        # Draw gutter background
+        self.draw.rectangle(
+            [
+                self.PADDING_X,
+                code_y_start,
+                self.PADDING_X + self.IDE_GUTTER_WIDTH,
+                code_y_start + code_block_height,
+            ],
+            fill=self.IDE_GUTTER_BG,
+        )
+
+        # Draw gutter separator line
+        self.draw.line(
+            [
+                self.PADDING_X + self.IDE_GUTTER_WIDTH,
+                code_y_start,
+                self.PADDING_X + self.IDE_GUTTER_WIDTH,
+                code_y_start + code_block_height,
+            ],
+            fill=(25, 32, 47),
+            width=5
+        )
+
+        # Draw line numbers and code
+        text_x = self.PADDING_X + self.IDE_GUTTER_WIDTH + 12
+        text_y = code_y_start + 15
+
+        for wline, src_line_num, is_first in wrapped_with_line_map:
+            # Draw line number only for first wrapped line of each source line
+            if is_first:
+                self.draw.text(
+                    (self.PADDING_X + 8, text_y),
+                    str(src_line_num),
+                    font=self.SMALL_LABEL_FONT,
+                    fill=self.IDE_LINE_NUMBER_COLOR,
+                )
+
+            # Draw code
+            self.draw.text(
+                (text_x, text_y),
+                wline,
+                font=font,
+                fill=self.TEXT_COLOR,
+            )
+            
+            text_y += line_height
+
+        self.y_cursor += total_height + 20
+    
     # ---------- CODE ----------
     def _draw_editor_code(self, canvas, code: str):
         font = self.CODE_FONT
@@ -497,7 +674,7 @@ class ImageRenderer:
 
         self.y_cursor += box_h + 12
 
-    def _draw_code(self, canvas, code, code_style: str | None):
+    def _draw_code(self, canvas, code, code_style: str | None, subject: str | None = None):
         if code_style is None:
             return
 
@@ -519,10 +696,17 @@ class ImageRenderer:
         #         match=content.get("match", ""),
         #     )   # stub for now
         elif code_style == "editor":
-            self._draw_editor_code(canvas, code) 
+            # Use IDE-style if enabled and subject provided
+            if self.IDE_CODE_STYLE and subject:
+                self._draw_editor_code_with_ide(canvas, code, subject)
+            else:
+                self._draw_editor_code(canvas, code)
         else:
-            self._draw_editor_code(canvas, code)
             # default editor style - all programming languages + system design + docker_k8s
+            if self.IDE_CODE_STYLE and subject:
+                self._draw_editor_code_with_ide(canvas, code, subject)
+            else:
+                self._draw_editor_code(canvas, code)
 
     # ---------- OPTIONS ----------
     def _draw_options(self, canvas, options: list[str]):
@@ -599,7 +783,7 @@ class ImageRenderer:
         draw = self.draw
         font = self.TEXT_FONT
         max_width = self.WIDTH - (self.PADDING_X * 2)
-        line_height = 50
+        line_height = 45
         padding = 18
         option_gap = 14
 
@@ -1067,7 +1251,7 @@ class ImageRenderer:
         # ---------- CODE BLOCK ----------
         # Code comes after scenario for scenario-based questions (docker_k8s, system_design)
         if layout_profile.has_code and question.code:
-            self._draw_code(canvas, question.code, layout_profile.code_style)
+            self._draw_code(canvas, question.code, layout_profile.code_style, subject=subject)
 
         # ----------- QUESTION TEXT ----------
         self._draw_scenario(canvas, question.question)
@@ -1426,7 +1610,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Output directories (type-based)
         # --------------------------------------------------
-        base_img_dir = self.base_dir / subject / "images"
+        base_img_dir = self.base_dir / "test" / "images"
         question_dir = base_img_dir / "questions"
         answer_dir = base_img_dir / "answers"
         single_dir = base_img_dir / "singles"
@@ -1485,8 +1669,8 @@ class ImageRenderer:
         # Write metadata.json (single source of truth)
         # --------------------------------------------------
         metadata_path = run_dir / f"{RUN_ID}_metadata.json"
-        with open(metadata_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
+        # with open(metadata_path, "w", encoding="utf-8") as f:
+        #     json.dump(metadata, f, indent=2)
 
         print(f"Metadata written to {metadata_path}")
         # TODO: create separate welcome pages per subject
@@ -1496,15 +1680,16 @@ class ImageRenderer:
         print("Image rendering process completed successfully")
         return metadata_path
 
-# if __name__ == "__main__":
-#     renderer = ImageRenderer()
-#     # subjects = ["linux"]
-#     subjects = [
-#         "python", "sql", "regex", "system_design", "linux"
-#         ,"docker_k8s", "javascript", "rust", "golang"
-#     ]
-#     for subject in subjects:
-#         renderer.render_welcome_image(subject)
-#         renderer.render_day1_cta_image(subject)
-#         renderer.render_day2_cta_image(subject)
-        # renderer.main(1, subject=subject)
+if __name__ == "__main__":
+    renderer = ImageRenderer()
+    subjects = ["system_design"]
+    # subjects = [
+    #     # "python", "sql", "regex", "system_design", 
+    #     "linux"
+    #     ,"docker_k8s", "javascript", "rust", "golang"
+    # ]
+    for subject in subjects:
+        # renderer.render_welcome_image(subject)
+        # renderer.render_day1_cta_image(subject)
+        # renderer.render_day2_cta_image(subject)
+        renderer.main(1, subject=subject)

@@ -50,6 +50,7 @@ class QuestionGenerator:
         try:
             print(f"🧠 Generating {n} questions via LLM for {subject} on topic: {topic}")
             raw = self.get_llm_response(prompt)
+            print(f"💬 Raw LLM response:\n{raw}\n")
             if not raw or not raw.strip():
                 raise ValueError(f"LLM returned empty response for subject {subject} on topic {topic}")
             
