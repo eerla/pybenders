@@ -48,7 +48,9 @@ class ImageRenderer:
             "docker_k8s": (59, 130, 246),      # kubernetes blue
             "golang": (0, 173, 216),           # go cyan
         }
-
+        
+        # self.base_dir = Path("output")
+        self.base_dir = Path(r"G:\My Drive\output")  # Change to google drive path
         # Fonts
         self.FONT_DIR = Path("pybender/assets/fonts")
         self.INTER_FONT_DIR = self.FONT_DIR / "Inter-4.1" / "extras" / "ttf"
@@ -1107,10 +1109,10 @@ class ImageRenderer:
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = Path(f"output/{subject}/images/cta/day1_new.png")
-        # if out_path.exists():
-        #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-        #     return
+        out_path = self.base_dir / subject / "images" / "cta" / "day1.png"
+        if out_path.exists():
+            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+            return
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1197,10 +1199,10 @@ class ImageRenderer:
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = Path(f"output/{subject}/images/cta/day2_new.png")
-        # if out_path.exists():
-        #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-        #     return
+        out_path = self.base_dir / subject / "images" / "cta" / "day2.png"
+        if out_path.exists():
+            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+            return
 
         TITLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 84)
         TEXT_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 48)
@@ -1284,10 +1286,10 @@ class ImageRenderer:
         """
         Render a welcome image: 'Welcome to Daily Dose of Python'
         """
-        out_path = Path(f"output/{subject}/images/welcome/welcome_new.png")
-        # if out_path.exists():
-        #     print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-        #     return
+        out_path =  self.base_dir / subject / "images" / "welcome" / "welcome.png"
+        if out_path.exists():
+            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+            return
 
         overlay_path = Path(f"pybender/assets/backgrounds/{subject}_img_new.png")
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
@@ -1424,12 +1426,12 @@ class ImageRenderer:
         # --------------------------------------------------
         # Output directories (type-based)
         # --------------------------------------------------
-        base_img_dir = Path(f"output/{subject}/images")
+        base_img_dir = self.base_dir / subject / "images"
         question_dir = base_img_dir / "questions"
         answer_dir = base_img_dir / "answers"
         single_dir = base_img_dir / "singles"
 
-        run_dir = Path(f"output/{subject}/runs")
+        run_dir = self.base_dir / subject / "runs"
 
         for d in [question_dir, answer_dir, single_dir, run_dir]:
             d.mkdir(parents=True, exist_ok=True)
@@ -1494,15 +1496,15 @@ class ImageRenderer:
         print("Image rendering process completed successfully")
         return metadata_path
 
-if __name__ == "__main__":
-    renderer = ImageRenderer()
-    subjects = ["linux"]
-    # subjects = [
-    #     "python", "sql", "regex", "system_design", "linux"
-    #     ,"docker_k8s", "javascript", "rust", "golang"
-    # ]
-    for subject in subjects:
-        # renderer.render_welcome_image(subject)
-        # renderer.render_day1_cta_image(subject)
-        # renderer.render_day2_cta_image(subject)
-        renderer.main(1, subject=subject)
+# if __name__ == "__main__":
+#     renderer = ImageRenderer()
+#     # subjects = ["linux"]
+#     subjects = [
+#         "python", "sql", "regex", "system_design", "linux"
+#         ,"docker_k8s", "javascript", "rust", "golang"
+#     ]
+#     for subject in subjects:
+#         renderer.render_welcome_image(subject)
+#         renderer.render_day1_cta_image(subject)
+#         renderer.render_day2_cta_image(subject)
+        # renderer.main(1, subject=subject)
