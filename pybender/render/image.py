@@ -49,8 +49,10 @@ class ImageRenderer:
             "golang": (0, 173, 216),           # go cyan
         }
         
-        self.base_dir = Path("output")
-        # self.base_dir = Path(r"G:\My Drive\output")  # Change to google drive path
+        self.BASE_DIR = Path("output")
+        self.WRITE_METADATA = True  # Set to True to write metadata.json
+        self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
+        # self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
         # Fonts
         self.FONT_DIR = Path("pybender/assets/fonts")
         self.INTER_FONT_DIR = self.FONT_DIR / "Inter-4.1" / "extras" / "ttf"
@@ -73,8 +75,6 @@ class ImageRenderer:
         self.LOGO_PADDING = 20  # 20px from edges
 
         # IDE-style code config
-        self.WRITE_METADATA = False  # Set to True to write metadata.json
-        self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
         self.IDE_CODE_STYLE = True  # Set to False to use plain code blocks
         self.IDE_HEADER_HEIGHT = 36
         self.IDE_GUTTER_WIDTH = 45
@@ -133,7 +133,7 @@ class ImageRenderer:
         self.draw.text((x, self.y_cursor), title, font=self.TITLE_FONT, fill=self.ACCENT_COLOR)
         self.y_cursor += bbox[3] + 30
 
-    # ---------- SCENARIO (STYLED) ----------
+    # ---------- SCENARIO (STYLED) - docker & system design ----------
     def _draw_scenario_styled(self, canvas, scenario_text: str, prefix: str = "Q:"):
         """
         Draw scenario with clean, subtle styling - minimal and modern.
@@ -218,158 +218,6 @@ class ImageRenderer:
         
 
         self.y_cursor += block_height + 20
-
-    # ---------- SQL RESULT TABLE ----------
-    def _draw_sql_result_table(self, canvas, table: dict | None): # not used currently
-        if not table:
-            return
-
-        columns = table.get("columns", [])
-        rows = table.get("rows", [])
-
-        if not columns or not rows:
-            return
-
-        font_header = self.TABLE_HEADER_FONT
-        font_cell = self.TABLE_CELL_FONT
-
-        cell_padding_x = 18
-        cell_padding_y = 12
-        row_height = 52
-
-        # Calculate column widths
-        col_widths = []
-        for col_idx, col in enumerate(columns):
-            max_text_width = self.draw.textlength(col, font=font_header)
-            for row in rows:
-                cell_text = str(row[col_idx])
-                max_text_width = max(
-                    max_text_width,
-                    self.draw.textlength(cell_text, font=font_cell),
-                )
-            col_widths.append(max_text_width + cell_padding_x * 2)
-
-        table_width = sum(col_widths)
-        x = (self.WIDTH - table_width) // 2
-        y = self.y_cursor
-
-        # Background
-        total_height = row_height * (len(rows) + 1)
-        self.draw.rounded_rectangle(
-            [x, y, x + table_width, y + total_height],
-            radius=16,
-            fill=self.CODE_BG,
-        )
-
-        # Accent bar
-        self.draw.rectangle(
-            [x, y, x + 6, y + total_height],
-            fill=self.ACCENT_COLOR,
-        )
-
-        # Header row
-        cx = x
-        for idx, col in enumerate(columns):
-            self.draw.text(
-                (cx + cell_padding_x, y + cell_padding_y),
-                col,
-                font=font_header,
-                fill=self.TEXT_COLOR,
-            )
-            cx += col_widths[idx]
-
-        # Divider
-        y += row_height
-        self.draw.line(
-            [x, y, x + table_width, y],
-            fill=self.DIVIDER_COLOR,
-            width=2,
-        )
-
-        # Data rows
-        for row in rows:
-            cx = x
-            for idx, cell in enumerate(row):
-                self.draw.text(
-                    (cx + cell_padding_x, y + cell_padding_y),
-                    str(cell),
-                    font=font_cell,
-                    fill=self.TEXT_COLOR,
-                )
-                cx += col_widths[idx]
-            y += row_height
-
-        self.y_cursor += total_height + 28
-
-    # ---------- REGEX MATCH ---------- not used currently
-    def _draw_regex_match( 
-        self,
-        canvas,
-        pattern: str,
-        input_text: str,
-        match_text: str,
-    ):
-        font_label = self.SMALL_LABEL_FONT
-        font_code = self.CODE_FONT
-
-        block_padding = 20
-        line_height = 48
-        max_width = self.WIDTH - (self.PADDING_X * 2) - 40
-
-        def draw_block(label, content, color):
-            nonlocal max_width
-
-            # Label
-            self.draw.text(
-                (self.PADDING_X, self.y_cursor),
-                label,
-                font=font_label,
-                fill=color,
-            )
-            self.y_cursor += 30
-
-            # Wrapped content
-            lines = self.wrap_text(self.draw, content, font_code, max_width)
-            block_height = line_height * len(lines) + block_padding * 2
-
-            # Background
-            self.draw.rounded_rectangle(
-                [
-                    self.PADDING_X,
-                    self.y_cursor,
-                    self.WIDTH - self.PADDING_X,
-                    self.y_cursor + block_height,
-                ],
-                radius=16,
-                fill=self.CODE_BG,
-            )
-
-            # Accent bar
-            self.draw.rectangle(
-                [
-                    self.PADDING_X,
-                    self.y_cursor,
-                    self.PADDING_X + 6,
-                    self.y_cursor + block_height,
-                ],
-                fill=color,
-            )
-
-            y = self.y_cursor + block_padding
-            for line in lines:
-                self.draw.text(
-                    (self.PADDING_X + 24, y),
-                    line,
-                    font=font_code,
-                    fill=self.TEXT_COLOR,
-                )
-                y += line_height
-
-            self.y_cursor += block_height + 24
-
-        draw_block("Pattern", pattern, "#F7C948")
-        draw_block("Input", input_text, "#5DA9E9")
-        draw_block("Match", match_text, "#4ADE80")
 
     # ---------- CODE (IDE STYLE) ----------
     def _draw_editor_code_with_ide(self, canvas, code: str, subject: str):
@@ -529,8 +377,7 @@ class ImageRenderer:
 
         self.y_cursor += total_height + 20
     
-    # ---------- CODE ----------
-    def _draw_editor_code(self, canvas, code: str):
+    def _draw_editor_code(self, canvas, code: str): # Plain code block without IDE styling - not active
         font = self.CODE_FONT
         line_height = 48
         max_width = self.WIDTH - (self.PADDING_X * 2) - 40
@@ -580,7 +427,6 @@ class ImageRenderer:
             text_y += line_height
 
         self.y_cursor += block_height + 20
-
 
     def _draw_terminal_code(self, canvas, code: str):
         font = self.CODE_FONT
@@ -689,34 +535,6 @@ class ImageRenderer:
         
         # Add bottom padding
         self.y_cursor += terminal_padding + 20
-
-
-    def _draw_inline_badge(self, text: str, color: str): # not used currently
-        font = self.BADGE_FONT
-        padding = 12
-        text_w = self.draw.textlength(text, font=font)
-        box_w = text_w + padding * 2
-        box_h = 36
-
-        self.draw.rounded_rectangle(
-            [
-                self.PADDING_X,
-                self.y_cursor,
-                self.PADDING_X + box_w,
-                self.y_cursor + box_h,
-            ],
-            radius=12,
-            fill=color,
-        )
-
-        self.draw.text(
-            (self.PADDING_X + padding, self.y_cursor + 6),
-            text,
-            font=font,
-            fill="#000000",
-        )
-
-        self.y_cursor += box_h + 12
 
     def _draw_code(self, canvas, code, code_style: str | None, subject: str | None = None):
         if code_style is None:
@@ -1243,7 +1061,7 @@ class ImageRenderer:
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = self.base_dir / subject / "images" / "cta" / "day1.png"
+        out_path = self.BASE_DIR / subject / "images" / "cta" / "day1.png"
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
@@ -1333,7 +1151,7 @@ class ImageRenderer:
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = self.base_dir / subject / "images" / "cta" / "day2.png"
+        out_path = self.BASE_DIR / subject / "images" / "cta" / "day2.png"
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
@@ -1420,7 +1238,7 @@ class ImageRenderer:
         """
         Render a welcome image: 'Welcome to Daily Dose of Python'
         """
-        out_path =  self.base_dir / subject / "images" / "welcome" / "welcome.png"
+        out_path =  self.BASE_DIR / subject / "images" / "welcome" / "welcome.png"
         if out_path.exists():
             print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
             return
@@ -1564,12 +1382,12 @@ class ImageRenderer:
         # --------------------------------------------------
         # Output directories (type-based)
         # --------------------------------------------------
-        base_img_dir = self.base_dir / "test" / "images"
+        base_img_dir = self.BASE_DIR / subject / "images"
         question_dir = base_img_dir / "questions"
         answer_dir = base_img_dir / "answers"
         single_dir = base_img_dir / "singles"
 
-        run_dir = self.base_dir / subject / "runs"
+        run_dir = self.BASE_DIR / subject / "runs"
 
         for d in [question_dir, answer_dir, single_dir, run_dir]:
             d.mkdir(parents=True, exist_ok=True)
@@ -1636,18 +1454,21 @@ class ImageRenderer:
         print("Image rendering process completed successfully")
         return metadata_path
 
-if __name__ == "__main__":
-    renderer = ImageRenderer()
-    subjects = ["docker_k8s", "system_design"]
-    # subjects = [
-    #     "python", "sql", "regex", "system_design", 
-    #     "linux"
-    #     ,"docker_k8s", "javascript", "rust", "golang"
-    # ]
-    import time
-    for subject in subjects:
-        # renderer.render_welcome_image(subject)
-        # renderer.render_day1_cta_image(subject)
-        # renderer.render_day2_cta_image(subject)
-        renderer.main(1, subject=subject)
-        time.sleep(2)
+# if __name__ == "__main__":
+#     renderer = ImageRenderer()
+#     subjects = ["sql"]
+#     # subjects = [
+#     #     "python", "sql", "regex", "system_design", 
+#     #     "linux"
+#     #     ,"docker_k8s", "javascript", "rust", "golang"
+#     # ]
+#     import time
+#     for subject in subjects:
+#         # renderer.render_welcome_image(subject)
+#         # renderer.render_day1_cta_image(subject)
+#         # renderer.render_day2_cta_image(subject)
+#         try:
+#             renderer.main(1, subject=subject)
+#             time.sleep(2)
+#         except Exception as e:
+#             print(f"Error rendering for subject {subject}: {e}")

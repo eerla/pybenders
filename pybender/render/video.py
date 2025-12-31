@@ -18,8 +18,8 @@ class VideoRenderer:
         self.VIDEO_W, self.VIDEO_H = 1080, 1920
         self.FPS = 30
         self.SAFE_WIDTH = 960
-        # self.base_dir = Path("output") # local output path
-        self.base_dir = Path(r"G:\My Drive\output") # Change to google drive path
+        # self.BASE_DIR = Path("output") # local output path
+        self.BASE_DIR = Path(r"G:\My Drive\output") # Change to google drive path
         self.RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.RUN_DATE = datetime.now().strftime("%Y%m%d")
 
@@ -280,11 +280,11 @@ class VideoRenderer:
         question_id = self.extract_question_id_from_image(Path(question_img))
 
         # Output paths (must match generate_* logic)
-        day1_path = self.base_dir / subject / "reels" / "day1" / self.RUN_DATE / f"{question_id}_day1.mp4"
-        day2_path = self.base_dir / subject / "reels" / "day2" / self.RUN_DATE / f"{question_id}_day2.mp4"
-        welcome_img = self.base_dir / subject / "images" / "welcome" / "welcome.png"
-        cta_day1_img = self.base_dir / subject / "images" / "cta" / "day1.png"
-        cta_day2_img = self.base_dir / subject / "images" / "cta" / "day2.png"
+        day1_path = self.BASE_DIR / subject / "reels" / "day1" / self.RUN_DATE / f"{question_id}_day1.mp4"
+        day2_path = self.BASE_DIR / subject / "reels" / "day2" / self.RUN_DATE / f"{question_id}_day2.mp4"
+        welcome_img = self.BASE_DIR / subject / "images" / "welcome" / "welcome.png"
+        cta_day1_img = self.BASE_DIR / subject / "images" / "cta" / "day1.png"
+        cta_day2_img = self.BASE_DIR / subject / "images" / "cta" / "day2.png"
 
         with ThreadPoolExecutor(max_workers=2) as executor: # Day 1 and Day 2 in parallel
             futures = [
@@ -362,7 +362,7 @@ class VideoRenderer:
 
 # if __name__ == "__main__":
 #     renderer = VideoRenderer()
-#     test_metadata_path = renderer.base_dir / "linux" / "runs" / "2025-12-30_002040_metadata.json"
+#     test_metadata_path = renderer.BASE_DIR / "linux" / "runs" / "2025-12-30_002040_metadata.json"
 #     if test_metadata_path.exists():
 #         renderer.main(test_metadata_path)
 #     else:
