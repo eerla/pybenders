@@ -1,3 +1,53 @@
+# Content length limits per subject (characters)
+# Optimized for mobile reel readability with current font sizes
+CONTENT_LIMITS = {
+    "python": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "javascript": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "rust": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "golang": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "sql": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "regex": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "linux": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "system_design": {
+        "scenario": 350,      # More context for architectural decisions
+        "question": 150,      # Questions are usually concise once context is set
+        "explanation": 400,   # Detailed reasoning for design trade-offs
+    },
+    "docker_k8s": {
+        "scenario": 350,      # More context for cluster/deployment scenarios
+        "question": 150,      # Questions are usually concise
+        "explanation": 400,   # Detailed reasoning for troubleshooting/decisions
+    },
+}
+
 PROMPT_TEMPLATES = {
     "code_output": """
                     You are a Senior {{subject}} expert creating SHORT-FORM content for Instagram reels.
@@ -187,12 +237,12 @@ PROMPT_TEMPLATES = {
 
                 Each question MUST contain:
                 - title: max 8 words
-                - scenario: concise but COMPLETE setup with key requirements, scale, and workload (under 120 chars). This is the hook — it MUST provide enough context to answer the question correctly without external knowledge.                - code: ""  (always empty — no code or snippets needed)
-                - question: exactly 1 sentence, under 280 characters  # Big increase — now the star
-                - code: "" (always empty)
+                - scenario: concise but COMPLETE setup with key requirements, scale, and workload (under 350 chars). This is the hook — it MUST provide enough context to answer the question correctly without external knowledge.
+                - code: ""  (always empty — no code or snippets needed)
+                - question: exactly 1 sentence, under 150 characters (keep it focused and concise)
                 - options: exactly 4 items, each under 75 characters
                 - correct: one of "A", "B", "C", "D"
-                - explanation: 1-2 short confident sentences, like reel voiceover (under 210 chars total)
+                - explanation: 2-3 short confident sentences, like reel voiceover (under 400 chars total - use this space to explain WHY with trade-offs)
 
                 Additional constraints:
                 - Focus on practical real-world trade-offs, not theoretical designs
@@ -287,12 +337,12 @@ PROMPT_TEMPLATES = {
 
         Each question MUST contain:
         - title: max 7 words
-        - scenario: concise but COMPLETE context (e.g., config snippet, symptoms, cluster state). Under 120 characters. This is essential — the question must be answerable from this alone.
+        - scenario: concise but COMPLETE context (e.g., config snippet, symptoms, cluster state). Under 350 characters. This is essential — the question must be answerable from this alone.
         - code: short relevant snippet (under 50 chars) OR "" if not needed
-        - question: exactly 1 sentence, under 280 characters. Must reference the scenario (e.g., "In this case,", "Given this config,", "What should you do when...")
+        - question: exactly 1 sentence, under 150 characters. Must reference the scenario (e.g., "In this case,", "Given this config,", "What should you do when...")
         - options: exactly 4 items, each under 75 characters
         - correct: one of "A", "B", "C", "D"
-        - explanation: 1-2 short confident sentences, like reel voiceover (under 210 chars total)
+        - explanation: 2-3 short confident sentences, like reel voiceover (under 400 chars total - use this space to explain WHY with troubleshooting insights)
 
         Additional constraints:
         - If the {{topic}} starts with "What does" or "What is", generate a definition/purpose quiz: ask what the command, status, or resource primarily does, with one correct description and three plausible but incorrect alternatives.

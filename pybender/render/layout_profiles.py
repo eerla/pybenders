@@ -22,11 +22,11 @@ CODE_OUTPUT = LayoutProfile(
 
 QA = LayoutProfile(
     name="qa",
-    has_code=False,
+    has_code=True,
     has_options=True,
     has_explanation=True,
     has_scenario=True,
-    code_style="terminal",
+    code_style="editor",
 )
 
 SCENARIO = LayoutProfile(

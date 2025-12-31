@@ -28,10 +28,11 @@ def validate_pattern_match(q: dict):
 
 def validate_scenario(q: dict):
     assert len(q["title"].split()) <= 8
-    assert len(q["question"]) <= 220
-    assert all(len(opt) <= 80 for opt in q["options"])
-    assert len(q["explanation"]) <= 200
-    assert len(q["scenario"]) >= 30
+    assert len(q["scenario"]) <= 350, "Scenario too long (max 350)"
+    assert len(q["scenario"]) >= 30, "Scenario too short (min 30)"
+    assert len(q["question"]) <= 150, "Question too long (max 150)"
+    assert all(len(opt) <= 75 for opt in q["options"]), "Option too long (max 75)"
+    assert len(q["explanation"]) <= 400, "Explanation too long (max 400)"
 
 def validate_command_output(q: dict):
     assert len(q["title"].split()) <= 8
@@ -42,11 +43,12 @@ def validate_command_output(q: dict):
 
 def validate_qa(q: dict):
     assert len(q["title"].split()) <= 8
-    assert q["code"].strip() == "" or len(q["code"]) <= 40
-    assert len(q["question"]) <= 180
-    assert all(len(opt) <= 70 for opt in q["options"])
-    assert len(q["explanation"]) <= 200
-    assert len(q["scenario"]) >= 30
+    assert len(q["scenario"]) <= 350, "Scenario too long (max 350)"
+    assert len(q["scenario"]) >= 30, "Scenario too short (min 30)"
+    assert q["code"].strip() == "" or len(q["code"]) <= 50, "Code too long (max 50)"
+    assert len(q["question"]) <= 150, "Question too long (max 150)"
+    assert all(len(opt) <= 75 for opt in q["options"]), "Option too long (max 75)"
+    assert len(q["explanation"]) <= 400, "Explanation too long (max 400)"
 
 VALIDATORS: Dict[str, callable] = {
     "code_output": validate_code_output,

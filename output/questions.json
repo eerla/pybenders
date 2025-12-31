@@ -1,12 +1,17 @@
 [
     {
-        "id": "q01",
-        "title": "E-commerce Platform RPO vs RTO",
-        "scenario": "E-commerce site with high transaction volume and global reach.",
-        "code": "",
-        "question": "In choosing between RTO and RPO, which focuses on minimizing data loss in case of failure for user orders?",
-        "options": ["RTO", "RPO", "Both are the same", "None of the above"],
-        "correct": "B",
-        "explanation": "RPO represents the maximum tolerable data loss in terms of time, crucial for preserving user transactions."
-    }
+        "question_id": "2025-12-30_164730_q01",
+        "title": "Base64 and K8s Secrets",
+        "code": "apiVersion: v1\nkind: Secret\n",
+        "scenario": "You notice secrets in YAML result in decoding issues.",
+        "question": "In this case, what common mistake leads to Base64 decoding errors in K8s Secrets?",
+        "options": [
+          "Misformatted secret data structure.",
+          "Using non-text binary data.",
+          "Not updating secrets after changes.",
+          "Not verifying Base64 encoding."
+        ],
+        "correct": "D",
+        "explanation": "Always verify your data is properly Base64 encoded! Encoding issues lead to runtime errors in your deployments."
+      }
 ]

@@ -73,6 +73,8 @@ class ImageRenderer:
         self.LOGO_PADDING = 20  # 20px from edges
 
         # IDE-style code config
+        self.WRITE_METADATA = False  # Set to True to write metadata.json
+        self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
         self.IDE_CODE_STYLE = True  # Set to False to use plain code blocks
         self.IDE_HEADER_HEIGHT = 36
         self.IDE_GUTTER_WIDTH = 45
@@ -750,78 +752,20 @@ class ImageRenderer:
             else:
                 self._draw_editor_code(canvas, code)
 
-    # ---------- OPTIONS ----------
-    def _draw_options(self, canvas, options: list[str]):
-        draw = ImageDraw.Draw(canvas)
-        # font = ImageFont.truetype("assets/fonts/Inter-Regular.ttf", 40)
-
-        max_width = self.WIDTH - (self.PADDING_X * 2)
-        line_height = 32
-        box_padding_y = 18
-        option_gap = 14
-
-        for idx, opt in enumerate(options):
-            label = chr(65 + idx)
-
-            # Normalize escaped newlines
-            opt = opt.replace("\\n", "\n")
-
-            # Split explicit newlines, then wrap each part
-            raw_lines = opt.split("\n")
-            wrapped_lines = []
-
-            for line in raw_lines:
-                wrapped_lines.extend(
-                    self.wrap_text(draw, line, self.TEXT_FONT, max_width - 60)
-                )
-
-            # Compute block height
-            block_height = (
-                len(wrapped_lines) * line_height
-                + box_padding_y * 2
-            )
-
-            # Draw background card
-            self.draw.rounded_rectangle(
-                [
-                    self.PADDING_X - 10,
-                    self.y_cursor,
-                    self.WIDTH - self.PADDING_X + 10,
-                    self.y_cursor + block_height,
-                ],
-                radius=18,
-                fill=self.CARD_COLOR,
-            )
-
-            # Draw accent bar on the left
-            self.draw.rectangle(
-                [
-                    self.PADDING_X - 10,
-                    self.y_cursor,
-                    self.PADDING_X - 4,
-                    self.y_cursor + block_height,
-                ],
-                fill=self.ACCENT_COLOR,
-            )
-
-            # Draw text lines
-            text_y = self.y_cursor + box_padding_y
-            for i, line in enumerate(wrapped_lines):
-                prefix = f"{label}. " if i == 0 else "    "
-                self.draw.text(
-                    (self.PADDING_X, text_y),
-                    prefix + line,
-                    font=self.TEXT_FONT,
-                    fill=self.TEXT_COLOR,
-                )
-                text_y += line_height
-
-            self.y_cursor += block_height + option_gap
-
-        self.y_cursor += 20
-
-    # ---------- OPTIONS WITH ANSWER HIGHLIGHT ----------
-    def _draw_options_with_answer(self, canvas, options, correct):
+    # ---------- OPTIONS (UNIFIED) ----------
+    def _draw_options_v2(self, canvas, options: list[str], mode: RenderMode, correct: str = None):
+        """
+        Unified options rendering function supporting three modes:
+        - RenderMode.QUESTION: Show all options without highlighting
+        - RenderMode.SINGLE: Show all options with correct one highlighted in green
+        - RenderMode.ANSWER: Show only the correct option highlighted in green
+        
+        Args:
+            canvas: PIL Image canvas to draw on
+            options: List of option text strings
+            mode: RenderMode enum (QUESTION, SINGLE, or ANSWER)
+            correct: Correct answer letter (A/B/C/D) - required for SINGLE and ANSWER modes
+        """
         draw = self.draw
         font = self.TEXT_FONT
         max_width = self.WIDTH - (self.PADDING_X * 2)
@@ -829,9 +773,16 @@ class ImageRenderer:
         padding = 18
         option_gap = 14
 
-        correct_idx = ord(correct.upper()) - 65
+        correct_idx = ord(correct.upper()) - 65 if correct else -1
 
-        for idx, opt in enumerate(options):
+        # Determine which options to display
+        options_to_display = options if mode != RenderMode.ANSWER else [options[correct_idx]]
+        start_idx = 0 if mode != RenderMode.ANSWER else correct_idx
+
+        for display_idx, opt in enumerate(options_to_display):
+            idx = start_idx + display_idx if mode == RenderMode.ANSWER else display_idx
+            
+            # Normalize escaped newlines
             opt = opt.replace("\\n", "\n")
             raw_lines = opt.split("\n")
             wrapped = []
@@ -843,9 +794,23 @@ class ImageRenderer:
 
             block_height = len(wrapped) * line_height + padding * 2
 
-            bg = self.CORRECT_BG if idx == correct_idx else self.CARD_COLOR
-            accent = self.SUCCESS_COLOR if idx == correct_idx else self.ACCENT_COLOR
+            # Determine colors based on mode
+            is_correct = (idx == correct_idx)
+            
+            if mode == RenderMode.QUESTION:
+                # All options same styling
+                bg = self.CARD_COLOR
+                accent = self.ACCENT_COLOR
+            elif mode == RenderMode.SINGLE:
+                # Highlight correct answer in green
+                bg = self.CORRECT_BG if is_correct else self.CARD_COLOR
+                accent = self.SUCCESS_COLOR if is_correct else self.ACCENT_COLOR
+            else:  # RenderMode.ANSWER
+                # Only showing correct answer, always green
+                bg = self.CORRECT_BG
+                accent = self.SUCCESS_COLOR
 
+            # Draw background card
             self.draw.rounded_rectangle(
                 [
                     self.PADDING_X - 10,
@@ -857,86 +822,32 @@ class ImageRenderer:
                 fill=bg,
             )
 
+            # Draw accent bar on the left
             self.draw.rectangle(
                 [
-                    self.PADDING_X - 10, # accent bar left
-                    self.y_cursor, # accent bar left
-                    self.PADDING_X - 4, # accent bar width
-                    self.y_cursor + block_height, # accent bar height
+                    self.PADDING_X - 10,
+                    self.y_cursor,
+                    self.PADDING_X - 4,
+                    self.y_cursor + block_height,
                 ],
                 fill=accent,
             )
 
-            y = self.y_cursor + padding
+            # Draw text lines
+            text_y = self.y_cursor + padding
             for i, line in enumerate(wrapped):
-                prefix = f"{chr(65+idx)}. " if i == 0 else "    "
+                prefix = f"{chr(65 + idx)}. " if i == 0 else "    "
                 self.draw.text(
-                    (self.PADDING_X, y),
+                    (self.PADDING_X, text_y),
                     prefix + line,
                     font=font,
                     fill=self.TEXT_COLOR,
                 )
-                y += line_height
+                text_y += line_height
 
             self.y_cursor += block_height + option_gap
 
         self.y_cursor += 20
-
-    def _draw_options_with_answer_highlight_only(self, canvas, options, correct):
-        # function to display only the correct answer highlighted
-        draw = self.draw
-        font = self.TEXT_FONT
-        max_width = self.WIDTH - (self.PADDING_X * 2)
-        line_height = 32
-        padding = 18
-
-        correct_idx = ord(correct.upper()) - 65
-        opt = options[correct_idx]
-        
-        opt = opt.replace("\\n", "\n")
-        raw_lines = opt.split("\n")
-        wrapped = []
-
-        for line in raw_lines:
-            wrapped.extend(
-                self.wrap_text(draw, line, font, max_width - 60)
-            )
-
-        block_height = len(wrapped) * line_height + padding * 2
-
-        self.draw.rounded_rectangle(
-            [
-                self.PADDING_X - 10,
-                self.y_cursor,
-                self.WIDTH - self.PADDING_X + 10,
-                self.y_cursor + block_height,
-            ],
-            radius=18,
-            fill=self.CORRECT_BG,
-        )
-
-        self.draw.rectangle(
-            [
-                self.PADDING_X - 10,
-                self.y_cursor,
-                self.PADDING_X - 4,
-                self.y_cursor + block_height,
-            ],
-            fill=self.SUCCESS_COLOR,
-        )
-
-        y = self.y_cursor + padding
-        for i, line in enumerate(wrapped):
-            prefix = f"{chr(65+correct_idx)}. " if i == 0 else "    "
-            self.draw.text(
-                (self.PADDING_X, y),
-                prefix + line,
-                font=font,
-                fill=self.TEXT_COLOR,
-            )
-            y += line_height
-
-        self.y_cursor += block_height + 20
 
     # ---------- EXPLANATION ----------
     def _draw_explanation(self, canvas, explanation: str):
@@ -971,7 +882,6 @@ class ImageRenderer:
                 fill=self.SUBTLE_TEXT,
             )
             self.y_cursor += 50
-
 
     # ---------- FOOTER ----------
     def _draw_footer(self, canvas, subject: str):
@@ -1273,12 +1183,13 @@ class ImageRenderer:
 
 
         # ---------- HEADER ----------
+        subject_header = f"{subject.replace('_', ' ').title()}"
         if mode == RenderMode.QUESTION:
-            header = f"Daily dose of {subject.replace('_', ' ').title()}"
+            header = f"Daily dose of {subject_header}"
         elif mode == RenderMode.ANSWER:
-            header = f"{subject.replace('_', ' ').title()} Answer"
+            header = f"{subject_header} Answer"
         else:
-            header = subject.replace('_', ' ').title()
+            header = subject_header
 
         self._draw_header(canvas, header)
         self._draw_title(question.title)
@@ -1287,10 +1198,10 @@ class ImageRenderer:
         # ----------- SCENARIO TEXT ---------- 
         # Scenario included inline for docker_k8s/system_design in QUESTION and SINGLE modes
         # (has_code is false for these, so scenario replaces code position)
-        # print("Layout profile:", layout_profile)
-        # print(question.scenario)
-        if layout_profile.has_scenario and question.scenario and mode in (RenderMode.QUESTION, RenderMode.SINGLE):
-            print("Drawing scenario inline...")
+
+        if layout_profile.has_scenario \
+                and question.scenario \
+                and mode in (RenderMode.QUESTION, RenderMode.SINGLE):
             self._draw_scenario_styled(canvas, question.scenario, prefix="Setup:")
 
         # ---------- CODE BLOCK ----------
@@ -1303,20 +1214,12 @@ class ImageRenderer:
 
         # ---------- OPTIONS ----------
         if layout_profile.has_options:
-            if mode == RenderMode.QUESTION:
-                self._draw_options(canvas, question.options)
-            elif mode == RenderMode.SINGLE:
-                self._draw_options_with_answer(
-                    canvas,
-                    question.options,
-                    question.correct,
-                )
-            elif mode == RenderMode.ANSWER:
-                self._draw_options_with_answer_highlight_only(
-                    canvas,
-                    question.options,
-                    question.correct,
-                )
+            self._draw_options_v2(
+                canvas,
+                question.options,
+                mode,
+                correct=question.correct
+            )
         
         # ---------- EXPLANATION ----------
         if layout_profile.has_explanation and mode in (RenderMode.ANSWER, RenderMode.SINGLE):
@@ -1641,13 +1544,17 @@ class ImageRenderer:
         # --------------------------------------------------
         # Generate questions
         # --------------------------------------------------
-        qg = QuestionGenerator()
-        questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)  # get from LLM
-        # with open("output/questions.json", "r") as f:
-        #     questions_data = json.load(f)
-        #     topic, content_type = "system_design", "scenario"
-        #     # topic, content_type = "javascript", "code_output"
-        #     questions = [Question(**q) for q in questions_data]
+        if self.USE_STATIC_QUESTIONS:
+            print("Using static questions from output/questions.json")
+            with open("output/questions.json", "r") as f:
+                questions_data = json.load(f)
+                topic, content_type = "docker_k8s", "qa"
+                # topic, content_type = "javascript", "code_output"
+                questions = [Question(**q) for q in questions_data]
+        else:
+            qg = QuestionGenerator()
+            questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)  # get from LLM
+        
         
 
         # Assign stable question IDs
@@ -1688,7 +1595,7 @@ class ImageRenderer:
             q_slug = self.slugify(q.title)
 
             layout_profile = resolve_layout_profile(content_type)
-
+            
             question_img_out_path = question_dir / f"{q.question_id}_question.png"
             answer_img_out_path = answer_dir / f"{q.question_id}_answer.png"
             single_img_out_path = single_dir / f"{q.question_id}_single.png"
@@ -1712,14 +1619,16 @@ class ImageRenderer:
 
         print("All images rendered successfully")
 
+
         # --------------------------------------------------
         # Write metadata.json (single source of truth)
         # --------------------------------------------------
         metadata_path = run_dir / f"{RUN_ID}_metadata.json"
-        # with open(metadata_path, "w", encoding="utf-8") as f:
-        #     json.dump(metadata, f, indent=2)
+        if self.WRITE_METADATA:
+            with open(metadata_path, "w", encoding="utf-8") as f:
+                json.dump(metadata, f, indent=2)
 
-        print(f"Metadata written to {metadata_path}")
+            print(f"Metadata written to {metadata_path}")
         # TODO: create separate welcome pages per subject
         # self.render_day1_cta_image(subject)
         # self.render_day2_cta_image(subject)
@@ -1729,7 +1638,7 @@ class ImageRenderer:
 
 if __name__ == "__main__":
     renderer = ImageRenderer()
-    subjects = ["python"]
+    subjects = ["docker_k8s", "system_design"]
     # subjects = [
     #     "python", "sql", "regex", "system_design", 
     #     "linux"
