@@ -108,6 +108,10 @@ PROMPT_TEMPLATES = {
                     STRICT RULES (must follow):
                     - Return ONLY valid JSON
                     - No text outside JSON
+                    - CRITICAL JSON ESCAPING: In the "code" field, multi-line SQL MUST use \\n escape sequences
+                      -- NEVER use backslash line continuations (\\) at end of lines
+                      -- ALWAYS use literal \\n characters for newlines within the JSON string
+                      -- Example: "WITH t AS (\\n  VALUES (1)\\n)\\nSELECT * FROM t;"
                     - Keep content concise and reel-friendly
                     - Everything must fit cleanly on a standard mobile phone screen (vertical reel)
                     - Do NOT exceed length limits below
@@ -121,7 +125,7 @@ PROMPT_TEMPLATES = {
                     - code: one compact SQL snippet:
                       -- single CTE with inline sample data via VALUES
                       -- final SELECT performing the logic under test
-                      -- under 8 lines total; use literal \n for line breaks and 2-space indentation
+                      -- under 8 lines total; use \\n for line breaks (NOT backslash continuations), 2-space indentation
                     - question: exactly 1 sentence, under 110 characters, asking about the SELECT result
                     - options: exactly 4 items (only ONE correct), each under 60 characters
                     - correct: one of "A", "B", "C", "D"
@@ -140,7 +144,7 @@ PROMPT_TEMPLATES = {
                     {
                         "id": "q01",
                         "title": "LIKE Pattern Edge Case",
-                        "code": "WITH t(id, name) AS (\n  VALUES (1,'Alice'), (2,'Mark'), (3,'Sara'), (4,'James')\n)\nSELECT COUNT(*)\nFROM t\nWHERE name LIKE '%a%a%';",
+                        "code": "WITH t(id, name) AS (\\n  VALUES (1,'Alice'), (2,'Mark'), (3,'Sara'), (4,'James')\\n)\\nSELECT COUNT(*)\\nFROM t\\nWHERE name LIKE '%a%a%';",
                         "question": "How many rows match?",
                         "options": ["0", "1", "2", "3"],
                         "correct": "B",
