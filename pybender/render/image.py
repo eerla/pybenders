@@ -1372,8 +1372,6 @@ class ImageRenderer:
         else:
             qg = QuestionGenerator()
             questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)  # get from LLM
-        
-        
 
         # Assign stable question IDs
         for idx, q in enumerate(questions, start=1):
@@ -1436,8 +1434,6 @@ class ImageRenderer:
             })
 
         print("All images rendered successfully")
-
-
         # --------------------------------------------------
         # Write metadata.json (single source of truth)
         # --------------------------------------------------

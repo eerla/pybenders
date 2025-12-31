@@ -18,8 +18,8 @@ class VideoRenderer:
         self.VIDEO_W, self.VIDEO_H = 1080, 1920
         self.FPS = 30
         self.SAFE_WIDTH = 960
-        # self.BASE_DIR = Path("output") # local output path
-        self.BASE_DIR = Path(r"G:\My Drive\output") # Change to google drive path
+        self.BASE_DIR = Path("output") # local output path
+        # self.BASE_DIR = Path(r"G:\My Drive\output") # Change to google drive path
         self.RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.RUN_DATE = datetime.now().strftime("%Y%m%d")
 
