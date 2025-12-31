@@ -72,6 +72,12 @@ def run_all_subjects():
             failed_subjects.append((subject, str(e)))
             runtimes[subject] = "FAILED"
     
+    if failed_subjects:
+        print("\nFailed subjects: Trying again...")
+        for subj, error in failed_subjects:
+            print(f"  - {subj}: {error}")
+            generator = ReelGenerator()
+            generator.generate(questions_per_run=1, subject=subj)
     # Summary
     elapsed_time = (datetime.now() - start_time).total_seconds() / 60
     print(f"\n{'='*50}")
@@ -80,11 +86,6 @@ def run_all_subjects():
     print(f"Total time taken: {elapsed_time:.2f} minutes")
     print(f"\nSuccessful: {len([r for r in runtimes.values() if r != 'FAILED'])}/{len(SUBJECTS)}")
     print(f"Failed: {len(failed_subjects)}/{len(SUBJECTS)}")
-    
-    if failed_subjects:
-        print("\n❌ Failed subjects:")
-        for subj, error in failed_subjects:
-            print(f"  - {subj}: {error}")
     
     print("\nIndividual subject runtimes:")
     for subj, runtime in runtimes.items():
