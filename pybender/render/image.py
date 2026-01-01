@@ -49,7 +49,8 @@ class ImageRenderer:
             "golang": (0, 173, 216),           # go cyan
         }
         
-        self.BASE_DIR = Path("output")
+        # Output and assets - switches
+        self.BASE_DIR = Path("output_1")
         self.WRITE_METADATA = True  # Set to True to write metadata.json
         self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
         # self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
@@ -66,10 +67,11 @@ class ImageRenderer:
         self.TABLE_CELL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 36)
         self.BADGE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 36)
         self.SMALL_LABEL_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 38)
-        # self.REGEX_FONT = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "FiraCode-Regular.ttf"), 48)
 
         # Logo config
-        self.LOGO_PATH = Path("pybender/assets/backgrounds/ddop1.PNG")
+        self.ASSETS_DIR = Path("pybender/assets/backgrounds")
+        self.LOGO_PATH = self.ASSETS_DIR / "ddop1.PNG"
+        self.DEFAULT_OVERLAY_PATH = self.ASSETS_DIR / "ddop3.PNG"
         self.LOGO_HEIGHT = 40  # 40x120 pixels
         self.LOGO_WIDTH = 60  # 40x120 pixels
         self.LOGO_PADDING = 20  # 20px from edges
@@ -594,8 +596,8 @@ class ImageRenderer:
         correct_idx = ord(correct.upper()) - 65 if correct else -1
 
         # Determine which options to display
-        options_to_display = options if mode != RenderMode.ANSWER else [options[correct_idx]]
-        start_idx = 0 if mode != RenderMode.ANSWER else correct_idx
+        options_to_display = options if mode != RenderMode.SINGLE else [options[correct_idx]]
+        start_idx = 0 if mode != RenderMode.SINGLE else correct_idx
 
         for display_idx, opt in enumerate(options_to_display):
             idx = start_idx + display_idx if mode == RenderMode.ANSWER else display_idx
@@ -619,11 +621,11 @@ class ImageRenderer:
                 # All options same styling
                 bg = self.CARD_COLOR
                 accent = self.ACCENT_COLOR
-            elif mode == RenderMode.SINGLE:
+            elif mode == RenderMode.ANSWER:
                 # Highlight correct answer in green
                 bg = self.CORRECT_BG if is_correct else self.CARD_COLOR
                 accent = self.SUCCESS_COLOR if is_correct else self.ACCENT_COLOR
-            else:  # RenderMode.ANSWER
+            else:  # RenderMode.SINGLE
                 # Only showing correct answer, always green
                 bg = self.CORRECT_BG
                 accent = self.SUCCESS_COLOR
@@ -923,7 +925,7 @@ class ImageRenderer:
         layout_profile,
         subject: str,
         mode: RenderMode,
-    ):
+        ):
         canvas = self._create_base_canvas(subject)
 
         # ---------- CALCULATE TOTAL CONTENT HEIGHT ----------
@@ -1056,104 +1058,14 @@ class ImageRenderer:
         canvas.save(out_path)
         print(f"image saved to: {out_path}")
 
-    def render_day1_cta_image(self, subject: str) -> None:
+
+    def render_cta_image(self, subject: str, out_path: Path) -> None:
         """
         Render a reusable Call-To-Action image (dark theme).
         Saved once and reused for all reels.
         """
-        out_path = self.BASE_DIR / subject / "images" / "cta" / "day1.png"
         if out_path.exists():
-            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
-            return
-
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # --------------------------------------------------
-        # Canvas
-        # --------------------------------------------------
-        img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
-        draw = ImageDraw.Draw(img)
-
-        # --------------------------------------------------
-        # Card Geometry
-        # --------------------------------------------------
-        card_w, card_h = 920, 720
-        card_x = (self.WIDTH - card_w) // 2
-        card_y = (self.HEIGHT - card_h) // 2
-        radius = 32
-
-        # Rounded card
-        draw.rounded_rectangle(
-            [card_x, card_y, card_x + card_w, card_y + card_h],
-            radius=radius,
-            fill=self.CARD_COLOR,
-        )
-
-        # --------------------------------------------------
-        # Fonts 
-        # --------------------------------------------------
-        title_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Bold.ttf"), 72)
-        body_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 50)
-        follow_font = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-Regular.ttf"), 44)
-
-        # --------------------------------------------------
-        # Text Content
-        # --------------------------------------------------
-        title_text = "What's Your Answer?"
-        body_text = "Drop A, B, C, or D below!\n\nAnswer drops tomorrow"
-        follow_text = f"Follow for daily {subject.replace('_', ' ').title()} challenges"
-
-        # --------------------------------------------------
-        # Text Positions
-        # --------------------------------------------------
-        center_x = self.WIDTH // 2
-
-        def draw_centered_text(text, font, y, color):
-            w, h = draw.textbbox((0, 0), text, font=font)[2:]
-            draw.text(
-                (center_x - w // 2, y),
-                text,
-                font=font,
-                fill=color,
-                align="center",
-            )
-
-        draw_centered_text(
-            title_text,
-            title_font,
-            card_y + 90,
-            self.SUBJECT_ACCENTS.get(subject, self.ACCENT_COLOR),
-        )
-
-        draw_centered_text(
-            body_text,
-            body_font,
-            card_y + 260,
-            self.TEXT_PRIMARY,
-        )
-
-        draw_centered_text(
-            follow_text,
-            follow_font,
-            card_y + 520,
-            self.TEXT_SECONDARY,
-        )
-
-        # --------------------------------------------------
-        # Save
-        # --------------------------------------------------
-        img.save(out_path, format="PNG")
-        print(f"CTA image rendered at: {out_path}")
-
-
-    def render_day2_cta_image(self, subject: str) -> None:
-        """
-        Render a reusable Call-To-Action image (dark theme).
-        Saved once and reused for all reels.
-        """
-        out_path = self.BASE_DIR / subject / "images" / "cta" / "day2.png"
-        if out_path.exists():
-            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+            print(f"CTA image already exists at {out_path}")
             return
 
         TITLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 84)
@@ -1231,19 +1143,18 @@ class ImageRenderer:
         # --------------------------------------------------
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
-        print(f"Day 2 CTA image saved → {out_path}")
+        print(f"CTA image saved → {out_path}")
 
-
-    def render_welcome_image(self, subject: str) -> None:
+    def render_welcome_image(self, subject: str, out_path: Path) -> None:
         """
         Render a welcome image: 'Welcome to Daily Dose of Python'
         """
-        out_path =  self.BASE_DIR / subject / "images" / "welcome" / "welcome.png"
+        
         if out_path.exists():
-            print(f"!!! {out_path} exists! remove that to recreate with new changes !!!")
+            print(f"Welcome image already exists at {out_path}")
             return
 
-        overlay_path = Path(f"pybender/assets/backgrounds/{subject}_img_new.png")
+        overlay_path = self.ASSETS_DIR / "overlays" / f"{subject}_img_new.png"
         img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
         draw = ImageDraw.Draw(img)
 
@@ -1325,7 +1236,16 @@ class ImageRenderer:
             overlay_x = (self.WIDTH - overlay_w) // 2
             overlay_y = y + 20
             img.paste(overlay_resized, (overlay_x, overlay_y), overlay_resized)
-
+        else:
+            # Fallback to default overlay if subject-specific doesn't exist
+            default_overlay_path = self.DEFAULT_OVERLAY_PATH
+            if default_overlay_path.exists():
+                overlay = Image.open(default_overlay_path).convert("RGBA")
+                overlay_w, overlay_h = 600, 600
+                overlay_resized = overlay.resize((overlay_w, overlay_h), Image.Resampling.LANCZOS)
+                overlay_x = (self.WIDTH - overlay_w) // 2
+                overlay_y = y + 20
+                img.paste(overlay_resized, (overlay_x, overlay_y), overlay_resized)
         y += overlay_h + 60  # Adjust y position for footer text
 
         # --------------------------------------------------
@@ -1348,6 +1268,190 @@ class ImageRenderer:
         img.save(out_path)
         print(f"Welcome image saved → {out_path}")
 
+    def render_transition_sequence(self, subject, transition_dir) -> dict:
+        """
+        Generate a reusable countdown transition sequence (4 images).
+        Used for combined reel strategy with 2-second countdown timer.
+        
+        Returns dict with paths to all 4 transition images:
+        {
+            "base": Path to "Want to guess?" image (0.6s),
+            "2": Path to "2" countdown image (0.6s),
+            "1": Path to "1" countdown image (0.6s),
+            "ready": Path to "Ready for the answer?" image (0.2s)
+        }
+        
+        Total duration: 2 seconds
+        """
+        transition_dir.mkdir(parents=True, exist_ok=True)
+        
+        transition_paths = {
+            "base": transition_dir / "transition_base.png",
+            "2": transition_dir / "transition_2.png",
+            "1": transition_dir / "transition_1.png",
+            "ready": transition_dir / "transition_ready.png",
+        }
+        
+        # Check if all images already exist
+        if all(p.exists() for p in transition_paths.values()):
+            print(f"✅ Transition sequence already exists")
+            return transition_paths
+        
+        # --------------------------------------------------
+        # 1. Base: "Want to guess?"
+        # --------------------------------------------------
+        img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
+        draw = ImageDraw.Draw(img)
+        
+        content_w, content_h = 800, 600
+        content_x = (self.WIDTH - content_w) // 2
+        content_y = (self.HEIGHT - content_h) // 2
+        
+        # Background card
+        draw.rounded_rectangle(
+            [content_x, content_y, content_x + content_w, content_y + content_h],
+            radius=32,
+            fill=self.CARD_COLOR
+        )
+        draw.rounded_rectangle(
+            [content_x, content_y, content_x + content_w, content_y + content_h],
+            radius=32,
+            outline=self.ACCENT_COLOR,
+            width=2
+        )
+        
+        # Main text
+        main_text = "Want to guess?"
+        main_bbox = draw.textbbox((0, 0), main_text, font=self.TITLE_FONT)
+        main_w = main_bbox[2] - main_bbox[0]
+        main_x = (self.WIDTH - main_w) // 2
+        main_y = content_y + 150
+        
+        draw.text((main_x, main_y), main_text, font=self.TITLE_FONT, fill=self.ACCENT_COLOR)
+        
+        # Subtitle
+        subtitle = "Pause the video and think..."
+        sub_bbox = draw.textbbox((0, 0), subtitle, font=self.TEXT_FONT)
+        sub_w = sub_bbox[2] - sub_bbox[0]
+        sub_x = (self.WIDTH - sub_w) // 2
+        sub_y = main_y + 100
+        
+        draw.text((sub_x, sub_y), subtitle, font=self.TEXT_FONT, fill=self.SUBTLE_TEXT)
+        
+        # Decorative dots
+        dot_y = sub_y + 120
+        dot_spacing = 80
+        dot_radius = 8
+        
+        for i in range(3):
+            dot_x = (self.WIDTH // 2) - 80 + (i * dot_spacing)
+            draw.ellipse(
+                [dot_x - dot_radius, dot_y - dot_radius, 
+                dot_x + dot_radius, dot_y + dot_radius],
+                fill=self.ACCENT_COLOR
+            )
+        
+        img.save(transition_paths["base"])
+        print(f"✅ Transition base image created")
+        
+        # --------------------------------------------------
+        # 2. Countdown: "2"
+        # --------------------------------------------------
+        img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
+        draw = ImageDraw.Draw(img)
+        
+        # Background card (slightly dimmer)
+        dimmer_color = tuple(int(c * 0.8) for c in self.CARD_COLOR)
+        draw.rounded_rectangle(
+            [content_x, content_y, content_x + content_w, content_y + content_h],
+            radius=32,
+            fill=dimmer_color
+        )
+        
+        # Large "2" number
+        countdown_font = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "JetBrainsMono-Regular.ttf"), 320)
+        number_text = "2"
+        num_bbox = draw.textbbox((0, 0), number_text, font=countdown_font)
+        num_w = num_bbox[2] - num_bbox[0]
+        num_h = num_bbox[3] - num_bbox[1]
+        num_x = (self.WIDTH - num_w) // 2
+        num_y = (self.HEIGHT - num_h) // 2 - 50
+        
+        draw.text((num_x, num_y), number_text, font=countdown_font, fill=self.ACCENT_COLOR)
+        
+        img.save(transition_paths["2"])
+        print(f"✅ Transition countdown '2' image created")
+        
+        # --------------------------------------------------
+        # 3. Countdown: "1"
+        # --------------------------------------------------
+        img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
+        draw = ImageDraw.Draw(img)
+        
+        # Background card (even dimmer)
+        dimmer_color = tuple(int(c * 0.7) for c in self.CARD_COLOR)
+        draw.rounded_rectangle(
+            [content_x, content_y, content_x + content_w, content_y + content_h],
+            radius=32,
+            fill=dimmer_color
+        )
+        
+        # Large "1" number
+        number_text = "1"
+        num_bbox = draw.textbbox((0, 0), number_text, font=countdown_font)
+        num_w = num_bbox[2] - num_bbox[0]
+        num_h = num_bbox[3] - num_bbox[1]
+        num_x = (self.WIDTH - num_w) // 2
+        num_y = (self.HEIGHT - num_h) // 2 - 50
+        
+        draw.text((num_x, num_y), number_text, font=countdown_font, fill=self.SUCCESS_COLOR)
+        
+        img.save(transition_paths["1"])
+        print(f"✅ Transition countdown '1' image created")
+        
+        # --------------------------------------------------
+        # 4. Ready: "Ready for the answer?"
+        # --------------------------------------------------
+        img = Image.new("RGB", (self.WIDTH, self.HEIGHT), self.BG_COLOR)
+        draw = ImageDraw.Draw(img)
+        
+        # Background card (back to normal)
+        draw.rounded_rectangle(
+            [content_x, content_y, content_x + content_w, content_y + content_h],
+            radius=32,
+            fill=self.CARD_COLOR
+        )
+        draw.rounded_rectangle(
+            [content_x, content_y, content_x + content_w, content_y + content_h],
+            radius=32,
+            outline=self.ACCENT_COLOR,
+            width=2
+        )
+        
+        # Ready text
+        ready_text = "Ready for the answer?"
+        ready_bbox = draw.textbbox((0, 0), ready_text, font=self.TITLE_FONT)
+        ready_w = ready_bbox[2] - ready_bbox[0]
+        ready_x = (self.WIDTH - ready_w) // 2
+        ready_y = content_y + 200
+        
+        draw.text((ready_x, ready_y), ready_text, font=self.TITLE_FONT, fill=self.SUCCESS_COLOR)
+        
+        # Subtitle
+        emoji_text = "Let's go!"
+        emoji_bbox = draw.textbbox((0, 0), emoji_text, font=self.TEXT_FONT)
+        emoji_w = emoji_bbox[2] - emoji_bbox[0]
+        emoji_x = (self.WIDTH - emoji_w) // 2
+        emoji_y = ready_y + 120
+        
+        draw.text((emoji_x, emoji_y), emoji_text, font=self.TEXT_FONT, fill=self.ACCENT_COLOR)
+        
+        img.save(transition_paths["ready"])
+        print(f"✅ Transition ready image created")
+        
+        print(f"✅ Complete transition sequence generated (4 images, 2 seconds total)")
+        return transition_paths
+
     def main(self, questions_per_run: int, subject: str = "python") -> Path:
 
         # --------------------------------------------------
@@ -1358,7 +1462,22 @@ class ImageRenderer:
         RUN_ID = f"{RUN_DATE}_{RUN_TIMESTAMP}"
         topic = None
         print(f"Starting run: {RUN_ID}")
-        
+
+        # --------------------------------------------------
+        # Output directories (type-based)
+        # --------------------------------------------------
+        base_img_dir = self.BASE_DIR / subject / "images"
+        question_dir = base_img_dir / "questions"
+        answer_dir = base_img_dir / "answers"
+        welcome_img_path = base_img_dir / "welcome.png"
+        cta_img_path = base_img_dir / "cta.png"
+
+        transition_dir = self.ASSETS_DIR / "transitions"
+        run_dir = self.BASE_DIR / subject / "runs" 
+
+        self.render_transition_sequence(subject=subject, transition_dir=transition_dir)
+        self.render_cta_image(subject=subject, out_path=cta_img_path)
+        self.render_welcome_image(subject=subject, out_path=welcome_img_path)
         # --------------------------------------------------
         # Generate questions
         # --------------------------------------------------
@@ -1366,7 +1485,7 @@ class ImageRenderer:
             print("Using static questions from output/questions.json")
             with open("output/questions.json", "r") as f:
                 questions_data = json.load(f)
-                topic, content_type = "docker_k8s", "qa"
+                topic, content_type = "python", "code_output"
                 # topic, content_type = "javascript", "code_output"
                 questions = [Question(**q) for q in questions_data]
         else:
@@ -1377,17 +1496,9 @@ class ImageRenderer:
         for idx, q in enumerate(questions, start=1):
             q.question_id = f"{RUN_ID}_q{idx:02d}"
 
-        # --------------------------------------------------
-        # Output directories (type-based)
-        # --------------------------------------------------
-        base_img_dir = self.BASE_DIR / subject / "images"
-        question_dir = base_img_dir / "questions"
-        answer_dir = base_img_dir / "answers"
-        single_dir = base_img_dir / "singles"
+        # -----------------CREATE DIRECTORIES---------------------------------
 
-        run_dir = self.BASE_DIR / subject / "runs"
-
-        for d in [question_dir, answer_dir, single_dir, run_dir]:
+        for d in [question_dir, answer_dir, run_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
         metadata = {
@@ -1414,12 +1525,10 @@ class ImageRenderer:
             
             question_img_out_path = question_dir / f"{q.question_id}_question.png"
             answer_img_out_path = answer_dir / f"{q.question_id}_answer.png"
-            single_img_out_path = single_dir / f"{q.question_id}_single.png"
 
-            # Render all three standard images (scenario included inline for QUESTION/SINGLE when applicable)
+            # Render images (scenario included inline for QUESTION/SINGLE when applicable)
             self.render_image(q, question_img_out_path, layout_profile, subject, RenderMode.QUESTION)
             self.render_image(q, answer_img_out_path, layout_profile, subject, RenderMode.ANSWER)
-            self.render_image(q, single_img_out_path, layout_profile, subject, RenderMode.SINGLE)
 
             metadata["questions"].append({
                 "question_id": q.question_id,
@@ -1429,7 +1538,7 @@ class ImageRenderer:
                 "assets": {
                     "question_image": str(question_img_out_path),
                     "answer_image": str(answer_img_out_path),
-                    "single_post_image": str(single_img_out_path)
+                    # "single_post_image": str(single_img_out_path)
                 }
             })
 
@@ -1443,28 +1552,23 @@ class ImageRenderer:
                 json.dump(metadata, f, indent=2)
 
             print(f"Metadata written to {metadata_path}")
-        # TODO: create separate welcome pages per subject
-        # self.render_day1_cta_image(subject)
-        # self.render_day2_cta_image(subject)
-        # self.render_welcome_image(subject)
+
         print("Image rendering process completed successfully")
         return metadata_path
 
 # if __name__ == "__main__":
-#     renderer = ImageRenderer()
-#     subjects = ["sql"]
-#     # subjects = [
-#     #     "python", "sql", "regex", "system_design", 
-#     #     "linux"
-#     #     ,"docker_k8s", "javascript", "rust", "golang"
-#     # ]
-#     import time
-#     for subject in subjects:
-#         # renderer.render_welcome_image(subject)
-#         # renderer.render_day1_cta_image(subject)
-#         # renderer.render_day2_cta_image(subject)
-#         try:
-#             renderer.main(1, subject=subject)
-#             time.sleep(2)
-#         except Exception as e:
-#             print(f"Error rendering for subject {subject}: {e}")
+    # renderer = ImageRenderer()
+    # # renderer.render_transition_sequence()
+    # subjects = ["python"]
+    # # subjects = [
+    # #     "python", "sql", "regex", "system_design", 
+    # #     "linux"
+    # #     ,"docker_k8s", "javascript", "rust", "golang"
+    # # ]
+    # import time
+    # for subject in subjects:
+    #     try:
+    #         renderer.main(1, subject=subject)
+    #         time.sleep(2)
+    #     except Exception as e:
+    #         print(f"Error rendering for subject {subject}: {e}")

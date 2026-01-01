@@ -11,7 +11,5 @@ dist/
 pybenders/
 .env
 output/
-
-pybenders/output/
-pybenders/pybender/assets/backgrounds
+output_1/
 pybender/assets/backgrounds
