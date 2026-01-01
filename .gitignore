@@ -12,4 +12,5 @@ pybenders/
 .env
 output/
 output_1/
+uploaded/
 pybender/assets/backgrounds
