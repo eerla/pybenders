@@ -1,19 +1,30 @@
 import json
+import logging
 import random
 from pathlib import Path
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
+from pybender.config.logging_config import setup_logging
 from pybender.generator.schema import Question
 from pybender.render.layout_profiles import LAYOUT_PROFILES
 from pybender.generator.question_gen import QuestionGenerator
 from pybender.render.layout_resolver import resolve_layout_profile
 from pybender.render.render_mode import RenderMode
 
+
+logger = logging.getLogger(__name__)
+
+
+def _ensure_logging_configured() -> None:
+    if not logging.getLogger().handlers:
+        setup_logging()
+
 class ImageRenderer:
     """
     Wrapper class for image rendering functions.
     """
     def __init__(self):
+        _ensure_logging_configured()
         self.MODEL = "gpt-4o-mini"
         # Canvas
         self.WIDTH, self.HEIGHT = 1080, 1920
@@ -733,7 +744,7 @@ class ImageRenderer:
             logo = Image.open(self.LOGO_PATH).convert("RGBA")
             logo = logo.resize((self.LOGO_WIDTH, self.LOGO_HEIGHT), Image.Resampling.LANCZOS)
         except Exception as e:
-            print(f"Warning: Could not load logo: {e}")
+            logger.warning("Could not load logo: %s", e)
             return canvas
 
         # Position: bottom-right corner of card with padding
@@ -1056,7 +1067,7 @@ class ImageRenderer:
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
         canvas.save(out_path)
-        print(f"image saved to: {out_path}")
+        logger.info("Image saved to %s", out_path)
 
 
     def render_cta_image(self, subject: str, out_path: Path) -> None:
@@ -1065,7 +1076,7 @@ class ImageRenderer:
         Saved once and reused for all reels.
         """
         if out_path.exists():
-            print(f"CTA image already exists at {out_path}")
+            logger.info("CTA image already exists at %s", out_path)
             return
 
         TITLE_FONT = ImageFont.truetype(str(self.INTER_FONT_DIR / "Inter-SemiBold.ttf"), 84)
@@ -1143,7 +1154,7 @@ class ImageRenderer:
         # --------------------------------------------------
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
-        print(f"CTA image saved → {out_path}")
+        logger.info("CTA image saved → %s", out_path)
 
     def render_welcome_image(self, subject: str, out_path: Path) -> None:
         """
@@ -1151,7 +1162,7 @@ class ImageRenderer:
         """
         
         if out_path.exists():
-            print(f"Welcome image already exists at {out_path}")
+            logger.info("Welcome image already exists at %s", out_path)
             return
 
         overlay_path = self.ASSETS_DIR / "overlays" / f"{subject}_img_new.png"
@@ -1266,7 +1277,7 @@ class ImageRenderer:
         # --------------------------------------------------
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path)
-        print(f"Welcome image saved → {out_path}")
+        logger.info("Welcome image saved → %s", out_path)
 
     def render_transition_sequence(self, subject, transition_dir) -> dict:
         """
@@ -1294,7 +1305,7 @@ class ImageRenderer:
         
         # Check if all images already exist
         if all(p.exists() for p in transition_paths.values()):
-            print(f"✅ Transition sequence already exists")
+            logger.info("✅ Transition sequence already exists")
             return transition_paths
         
         # --------------------------------------------------
@@ -1352,7 +1363,7 @@ class ImageRenderer:
             )
         
         img.save(transition_paths["base"])
-        print(f"✅ Transition base image created")
+        logger.info("✅ Transition base image created")
         
         # --------------------------------------------------
         # 2. Countdown: "2"
@@ -1380,7 +1391,7 @@ class ImageRenderer:
         draw.text((num_x, num_y), number_text, font=countdown_font, fill=self.ACCENT_COLOR)
         
         img.save(transition_paths["2"])
-        print(f"✅ Transition countdown '2' image created")
+        logger.info("✅ Transition countdown '2' image created")
         
         # --------------------------------------------------
         # 3. Countdown: "1"
@@ -1407,7 +1418,7 @@ class ImageRenderer:
         draw.text((num_x, num_y), number_text, font=countdown_font, fill=self.SUCCESS_COLOR)
         
         img.save(transition_paths["1"])
-        print(f"✅ Transition countdown '1' image created")
+        logger.info("✅ Transition countdown '1' image created")
         
         # --------------------------------------------------
         # 4. Ready: "Ready for the answer?"
@@ -1447,9 +1458,9 @@ class ImageRenderer:
         draw.text((emoji_x, emoji_y), emoji_text, font=self.TEXT_FONT, fill=self.ACCENT_COLOR)
         
         img.save(transition_paths["ready"])
-        print(f"✅ Transition ready image created")
+        logger.info("✅ Transition ready image created")
         
-        print(f"✅ Complete transition sequence generated (4 images, 2 seconds total)")
+        logger.info("✅ Complete transition sequence generated (4 images, 2 seconds total)")
         return transition_paths
 
     def main(self, questions_per_run: int, subject: str = "python") -> Path:
@@ -1461,7 +1472,7 @@ class ImageRenderer:
         RUN_TIMESTAMP = datetime.now().strftime("%H%M%S")
         RUN_ID = f"{RUN_DATE}_{RUN_TIMESTAMP}"
         topic = None
-        print(f"Starting run: {RUN_ID}")
+        logger.info("Starting run: %s", RUN_ID)
 
         # --------------------------------------------------
         # Output directories (type-based)
@@ -1482,7 +1493,7 @@ class ImageRenderer:
         # Generate questions
         # --------------------------------------------------
         if self.USE_STATIC_QUESTIONS:
-            print("Using static questions from output/questions.json")
+            logger.info("Using static questions from output/questions.json")
             with open("output/questions.json", "r") as f:
                 questions_data = json.load(f)
                 topic, content_type = "python", "code_output"
@@ -1516,7 +1527,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Render assets
         # --------------------------------------------------
-        print("Rendering images...")
+        logger.info("Rendering images...")
 
         for q in questions:
             q_slug = self.slugify(q.title)
@@ -1542,7 +1553,7 @@ class ImageRenderer:
                 }
             })
 
-        print("All images rendered successfully")
+        logger.info("All images rendered successfully")
         # --------------------------------------------------
         # Write metadata.json (single source of truth)
         # --------------------------------------------------
@@ -1551,9 +1562,9 @@ class ImageRenderer:
             with open(metadata_path, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=2)
 
-            print(f"Metadata written to {metadata_path}")
+            logger.info("Metadata written to %s", metadata_path)
 
-        print("Image rendering process completed successfully")
+        logger.info("Image rendering process completed successfully")
         return metadata_path
 
 # if __name__ == "__main__":
@@ -1571,4 +1582,4 @@ class ImageRenderer:
     #         renderer.main(1, subject=subject)
     #         time.sleep(2)
     #     except Exception as e:
-    #         print(f"Error rendering for subject {subject}: {e}")
+    #         logger.exception("Error rendering for subject %s", subject)

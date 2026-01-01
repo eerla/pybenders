@@ -1,21 +1,34 @@
+import json
+import logging
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
+
+import numpy as np
+from moviepy.audio.AudioClip import AudioArrayClip
 from moviepy.editor import (
-    ImageClip,
-    CompositeVideoClip,
     AudioFileClip,
+    CompositeVideoClip,
+    ImageClip,
     vfx,
 )
-from moviepy.audio.AudioClip import AudioArrayClip
-from pathlib import Path
-from typing import List, Dict, Any
-import numpy as np
-import json
-import os
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from pybender.config.logging_config import setup_logging
+
+
+logger = logging.getLogger(__name__)
+
+
+def _ensure_logging_configured() -> None:
+    if not logging.getLogger().handlers:
+        setup_logging()
 
 
 class VideoRenderer:
     def __init__(self):
+        _ensure_logging_configured()
         self.VIDEO_W, self.VIDEO_H = 1080, 1920
         self.FPS = 30
         self.SAFE_WIDTH = 960
@@ -253,7 +266,7 @@ class VideoRenderer:
             threads=1  # Reduced for stability
         )
         
-        print(f"✅ Combined reel generated at: {out_path}")
+        logger.info("✅ Combined reel generated at: %s", out_path)
 
     def process_question_v2(self, asset: dict) -> dict:
         """
@@ -327,7 +340,7 @@ class VideoRenderer:
             for future in as_completed(futures):
                 result = future.result()
                 reel_results.append(result)
-                print(f"✅ Combined reel generated for {result['question_id']}")
+                logger.info("✅ Combined reel generated for %s", result["question_id"])
         
         # --------------------------------------------------
         # Update metadata with reel paths
@@ -346,8 +359,8 @@ class VideoRenderer:
         with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
         
-        print(f"📦 All combined reels generated ({len(reel_results)} total)")
-        print(f"📦 Metadata updated with combined reel paths")
+        logger.info("📦 All combined reels generated (%s total)", len(reel_results))
+        logger.info("📦 Metadata updated with combined reel paths")
         
         return metadata_path
 
@@ -358,10 +371,10 @@ class VideoRenderer:
 #     test_metadata_path = renderer.BASE_DIR / "python" / "runs"
     
 #     if not test_metadata_path.exists():
-#         print(f"❌ Metadata directory not found at: {test_metadata_path}")
+#         logger.error("❌ Metadata directory not found at: %s", test_metadata_path)
 #     else:
 #         files = os.listdir(test_metadata_path)
 #         for file in files:
 #             if file.endswith(".json"):
-#                 print(f"Processing file: {file}")
+#                 logger.info("Processing file: %s", file)
 #                 renderer.main(test_metadata_path / file)

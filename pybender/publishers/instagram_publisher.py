@@ -631,14 +631,14 @@ def upload_reels_from_metadata(
                     os.remove(tmp_thumbnail_path)
                     logger.debug(f"Removed temporary thumbnail: {tmp_thumbnail_path}")
                 
-                # Move the uploaded reel to archive with a brief wait to release file lock
-                time.sleep(5)  # Allow instagrapi/OS to release the file handle
+                # Move the uploaded reel to archive with a longer wait to release file lock
+                time.sleep(10)  # Allow instagrapi/OS to release the file handle
                 destination = date_folder / reel_path.name
                 try:
                     reel_path.rename(destination)
                 except PermissionError as e:
-                    logger.warning(f"File locked, retrying move after 3s: {e}")
-                    time.sleep(3)
+                    logger.warning(f"File locked, retrying move after 10s: {e}")
+                    time.sleep(10)
                     reel_path.rename(destination)
                 logger.info(f"Archived reel to: {destination}")
                 

@@ -1,14 +1,24 @@
 # pybenders/generator/question_gen.py
 import json
+import logging
 import random
 from datetime import datetime
 from openai import OpenAI
 
+from pybender.config.logging_config import setup_logging
 from pybender.config.settings import OPENAI_API_KEY, MODEL
 from pybender.generator.schema import Question
 from pybender.generator.content_registry import CONTENT_REGISTRY
 from pybender.prompts.templates import PROMPT_TEMPLATES
 from pybender.validation.validate_questions import validate_questions
+
+
+logger = logging.getLogger(__name__)
+
+
+def _ensure_logging_configured() -> None:
+    if not logging.getLogger().handlers:
+        setup_logging()
 
 
 class ValidationError(Exception):
@@ -17,6 +27,7 @@ class ValidationError(Exception):
 class QuestionGenerator:
 
     def __init__(self):
+        _ensure_logging_configured()
         self.client = OpenAI(api_key=OPENAI_API_KEY)
         self.run_date = datetime.now().strftime("%Y%m%d")
         self.run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -48,9 +59,9 @@ class QuestionGenerator:
         )
 
         try:
-            print(f"🧠 Generating {n} questions via LLM for {subject} on topic: {topic}")
+            logger.info("🧠 Generating %s questions via LLM for %s on topic: %s", n, subject, topic)
             raw = self.get_llm_response(prompt)
-            # print(f"💬 Raw LLM response:\n{raw}\n")
+            logger.debug("💬 Raw LLM response:\n%s", raw)
             if not raw or not raw.strip():
                 raise ValueError(f"LLM returned empty response for subject {subject} on topic {topic}")
             
@@ -64,7 +75,7 @@ class QuestionGenerator:
         attempt = 0
         while failed and attempt < self.MAX_RETRIES:
             attempt += 1
-            print(f"🔁 Retry {attempt}: regenerating {len(failed)} invalid questions")
+            logger.info("🔁 Retry %s: regenerating %s invalid questions", attempt, len(failed))
 
             regenerated = self.regenerate_failed_questions(
                 failed,
@@ -76,7 +87,7 @@ class QuestionGenerator:
             valid.extend(valid_retry)
 
         if failed:
-            print(f"⚠️ Dropping {len(failed)} questions after {self.MAX_RETRIES} retries")
+            logger.warning("⚠️ Dropping %s questions after %s retries", len(failed), self.MAX_RETRIES)
 
         return [Question(**q) for q in valid], topic, content_type
 
