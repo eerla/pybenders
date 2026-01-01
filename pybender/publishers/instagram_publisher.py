@@ -83,8 +83,75 @@ class InstagramVideoUploader:
         # Set delays to mimic real user behavior
         self.cl.delay_range = delay_range
         
-        # Multi-subject captions (generic enough for all topics)
-        self.captions = [
+        # Subject-specific captions with relevant hashtags
+        self.subject_captions = {
+            "python": [
+                "Can you crack this in 30 seconds? 🚀 #Python #CodeChallenge #PythonTips #Programming",
+                "Think you've got the answer? Prove it. ⚡ #Python #DevQuiz #PythonProgramming #Coding",
+                "One quick puzzle: what's your move? 🤔 #Python #CodeChallenge #PythonDev #Programming",
+                "Your turn—solve it before the timer ends. 🎯 #Python #CodingQuiz #PythonCoding #Tech",
+                "Pause, solve, flex your brain. 🧠 #Python #CodeChallenge #PythonTricks #Programming"
+            ],
+            "sql": [
+                "Can you crack this in 30 seconds? 🚀 #SQL #Database #DataEngineering #SQLQuery",
+                "Think you've got the answer? Prove it. ⚡ #SQL #DatabaseDesign #DataScience #SQLServer",
+                "One quick puzzle: what's your move? 🤔 #SQL #DataEngineering #DatabaseDev #SQLQueries",
+                "Your turn—solve it before the timer ends. 🎯 #SQL #DataAnalytics #DatabaseAdmin #SQLChallenge",
+                "Pause, solve, flex your brain. 🧠 #SQL #Database #DataEngineering #SQLTips"
+            ],
+            "javascript": [
+                "Can you crack this in 30 seconds? 🚀 #JavaScript #WebDev #JS #Frontend",
+                "Think you've got the answer? Prove it. ⚡ #JavaScript #WebDevelopment #JSCode #Coding",
+                "One quick puzzle: what's your move? 🤔 #JavaScript #FrontendDev #JSProgramming #WebDev",
+                "Your turn—solve it before the timer ends. 🎯 #JavaScript #JSChallenge #WebDevelopment #Frontend",
+                "Pause, solve, flex your brain. 🧠 #JavaScript #WebDev #JSTricks #Programming"
+            ],
+            "rust": [
+                "Can you crack this in 30 seconds? 🚀 #RustLang #SystemsProgramming #Rust #Programming",
+                "Think you've got the answer? Prove it. ⚡ #RustLang #RustProgramming #SystemsCode #Coding",
+                "One quick puzzle: what's your move? 🤔 #RustLang #RustDev #LowLevel #Programming",
+                "Your turn—solve it before the timer ends. 🎯 #RustLang #RustCode #SystemsProgramming #Tech",
+                "Pause, solve, flex your brain. 🧠 #RustLang #Rust #SafeSystems #Programming"
+            ],
+            "golang": [
+                "Can you crack this in 30 seconds? 🚀 #Golang #Go #Backend #CloudNative",
+                "Think you've got the answer? Prove it. ⚡ #Golang #GoDev #BackendDev #Programming",
+                "One quick puzzle: what's your move? 🤔 #Golang #GoLang #Microservices #CloudNative",
+                "Your turn—solve it before the timer ends. 🎯 #Golang #Go #BackendDevelopment #DevOps",
+                "Pause, solve, flex your brain. 🧠 #Golang #GoProgramming #Backend #CloudNative"
+            ],
+            "linux": [
+                "Can you crack this in 30 seconds? 🚀 #Linux #SysAdmin #DevOps #Terminal",
+                "Think you've got the answer? Prove it. ⚡ #Linux #SystemAdmin #BashScripting #DevOps",
+                "One quick puzzle: what's your move? 🤔 #Linux #CommandLine #SysAdmin #OpenSource",
+                "Your turn—solve it before the timer ends. 🎯 #Linux #DevOps #SystemAdministration #Terminal",
+                "Pause, solve, flex your brain. 🧠 #Linux #SysAdmin #BashCommands #DevOps"
+            ],
+            "regex": [
+                "Can you crack this in 30 seconds? 🚀 #Regex #RegularExpressions #Programming #TextProcessing",
+                "Think you've got the answer? Prove it. ⚡ #Regex #RegExp #PatternMatching #Coding",
+                "One quick puzzle: what's your move? 🤔 #Regex #RegularExpressions #TextParsing #Programming",
+                "Your turn—solve it before the timer ends. 🎯 #Regex #PatternMatching #Programming #DataValidation",
+                "Pause, solve, flex your brain. 🧠 #Regex #RegularExpressions #StringManipulation #Programming"
+            ],
+            "docker_k8s": [
+                "Can you crack this in 30 seconds? 🚀 #Docker #Kubernetes #DevOps #CloudNative",
+                "Think you've got the answer? Prove it. ⚡ #Docker #K8s #ContainerOrchestration #DevOps",
+                "One quick puzzle: what's your move? 🤔 #Docker #Kubernetes #Containers #CloudNative",
+                "Your turn—solve it before the timer ends. 🎯 #Docker #K8s #DevOps #CloudComputing",
+                "Pause, solve, flex your brain. 🧠 #Docker #Kubernetes #Containerization #DevOps"
+            ],
+            "system_design": [
+                "Can you crack this in 30 seconds? 🚀 #SystemDesign #Architecture #SoftwareEngineering #ScalableSystems",
+                "Think you've got the answer? Prove it. ⚡ #SystemDesign #SoftwareArchitecture #Engineering #Scalability",
+                "One quick puzzle: what's your move? 🤔 #SystemDesign #Architecture #DistributedSystems #Engineering",
+                "Your turn—solve it before the timer ends. 🎯 #SystemDesign #SoftwareEngineering #Architecture #Tech",
+                "Pause, solve, flex your brain. 🧠 #SystemDesign #Architecture #Scalability #SoftwareEngineering"
+            ]
+        }
+        
+        # Generic fallback captions for unknown subjects
+        self.generic_captions = [
             "Can you crack this in 30 seconds? 🚀 #CodeChallenge #Programming",
             "Think you've got the answer? Prove it. ⚡ #DevQuiz #Coding",
             "One quick puzzle: what's your move? 🤔 #CodeChallenge #Programming",
@@ -264,17 +331,19 @@ class InstagramVideoUploader:
         video_path: str,
         caption: str = "",
         thumbnail_path: Optional[str] = None,
-        use_custom_thumbnail: bool = False
+        use_custom_thumbnail: bool = False,
+        subject: str = "python"
         ) -> bool:
         """
         Upload a video as Instagram Reel (single attempt, no retries).
         
         Args:
             video_path: Path to video file (MP4, MOV, etc.)
-            caption: Caption text for the reel
+            caption: Caption text for the reel (if empty, auto-generated from subject)
             thumbnail_path: Custom thumbnail image path (optional)
             use_custom_thumbnail: If True, use custom thumbnail. If False, auto-generate (safer).
                                  Note: Custom thumbnails may cause validation errors.
+            subject: Subject/topic for caption selection (python, sql, javascript, etc.)
         
         Returns:
             True if upload successful, False otherwise
@@ -298,6 +367,12 @@ class InstagramVideoUploader:
             )
         """
         video_path = Path(video_path)
+        
+        # Auto-generate caption from subject if not provided
+        if not caption:
+            captions = self.subject_captions.get(subject, self.generic_captions)
+            caption = random.choice(captions)
+            logger.debug(f"Using {subject} caption: {caption[:60]}...")
         
         # Validate video file exists
         if not video_path.exists():
@@ -571,6 +646,10 @@ def upload_reels_from_metadata(
     uploaded_reels = []
     failed_reels = []
     
+    # Extract subject from metadata for caption selection
+    subject = metadata.get('subject', 'python')
+    logger.info(f"Using subject for captions: {subject}")
+    
     # Upload each reel
     for idx, question in enumerate(questions, 1):
         question_id = question.get('question_id', 'unknown')
@@ -604,12 +683,13 @@ def upload_reels_from_metadata(
             logger.warning(f"Thumbnail file not found: {thumbnail_path}")
             thumbnail_path = None
         
-        # Upload the reel
+        # Upload the reel with subject-specific caption
         success = uploader.upload_reel(
             video_path=str(reel_path),
-            caption=random.choice(uploader.captions),
+            caption="",  # Auto-generate from subject
             thumbnail_path=str(thumbnail_path) if thumbnail_path else None,
-            use_custom_thumbnail=True if thumbnail_path else False
+            use_custom_thumbnail=True if thumbnail_path else False,
+            subject=subject
         )
         
         if success:
