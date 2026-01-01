@@ -12,6 +12,7 @@ Features:
 - Optional proxy support
 """
 import logging
+import shutil
 import time
 import json
 import os
@@ -711,16 +712,42 @@ def upload_reels_from_metadata(
                     os.remove(tmp_thumbnail_path)
                     logger.debug(f"Removed temporary thumbnail: {tmp_thumbnail_path}")
                 
-                # Move the uploaded reel to archive with a longer wait to release file lock
-                time.sleep(10)  # Allow instagrapi/OS to release the file handle
+                # Move the uploaded reel to archive with aggressive exponential backoff retry
                 destination = date_folder / reel_path.name
-                try:
-                    reel_path.rename(destination)
-                except PermissionError as e:
-                    logger.warning(f"File locked, retrying move after 10s: {e}")
-                    time.sleep(10)
-                    reel_path.rename(destination)
-                logger.info(f"Archived reel to: {destination}")
+                max_retries = 7
+                retry_delays = [5, 10, 15, 20, 30, 45, 60]  # Longer exponential backoff in seconds
+                archive_success = False
+                
+                for attempt in range(1, max_retries + 1):
+                    try:
+                        # Initial longer wait before first attempt to ensure all handles are released
+                        if attempt == 1:
+                            logger.info("Waiting 20s before archiving to ensure all file handles are released...")
+                            time.sleep(20)
+                        
+                        logger.debug(f"Attempting to archive reel (attempt {attempt}/{max_retries})...")
+                        shutil.move(str(reel_path), str(destination))
+                        logger.info(f"✓ Archived reel to: {destination}")
+                        archive_success = True
+                        break
+                        
+                    except (PermissionError, OSError, FileNotFoundError) as e:
+                        if attempt < max_retries:
+                            delay = retry_delays[attempt - 1]
+                            logger.warning(
+                                f"File locked (attempt {attempt}/{max_retries}), "
+                                f"retrying in {delay}s: {type(e).__name__}"
+                            )
+                            time.sleep(delay)
+                        else:
+                            # All retries exhausted
+                            logger.error(
+                                f"Failed to archive reel after {max_retries} attempts. "
+                                f"File may still be in use by system processes. "
+                                f"Manual archive may be needed: {reel_path} -> {destination}"
+                            )
+                            # Don't crash - upload was successful even if archive failed
+                            archive_success = False
                 
             except Exception as e:
                 logger.error(f"Failed to archive reel: {e}")
