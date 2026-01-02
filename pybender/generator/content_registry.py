@@ -58,7 +58,9 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "Yield from delegation in generators",
             "Structural pattern matching (match/case in 3.10+)",
             "Positional-only and keyword-only parameters",
-            "Dataclasses internals and field defaults"
+            "Dataclasses internals and field defaults",
+            "Python with Regex",
+            "Python memory management and reference counting",
         ],
     ),
 
