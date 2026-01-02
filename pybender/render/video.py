@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import gc
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
@@ -238,9 +239,11 @@ class VideoRenderer:
         # --------------------------------------------------
         # Audio
         # --------------------------------------------------
+        audio_clip = None
         if music_path and music_path.exists():
+            audio_clip = AudioFileClip(str(music_path))
             audio = (
-                AudioFileClip(str(music_path))
+                audio_clip
                 .subclip(0, final_video.duration)
                 .volumex(0.30)
             )
@@ -257,16 +260,32 @@ class VideoRenderer:
         # Export
         # --------------------------------------------------
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        final_video.write_videofile(
-            str(out_path),
-            codec="libx264",
-            audio_codec="aac",
-            fps=self.FPS,
-            preset="ultrafast",
-            threads=1  # Reduced for stability
-        )
+        # Collect all clips for cleanup
+        all_clips = [welcome_clip, question_clip, t_base_clip, t_2_clip, t_1_clip, t_ready_clip, answer_clip, cta_clip]
         
-        logger.info("✅ Combined reel generated at: %s", out_path)
+        try:
+            final_video.write_videofile(
+                str(out_path),
+                codec="libx264",
+                audio_codec="aac",
+                fps=self.FPS,
+                preset="ultrafast",
+                threads=1  # Reduced for stability
+            )
+            logger.info("✅ Combined reel generated at: %s", out_path)
+        finally:
+             # CRITICAL: Clean up MoviePy resources to free memory
+            try:
+                if audio_clip:
+                    audio_clip.close()
+                for clip in all_clips:
+                    clip.close()
+                final_video.close()
+            except Exception as e:
+                logger.warning(f"Error during clip cleanup: {e}")
+            finally:
+                del all_clips, final_video, audio_clip
+                gc.collect()  # Force garbage collection
 
     def process_question_v2(self, asset: dict) -> dict:
         """
