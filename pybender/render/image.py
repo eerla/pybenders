@@ -1,15 +1,26 @@
 import json
 import logging
 import random
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFont
+
 from pybender.config.logging_config import setup_logging
-from pybender.generator.schema import Question
-from pybender.render.layout_profiles import LAYOUT_PROFILES
 from pybender.generator.question_gen import QuestionGenerator
+from pybender.generator.schema import Question
+from pybender.render.carousel import CarouselRenderer
+from pybender.render.code_renderer import draw_editor_code_with_ide
+from pybender.render.layout_profiles import LAYOUT_PROFILES
 from pybender.render.layout_resolver import resolve_layout_profile
 from pybender.render.render_mode import RenderMode
+from pybender.render.text_utils import (
+    normalize_code,
+    slugify,
+    wrap_code_line,
+    wrap_text,
+    wrap_text_with_prefix,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -28,8 +39,6 @@ class ImageRenderer:
         self.MODEL = "gpt-4o-mini"
         # Canvas
         self.WIDTH, self.HEIGHT = 1080, 1920
-        # if for_carousel:
-        # WIDTH, HEIGHT = 1080, 1080
         self.PADDING_X = 60
         self.PADDING_Y = 60
         self.CODE_BLOCK_PADDING = 20
@@ -160,7 +169,7 @@ class ImageRenderer:
         
         # Measure the prefix in pixels and wrap the first line using the reduced width.
         prefix_width = self.draw.textlength(f"{prefix} ", font=self.TEXT_FONT)
-        lines = self.wrap_text_with_prefix(
+        lines = wrap_text_with_prefix(
             self.draw,
             scenario_text,
             self.TEXT_FONT,
@@ -232,164 +241,6 @@ class ImageRenderer:
 
         self.y_cursor += block_height + 20
 
-    # ---------- CODE (IDE STYLE) ----------
-    def _draw_editor_code_with_ide(self, canvas, code: str, subject: str):
-        """
-        Draw code with IDE-style header bar and line numbers.
-        Line numbers sync with source lines, not wrapped display lines.
-        Only shows line number on first wrapped line of each source line.
-        """
-        font = self.CODE_FONT
-        line_height = 48
-        max_width = self.WIDTH - (self.PADDING_X * 2) - 40 - self.IDE_GUTTER_WIDTH
-
-        # Wrap code lines and track which source line each wrapped line belongs to
-        wrapped_with_line_map = []  # List of (wrapped_line, source_line_num, is_first_of_source)
-        for src_line_idx, src_line in enumerate(code, start=1):
-            wrapped = self.wrap_code_line(self.draw, src_line, font, max_width)
-            for wrap_idx, wline in enumerate(wrapped):
-                is_first = (wrap_idx == 0)  # Only the first wrapped line gets the line number
-                wrapped_with_line_map.append((wline, src_line_idx, is_first))
-
-        wrapped_lines = [item[0] for item in wrapped_with_line_map]
-        code_block_height = len(wrapped_lines) * line_height + 30
-
-        # Draw unified IDE window (header + code as one block)
-        total_height = self.IDE_HEADER_HEIGHT + code_block_height
-        self.draw.rounded_rectangle(
-            [
-                self.PADDING_X,
-                self.y_cursor,
-                self.WIDTH - self.PADDING_X,
-                self.y_cursor + total_height,
-            ],
-            radius=18,
-            fill=self.CODE_BG,
-        )
-
-        # Draw header section on top
-        self.draw.rectangle(
-            [
-                self.PADDING_X,
-                self.y_cursor,
-                self.WIDTH - self.PADDING_X,
-                self.y_cursor + self.IDE_HEADER_HEIGHT,
-            ],
-            fill=self.IDE_HEADER_BG,
-        )
-
-        # Re-apply rounded corners to header top
-        self.draw.rounded_rectangle(
-            [
-                self.PADDING_X,
-                self.y_cursor,
-                self.WIDTH - self.PADDING_X,
-                self.y_cursor + self.IDE_HEADER_HEIGHT,
-            ],
-            radius=18,
-            fill=self.IDE_HEADER_BG,
-            corners=(True, True, False, False)  # Only round top corners
-        )
-
-        # Draw window control dots in header (macOS/VS Code style)
-        dot_y = self.y_cursor + self.IDE_HEADER_HEIGHT // 2
-        dot_radius = 5
-        dot_spacing = 16
-        start_x = self.PADDING_X + 12
-        
-        # Close (red)
-        self.draw.ellipse(
-            [start_x, dot_y - dot_radius, start_x + dot_radius * 2, dot_y + dot_radius],
-            fill=(255, 95, 86)
-        )
-        # Minimize (yellow)
-        self.draw.ellipse(
-            [start_x + dot_spacing, dot_y - dot_radius, start_x + dot_spacing + dot_radius * 2, dot_y + dot_radius],
-            fill=(255, 189, 46)
-        )
-        # Maximize (green)
-        self.draw.ellipse(
-            [start_x + dot_spacing * 2, dot_y - dot_radius, start_x + dot_spacing * 2 + dot_radius * 2, dot_y + dot_radius],
-            fill=(40, 201, 64)
-        )
-
-        # Draw language badge in header (vertically centered)
-        language = self.LANGUAGE_MAP.get(subject, subject.title())
-        badge_text = f"  daily dose of programming  "
-        
-        # Get text bounding box for vertical centering
-        bbox = self.draw.textbbox((0, 0), badge_text, font=self.SMALL_LABEL_FONT)
-        text_height = bbox[3] - bbox[1]
-        text_width = self.draw.textlength(badge_text, font=self.SMALL_LABEL_FONT)
-        
-        # Calculate dots area width (3 dots + spacing on left side)
-        dots_area_width = 12 + (dot_radius * 2) + dot_spacing + (dot_radius * 2) + dot_spacing + (dot_radius * 2) + 12
-        
-        # Center text horizontally, then shift LEFT by half the dots width to compensate
-        badge_x = (self.WIDTH - text_width) // 2 - (dots_area_width // 2)
-        
-        # Center text vertically in header
-        badge_y = self.y_cursor + (self.IDE_HEADER_HEIGHT - text_height) // 2
-        
-        self.draw.text(
-            (badge_x, badge_y),
-            badge_text,
-            font=self.CODE_FONT,
-            fill=self.SUBTLE_TEXT,
-        )
-
-        # Move cursor to code section
-        code_y_start = self.y_cursor + self.IDE_HEADER_HEIGHT
-
-        # Draw gutter background
-        self.draw.rectangle(
-            [
-                self.PADDING_X,
-                code_y_start,
-                self.PADDING_X + self.IDE_GUTTER_WIDTH,
-                code_y_start + code_block_height,
-            ],
-            fill=self.IDE_GUTTER_BG,
-        )
-
-        # Draw gutter separator line
-        self.draw.line(
-            [
-                self.PADDING_X + self.IDE_GUTTER_WIDTH,
-                code_y_start,
-                self.PADDING_X + self.IDE_GUTTER_WIDTH,
-                code_y_start + code_block_height,
-            ],
-            fill=(25, 32, 47),
-            width=5
-        )
-
-        # Draw line numbers and code
-        text_x = self.PADDING_X + self.IDE_GUTTER_WIDTH + 12
-        text_y = code_y_start + 15
-
-        for wline, src_line_num, is_first in wrapped_with_line_map:
-            # Draw line number only for first wrapped line of each source line
-            if is_first:
-                self.draw.text(
-                    (self.PADDING_X + 8, text_y),
-                    str(src_line_num),
-                    font=self.SMALL_LABEL_FONT,
-                    fill=self.IDE_LINE_NUMBER_COLOR,
-                )
-
-            # Draw code
-            self.draw.text(
-                (text_x, text_y),
-                wline,
-                font=font,
-                fill=self.TEXT_COLOR,
-            )
-            
-            text_y += line_height
-
-        self.y_cursor += total_height + 20
-    
     def _draw_editor_code(self, canvas, code: str): # Plain code block without IDE styling - not active
         font = self.CODE_FONT
         line_height = 48
@@ -398,7 +249,7 @@ class ImageRenderer:
         # -------- Measure total height first --------
         wrapped_lines = []
         for line in code:
-            wrapped = self.wrap_code_line(self.draw, line, font, max_width)
+            wrapped = wrap_code_line(self.draw, line, font, max_width)
             wrapped_lines.extend(wrapped)
 
         block_height = len(wrapped_lines) * line_height + 30
@@ -464,7 +315,7 @@ class ImageRenderer:
             line = line.strip()
             if line:
                 line = f"$ {line}"
-            wrapped = self.wrap_code_line(self.draw, line, font, max_width)
+            wrapped = wrap_code_line(self.draw, line, font, max_width)
             wrapped_lines.extend(wrapped)
         
         # Terminal block dimensions
@@ -554,32 +405,58 @@ class ImageRenderer:
             return
 
         # Normalize code first (fix \t and escaped \n)
-        code = self._normalize_code(code)
+        code = normalize_code(code)
 
         if code_style == "terminal": # linux - terminal commands -fixed
             self._draw_terminal_code(canvas, code)
-        
-        # TODO: implement other code styles later
-        # elif code_style == "query_result": # sql - queries + result table 
-        #     self._draw_editor_code(canvas, content.get("query", ""))
-        #     self._draw_sql_result_table(canvas, content.get("result_table", ""))
-        # elif code_style == "regex_highlight": # regex - patterns
-        #     self._draw_regex_match(
-        #         canvas,
-        #         pattern=content.get("pattern", ""),
-        #         input_text=content.get("input", ""),
-        #         match=content.get("match", ""),
-        #     )   # stub for now
         elif code_style == "editor":
             # Use IDE-style if enabled and subject provided
             if self.IDE_CODE_STYLE and subject:
-                self._draw_editor_code_with_ide(canvas, code, subject)
+                self.y_cursor = draw_editor_code_with_ide(
+                    draw=self.draw,
+                    code=code,
+                    subject=subject,
+                    y_cursor=self.y_cursor,
+                    width=self.WIDTH,
+                    padding_x=self.PADDING_X,
+                    code_font=self.CODE_FONT,
+                    small_label_font=self.SMALL_LABEL_FONT,
+                    code_bg=self.CODE_BG,
+                    ide_header_bg=self.IDE_HEADER_BG,
+                    ide_gutter_bg=self.IDE_GUTTER_BG,
+                    text_color=self.TEXT_COLOR,
+                    subtle_text=self.SUBTLE_TEXT,
+                    ide_line_number_color=self.IDE_LINE_NUMBER_COLOR,
+                    language_map=self.LANGUAGE_MAP,
+                    ide_gutter_width=self.IDE_GUTTER_WIDTH,
+                    ide_header_height=self.IDE_HEADER_HEIGHT,
+                    line_height=48
+                )
             else:
                 self._draw_editor_code(canvas, code)
         else:
             # default editor style - all programming languages + system design + docker_k8s
             if self.IDE_CODE_STYLE and subject:
-                self._draw_editor_code_with_ide(canvas, code, subject)
+                self.y_cursor = draw_editor_code_with_ide(
+                    draw=self.draw,
+                    code=code,
+                    subject=subject,
+                    y_cursor=self.y_cursor,
+                    width=self.WIDTH,
+                    padding_x=self.PADDING_X,
+                    code_font=self.CODE_FONT,
+                    small_label_font=self.SMALL_LABEL_FONT,
+                    code_bg=self.CODE_BG,
+                    ide_header_bg=self.IDE_HEADER_BG,
+                    ide_gutter_bg=self.IDE_GUTTER_BG,
+                    text_color=self.TEXT_COLOR,
+                    subtle_text=self.SUBTLE_TEXT,
+                    ide_line_number_color=self.IDE_LINE_NUMBER_COLOR,
+                    language_map=self.LANGUAGE_MAP,
+                    ide_gutter_width=self.IDE_GUTTER_WIDTH,
+                    ide_header_height=self.IDE_HEADER_HEIGHT,
+                    line_height=48
+                )
             else:
                 self._draw_editor_code(canvas, code)
 
@@ -620,7 +497,7 @@ class ImageRenderer:
 
             for line in raw_lines:
                 wrapped.extend(
-                    self.wrap_text(draw, line, font, max_width - 60)
+                    wrap_text(draw, line, font, max_width - 60)
                 )
 
             block_height = len(wrapped) * line_height + padding * 2
@@ -686,7 +563,7 @@ class ImageRenderer:
         max_width = self.WIDTH - (self.PADDING_X * 2)
 
         explanation = explanation.replace("\\n", " ")
-        lines = self.wrap_text(self.draw, explanation, font, max_width)
+        lines = wrap_text(self.draw, explanation, font, max_width)
 
         self.draw.line(
             [(self.PADDING_X, self.y_cursor),
@@ -818,117 +695,6 @@ class ImageRenderer:
         return watermarked.convert("RGB")
 
 
-    @staticmethod
-    def slugify(text: str) -> str:
-        return text.lower().replace(" ", "_")
-    
-    @staticmethod
-    def wrap_code_line(draw, line, font, max_width):
-        stripped = line.lstrip(" ")
-        indent = line[:len(line) - len(stripped)]
-
-        if not stripped:
-            return [line]
-
-        words = stripped.split(" ")
-        lines = []
-        current = ""
-
-        for word in words:
-            test = (current + " " + word).strip()
-            width = draw.textlength(indent + test, font=font)
-
-            if width <= max_width:
-                current = test
-            else:
-                if current:
-                    lines.append(indent + current)
-                current = word
-
-        if current:
-            lines.append(indent + current)
-
-        return lines
-
-    @staticmethod
-    def wrap_text(draw, text, font, max_width):
-        """
-        Wrap text so that each line fits within max_width.
-        Returns a list of lines.
-        """
-        if not text:
-            return [""]
-        words = text.split(" ")
-        lines = []
-        current = ""
-
-        for word in words:
-            test = current + (" " if current else "") + word
-            if draw.textlength(test, font=font) <= max_width:
-                current = test
-            else:
-                lines.append(current)
-                current = word
-
-        if current:
-            lines.append(current)
-
-        return lines
-
-    @staticmethod
-    def wrap_text_with_prefix(draw, text, font, max_width, prefix_width):
-        """
-        Wrap text where the first line has reduced available width due to a prefix.
-        Subsequent lines use the full max_width.
-        """
-        if not text:
-            return [""]
-
-        words = text.split(" ")
-        lines = []
-        current = ""
-
-        # First line accounts for the prefix width
-        line_limit = max_width - (prefix_width or 0)
-
-        for word in words:
-            test = current + (" " if current else "") + word
-            if draw.textlength(test, font=font) <= line_limit:
-                current = test
-            else:
-                if current:
-                    lines.append(current)
-                current = word
-                # After the first break, use full width for subsequent lines
-                line_limit = max_width
-
-        if current:
-            lines.append(current)
-
-        return lines
-
-    @staticmethod
-    def _normalize_code(code: str) -> list[str]:
-        """
-        Normalize code string into clean lines:
-        - Converts escaped newlines (\\n) to real newlines
-        - Converts tabs to 4 spaces
-        - Strips trailing whitespace
-        """
-        if not code:
-            return []
-
-        # Convert literal "\n" into actual newlines
-        code = code.replace("\\n", "\n")
-
-        lines = []
-        for line in code.split("\n"):
-            # Convert tabs to spaces (visual stability)
-            line = line.replace("\t", " " * 4)
-            lines.append(line.rstrip())
-
-        return lines
-
     def render_image(
         self,
         question: Question,
@@ -948,7 +714,7 @@ class ImageRenderer:
         # Scenario block height (drawn inline for QUESTION and SINGLE modes)
         scenario_height = 0
         if layout_profile.has_scenario and question.scenario and mode in (RenderMode.QUESTION, RenderMode.SINGLE):
-            scenario_lines = self.wrap_text_with_prefix(
+            scenario_lines = wrap_text_with_prefix(
                 self.draw,
                 question.scenario.replace("\\n", " "),
                 self.TEXT_FONT,
@@ -960,14 +726,14 @@ class ImageRenderer:
         # Code block height (comes after scenario for scenario-based questions)
         code_height = 0
         if layout_profile.has_code and question.code:
-            code_lines = self._normalize_code(question.code)
+            code_lines = normalize_code(question.code)
             wrapped_lines = []
             for line in code_lines:
-                wrapped_lines.extend(self.wrap_code_line(self.draw, line, self.CODE_FONT, self.WIDTH - 120 - 40))
+                wrapped_lines.extend(wrap_code_line(self.draw, line, self.CODE_FONT, self.WIDTH - 120 - 40))
             code_height = len(wrapped_lines) * 48 + 40 + 40  # line_height + padding + gap
 
         # Question height
-        question_lines = self.wrap_text_with_prefix(
+        question_lines = wrap_text_with_prefix(
             self.draw,
             question.question,
             self.TEXT_FONT,
@@ -984,14 +750,14 @@ class ImageRenderer:
                 raw_lines = opt.split("\n")
                 wrapped = []
                 for line in raw_lines:
-                    wrapped.extend(self.wrap_text(self.draw, line, self.TEXT_FONT, self.WIDTH - 120 - 60))
+                    wrapped.extend(wrap_text(self.draw, line, self.TEXT_FONT, self.WIDTH - 120 - 60))
                 block_height = len(wrapped) * 50 + 36  # line_height + padding
                 options_height += block_height + 14  # option_gap
         
         # Explanation height
         explanation_height = 0
         if layout_profile.has_explanation and mode in (RenderMode.ANSWER, RenderMode.SINGLE):
-            explanation_lines = self.wrap_text(self.draw, question.explanation, self.TEXT_FONT, self.WIDTH - 120)
+            explanation_lines = wrap_text(self.draw, question.explanation, self.TEXT_FONT, self.WIDTH - 120)
             explanation_height = 18 + 55 + len(explanation_lines) * 50  # divider + label + lines
         
         total_content_height = (
@@ -1480,6 +1246,7 @@ class ImageRenderer:
         base_img_dir = self.BASE_DIR / subject / "images"
         question_dir = base_img_dir / "questions"
         answer_dir = base_img_dir / "answers"
+        carousel_dir = base_img_dir / "carousels"
         welcome_img_path = base_img_dir / "welcome.png"
         cta_img_path = base_img_dir / "cta.png"
 
@@ -1509,7 +1276,7 @@ class ImageRenderer:
 
         # -----------------CREATE DIRECTORIES---------------------------------
 
-        for d in [question_dir, answer_dir, run_dir]:
+        for d in [question_dir, answer_dir, carousel_dir, run_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
         metadata = {
@@ -1529,8 +1296,10 @@ class ImageRenderer:
         # --------------------------------------------------
         logger.info("Rendering images...")
 
+        carousel_renderer = CarouselRenderer()
+
         for q in questions:
-            q_slug = self.slugify(q.title)
+            q_slug = slugify(q.title)
 
             layout_profile = resolve_layout_profile(content_type)
             
@@ -1541,6 +1310,13 @@ class ImageRenderer:
             self.render_image(q, question_img_out_path, layout_profile, subject, RenderMode.QUESTION)
             self.render_image(q, answer_img_out_path, layout_profile, subject, RenderMode.ANSWER)
 
+            carousel_images = carousel_renderer.generate_carousel_slides(
+                question=q,
+                carousel_dir=carousel_dir,
+                subject=subject,
+                question_id=q.question_id,
+            )
+
             metadata["questions"].append({
                 "question_id": q.question_id,
                 "title": q.title,
@@ -1549,7 +1325,7 @@ class ImageRenderer:
                 "assets": {
                     "question_image": str(question_img_out_path),
                     "answer_image": str(answer_img_out_path),
-                    # "single_post_image": str(single_img_out_path)
+                    "carousel_images": carousel_images,
                 }
             })
 
@@ -1568,18 +1344,18 @@ class ImageRenderer:
         return metadata_path
 
 # if __name__ == "__main__":
-    # renderer = ImageRenderer()
-    # # renderer.render_transition_sequence()
-    # subjects = ["python"]
-    # # subjects = [
-    # #     "python", "sql", "regex", "system_design", 
-    # #     "linux"
-    # #     ,"docker_k8s", "javascript", "rust", "golang"
-    # # ]
-    # import time
-    # for subject in subjects:
-    #     try:
-    #         renderer.main(1, subject=subject)
-    #         time.sleep(2)
-    #     except Exception as e:
-    #         logger.exception("Error rendering for subject %s", subject)
+#     renderer = ImageRenderer()
+#     # renderer.render_transition_sequence()
+#     # subjects = ["python"]
+#     subjects = [
+#         "python", "sql", "regex", "system_design", 
+#         "linux"
+#         ,"docker_k8s", "javascript", "rust", "golang"
+#     ]
+#     import time
+#     for subject in subjects:
+#         try:
+#             renderer.main(1, subject=subject)
+#             time.sleep(2)
+#         except Exception as e:
+#             logger.exception("Error rendering for subject %s", subject)

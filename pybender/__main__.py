@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from pybender.render.reel_generator import ReelGenerator
-from pybender.publishers.instagram_publisher import upload_reels_from_metadata
+from pybender.publishers.instagram_publisher import upload_from_metadata
 from pybender.config.logging_config import setup_logging
 import os
 
@@ -92,16 +92,20 @@ def upload_instagram_reels(metadata_path: Path) -> dict:
         return {'success': False, 'error': 'Missing credentials'}
     
     try:
-        result = upload_reels_from_metadata(
+        result = upload_from_metadata(
             metadata_file_path=metadata_path,
             username=username,
             password=password
         )
         
         if result['success']:
-            logger.info(f"✅ Successfully uploaded {result['uploaded_count']} reels to Instagram")
+            logger.info(f"✅ Successfully uploaded {result['total_uploaded']} reels to Instagram")
+            logger.info(f"   - Carousels: {result['carousel']['uploaded_count']} uploaded, {result['carousel']['failed_count']} failed")
+            logger.info(f"   - Reels: {result['reel']['uploaded_count']} uploaded, {result['reel']['failed_count']} failed")
         else:
-            logger.warning(f"⚠️  Upload completed with {result['failed_count']} failures")
+            logger.warning(f"⚠️  Upload completed with {result['total_failed']} failures")
+            logger.warning(f"   - Carousels: {result['carousel']['failed_count']} failed")
+            logger.warning(f"   - Reels: {result['reel']['failed_count']} failed")
             
         return result
         

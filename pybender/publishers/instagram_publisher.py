@@ -259,6 +259,32 @@ class InstagramVideoUploader:
         except Exception as e:
             logger.warning(f"Error clearing session: {e}")
     
+    def _get_caption(self, subject: str, question_title: str = "") -> str:
+        """
+        Generate a caption for Instagram post using subject-specific options.
+        
+        Args:
+            subject: Programming subject/language
+            question_title: Optional question title to include in caption
+            
+        Returns:
+            Generated caption string
+        """
+        # Get captions for subject, fallback to python if not found
+        captions = self.subject_captions.get(subject, self.subject_captions.get("python", []))
+        
+        if not captions:
+            return f"Daily Dose of {subject.replace('_', ' ').title()}"
+        
+        # Pick a random caption
+        caption = random.choice(captions)
+        
+        # Include question title if provided
+        if question_title:
+            caption = f"{question_title}\n\n{caption}"
+        
+        return caption
+    
     def login(self) -> bool:
         """
         Login to Instagram with proper session handling.
@@ -449,6 +475,7 @@ class InstagramVideoUploader:
         self,
         image_paths: list,
         caption: str = "",
+        subject: str = "",
         retries: int = 3
         ) -> bool:
         """
@@ -469,6 +496,12 @@ class InstagramVideoUploader:
                 caption="Swipe to see more! 📸"
             )
         """
+        # Auto-generate caption from subject if not provided
+        if not caption:
+            captions = self.subject_captions.get(subject, self.generic_captions)
+            caption = random.choice(captions)
+            logger.debug(f"Using {subject} caption: {caption[:60]}...")
+            
         # Validate all image files exist
         image_paths = [Path(img) for img in image_paths]
         
@@ -545,49 +578,44 @@ class InstagramVideoUploader:
             return None
 
 
-def upload_reels_from_metadata(
+def upload_from_metadata(
     metadata_file_path: Path,
     username: str,
     password: str,
-    session_dir: Optional[Path] = None
+    session_dir: Optional[Path] = None,
+    delay_between_uploads: int = 12
     ) -> Dict[str, Any]:
     """
-    Upload all reels from a metadata JSON file to Instagram.
+    Unified function to upload both carousels and reels from metadata file to Instagram.
+    
+    Collects all carousel and reel image paths from metadata, then uploads both with delay.
     
     Args:
         metadata_file_path: Path to the metadata JSON file
         username: Instagram username
         password: Instagram password
         session_dir: Optional directory for session files (defaults to output_1/sessions)
+        delay_between_uploads: Delay in seconds between carousel and reel uploads (default: 12)
     
     Returns:
-        Dictionary with upload results:
+        Dictionary with combined upload results:
         {
             'success': bool,
-            'uploaded_count': int,
-            'failed_count': int,
-            'uploaded_reels': List[str],
-            'failed_reels': List[str]
+            'carousel': {'uploaded_count': int, 'failed_count': int, 'uploaded': list, 'failed': list},
+            'reel': {'uploaded_count': int, 'failed_count': int, 'uploaded': list, 'failed': list},
+            'total_uploaded': int,
+            'total_failed': int
         }
     """
-    logger.info(f"📤 Starting Instagram upload from metadata: {metadata_file_path}")
-    
-    # Setup paths - resolve metadata path once
     metadata_file_path = Path(metadata_file_path).resolve()
-    # Metadata at: .../pybenders/output_1/python/runs/metadata_*.json
-    # Go up 4 levels to project root: runs -> python -> output_1 -> pybenders
+    logger.info(f"📤 Starting unified upload from: {metadata_file_path}")
+    
+    # Setup paths
     project_root = metadata_file_path.parent.parent.parent.parent
-    
-    logger.info(f"🔍 Project root: {project_root}")
-    logger.info(f"🔍 Metadata file: {metadata_file_path}")
-    
-    # Use session directory in output_1 (where metadata lives) for consistency
     if session_dir is None:
-        session_dir = metadata_file_path.parent.parent.parent / "sessions"  # output_1/sessions
-    
+        session_dir = metadata_file_path.parent.parent.parent / "sessions"
     session_dir.mkdir(parents=True, exist_ok=True)
     session_file = session_dir / "instagram_session.json"
-    logger.info(f"🔍 Session file: {session_file}")
     
     # Load metadata
     try:
@@ -597,33 +625,79 @@ def upload_reels_from_metadata(
         logger.error(f"Failed to load metadata file: {e}")
         return {
             'success': False,
-            'uploaded_count': 0,
-            'failed_count': 0,
-            'uploaded_reels': [],
-            'failed_reels': [],
+            'carousel': {'uploaded_count': 0, 'failed_count': 0, 'uploaded': [], 'failed': []},
+            'reel': {'uploaded_count': 0, 'failed_count': 0, 'uploaded': [], 'failed': []},
+            'total_uploaded': 0,
+            'total_failed': 0,
             'error': str(e)
         }
     
-    # Extract questions
+    # Collect carousel images
+    carousel_images_by_question = {}
+    reel_videos_with_metadata = []
     questions = metadata.get('questions', [])
-    if not questions:
-        logger.info("No questions found in metadata. Nothing to upload.")
-        return {
-            'success': True,
-            'uploaded_count': 0,
-            'failed_count': 0,
-            'uploaded_reels': [],
-            'failed_reels': []
-        }
+    subject = metadata.get('subject', 'programming')
     
-    logger.info(f"Found {len(questions)} reels to upload")
+    for q in questions:
+        question_id = q.get('question_id')
+        title = q.get('title', '')
+        content = q.get('content', {})
+        assets = q.get('assets', {})
+        carousel_images = assets.get('carousel_images', [])
+        
+        if carousel_images:
+            # Resolve paths relative to project root
+            valid_carousel_paths = []
+            for img in carousel_images:
+                img_path = project_root / img if not Path(img).is_absolute() else Path(img)
+                if img_path.exists():
+                    valid_carousel_paths.append(img_path.resolve())
+                else:
+                    logger.warning(f"Carousel image not found: {img_path}")
+            
+            if len(valid_carousel_paths) == 6:  # Need all 6 slides
+                carousel_images_by_question[question_id] = {
+                    'paths': valid_carousel_paths,
+                    'title': title,
+                    'subject': subject
+                }
+            else:
+                logger.warning(f"Question {question_id}: expected 6 carousel images, found {len(valid_carousel_paths)}")
+        
+        # Collect reel video with metadata
+        video_path = assets.get('combined_reel')
+        question_image = assets.get('question_image')  # Thumbnail for reel
+        
+        if video_path:
+            vid_path = project_root / video_path if not Path(video_path).is_absolute() else Path(video_path)
+            if vid_path.exists():
+                # Resolve thumbnail path if available
+                thumbnail_path = None
+                if question_image:
+                    thumb_path = project_root / question_image if not Path(question_image).is_absolute() else Path(question_image)
+                    if thumb_path.exists():
+                        thumbnail_path = thumb_path.resolve()
+                        logger.debug(f"Found thumbnail for {question_id}: {thumb_path.name}")
+                    else:
+                        logger.warning(f"Question image thumbnail not found: {thumb_path}")
+                
+                reel_videos_with_metadata.append({
+                    'path': vid_path.resolve(),
+                    'title': title,
+                    'subject': subject,
+                    'thumbnail': thumbnail_path
+                })
+            else:
+                logger.warning(f"Reel video not found: {vid_path}")
+    
+    logger.info(f"Found {len(carousel_images_by_question)} carousels with complete image sets")
+    logger.info(f"Found {len(reel_videos_with_metadata)} reel videos")
     
     # Initialize uploader
     uploader = InstagramVideoUploader(
         username=username,
         password=password,
-        session_file=str(session_file),
-        delay_range=[5, 10]
+        session_file=session_file
     )
     
     # Login
@@ -631,219 +705,239 @@ def upload_reels_from_metadata(
         logger.error("Failed to login to Instagram")
         return {
             'success': False,
-            'uploaded_count': 0,
-            'failed_count': len(questions),
-            'uploaded_reels': [],
-            'failed_reels': [q.get('question_id', 'unknown') for q in questions],
+            'carousel': {'uploaded_count': 0, 'failed_count': 0, 'uploaded': [], 'failed': []},
+            'reel': {'uploaded_count': 0, 'failed_count': 0, 'uploaded': [], 'failed': []},
+            'total_uploaded': 0,
+            'total_failed': 0,
             'error': 'Login failed'
         }
     
-    # Get account info
-    account_info = uploader.get_account_info()
-    if account_info:
-        logger.info(f"✓ Logged in as: {account_info['username']}")
+    # Upload carousels
+    logger.info("=" * 60)
+    logger.info("🖼️  UPLOADING CAROUSELS")
+    logger.info("=" * 60)
     
-    # Track results
-    uploaded_reels = []
-    failed_reels = []
+    carousel_uploaded = []
+    carousel_failed = []
     
-    # Extract subject from metadata for caption selection
-    subject = metadata.get('subject', 'python')
-    logger.info(f"Using subject for captions: {subject}")
-    
-    # Upload each reel
-    for idx, question in enumerate(questions, 1):
-        question_id = question.get('question_id', 'unknown')
-        logger.info(f"\n{'='*60}")
-        logger.info(f"Processing reel {idx}/{len(questions)}: {question_id}")
-        logger.info(f"{'='*60}")
-        
-        # Get reel path from metadata
-        combined_reel = question.get('assets', {}).get('combined_reel', '')
-        if not combined_reel:
-            logger.warning(f"No combined_reel found for question: {question_id}")
-            failed_reels.append(question_id)
-            continue
-        
-        # Convert relative path to absolute path
-        # combined_reel is like "output_1\python\reels\file.mp4"
-        reel_path = project_root / combined_reel.replace('\\', '/')
-        
-        logger.debug(f"Reel path resolved to: {reel_path}")
-        
-        if not reel_path.exists():
-            logger.warning(f"Reel file not found: {reel_path}")
-            failed_reels.append(question_id)
-            continue
-        
-        # Get thumbnail path from metadata
-        question_image = question.get('assets', {}).get('question_image', '')
-        thumbnail_path = project_root / question_image.replace('\\', '/') if question_image else None
-        
-        if thumbnail_path and not thumbnail_path.exists():
-            logger.warning(f"Thumbnail file not found: {thumbnail_path}")
-            thumbnail_path = None
-        
-        # Upload the reel with subject-specific caption
-        success = uploader.upload_reel(
-            video_path=str(reel_path),
-            caption="",  # Auto-generate from subject
-            thumbnail_path=str(thumbnail_path) if thumbnail_path else None,
-            use_custom_thumbnail=True if thumbnail_path else False,
-            subject=subject
-        )
-        
-        if success:
-            uploaded_reels.append(question_id)
-            logger.info(f"✓ Successfully uploaded: {question_id}")
+    for question_id, carousel_data in carousel_images_by_question.items():
+        try:
+            image_paths = carousel_data['paths']
+            title = carousel_data['title']
+            subject = carousel_data['subject']
             
-            # Post-upload cleanup and archiving
-            try:
-                # Create uploaded folder structure with date
-                subject = metadata.get('subject', 'python')
-                uploaded_dir = project_root / "uploaded" / subject
-                current_date = time.strftime("%Y-%m-%d")
-                date_folder = uploaded_dir / current_date
-                date_folder.mkdir(parents=True, exist_ok=True)
-                
-                # Remove temporary thumbnail if it exists
-                tmp_thumbnail_path = str(reel_path) + '.jpg'
-                if os.path.exists(tmp_thumbnail_path):
-                    os.remove(tmp_thumbnail_path)
-                    logger.debug(f"Removed temporary thumbnail: {tmp_thumbnail_path}")
-                
-                # Move the uploaded reel to archive with aggressive exponential backoff retry
-                destination = date_folder / reel_path.name
-                max_retries = 7
-                retry_delays = [5, 10, 15, 20, 30, 45, 60]  # Longer exponential backoff in seconds
-                archive_success = False
-                
-                for attempt in range(1, max_retries + 1):
-                    try:
-                        # Initial longer wait before first attempt to ensure all handles are released
-                        if attempt == 1:
-                            logger.info("Waiting 20s before archiving to ensure all file handles are released...")
-                            time.sleep(20)
-                        
-                        logger.debug(f"Attempting to archive reel (attempt {attempt}/{max_retries})...")
-                        shutil.move(str(reel_path), str(destination))
-                        logger.info(f"✓ Archived reel to: {destination}")
-                        archive_success = True
-                        break
-                        
-                    except (PermissionError, OSError, FileNotFoundError) as e:
-                        if attempt < max_retries:
-                            delay = retry_delays[attempt - 1]
-                            logger.warning(
-                                f"File locked (attempt {attempt}/{max_retries}), "
-                                f"retrying in {delay}s: {type(e).__name__}"
-                            )
-                            time.sleep(delay)
-                        else:
-                            # All retries exhausted
-                            logger.error(
-                                f"Failed to archive reel after {max_retries} attempts. "
-                                f"File may still be in use by system processes. "
-                                f"Manual archive may be needed: {reel_path} -> {destination}"
-                            )
-                            # Don't crash - upload was successful even if archive failed
-                            archive_success = False
-                
-            except Exception as e:
-                logger.error(f"Failed to archive reel: {e}")
-        else:
-            failed_reels.append(question_id)
-            logger.error(f"✗ Failed to upload: {question_id}")
-        
-        # Delay between uploads to avoid rate limiting
-        if idx < len(questions):
-            logger.info("⏳ Waiting before next upload...")
-            time.sleep(10)
+            # caption = f"{title}\n\n#{subject} #programming #coding #dailydoseofprogramming" # dynaically generated
+            logger.info(f"Uploading carousel for {question_id}: {title}")
+            uploader.upload_carousel(image_paths, subject=subject)
+            carousel_uploaded.append(question_id)
+            time.sleep(random.uniform(10, 15))  # Rate limiting between uploads
+        except Exception as e:
+            logger.error(f"Failed to upload carousel {question_id}: {e}")
+            carousel_failed.append(question_id)
     
-    # Summary
-    logger.info(f"\n{'='*60}")
-    logger.info("📊 UPLOAD SUMMARY")
-    logger.info(f"{'='*60}")
-    logger.info(f"Total reels: {len(questions)}")
-    logger.info(f"✓ Uploaded: {len(uploaded_reels)}")
-    logger.info(f"✗ Failed: {len(failed_reels)}")
+    logger.info(f"✅ Carousels: {len(carousel_uploaded)} uploaded, {len(carousel_failed)} failed")
     
-    if uploaded_reels:
-        logger.info(f"\nUploaded reels:")
-        for reel_id in uploaded_reels:
-            logger.info(f"  ✓ {reel_id}")
+    # Wait before uploading reels
+    if carousel_uploaded:
+        logger.info(f"⏳ Waiting {delay_between_uploads} seconds before uploading reels...")
+        time.sleep(delay_between_uploads)
     
-    if failed_reels:
-        logger.info(f"\nFailed reels:")
-        for reel_id in failed_reels:
-            logger.info(f"  ✗ {reel_id}")
+    # Upload reels
+    logger.info("=" * 60)
+    logger.info("🎬 UPLOADING REELS")
+    logger.info("=" * 60)
     
-    return {
-        'success': len(failed_reels) == 0,
-        'uploaded_count': len(uploaded_reels),
-        'failed_count': len(failed_reels),
-        'uploaded_reels': uploaded_reels,
-        'failed_reels': failed_reels
+    reel_uploaded = []
+    reel_failed = []
+    
+    for reel_data in reel_videos_with_metadata:
+        try:
+            video_path = reel_data['path']
+            title = reel_data['title']
+            subject = reel_data['subject']
+            thumbnail_path = reel_data.get('thumbnail')
+            
+            caption = f"{title}\n\n#{subject} #programming #coding #dailydoseofprogramming"
+            logger.info(f"Uploading reel: {video_path.name} - {title}")
+            
+            if thumbnail_path:
+                logger.info(f"Using custom thumbnail: {thumbnail_path.name}")
+                uploader.upload_reel(
+                    video_path=video_path,
+                    caption=caption,
+                    thumbnail_path=str(thumbnail_path),
+                    use_custom_thumbnail=True,
+                    subject=subject
+                )
+            else:
+                logger.info("Using auto-generated thumbnail")
+                uploader.upload_reel(video_path, caption=caption, subject=subject)
+            
+            reel_uploaded.append(str(video_path))
+            time.sleep(random.uniform(10, 15))  # Rate limiting between uploads
+        except Exception as e:
+            logger.error(f"Failed to upload reel {video_path.name}: {e}")
+            reel_failed.append(str(video_path))
+    
+    logger.info(f"✅ Reels: {len(reel_uploaded)} uploaded, {len(reel_failed)} failed")
+    
+    # # Logout
+    # try:
+    #     uploader.logout()
+    # except Exception as e:
+    #     logger.warning(f"Logout warning: {e}")
+    
+    # Combine results
+    combined_result = {
+        'success': len(carousel_failed) == 0 and len(reel_failed) == 0,
+        'carousel': {
+            'uploaded_count': len(carousel_uploaded),
+            'failed_count': len(carousel_failed),
+            'uploaded': carousel_uploaded,
+            'failed': carousel_failed
+        },
+        'reel': {
+            'uploaded_count': len(reel_uploaded),
+            'failed_count': len(reel_failed),
+            'uploaded': reel_uploaded,
+            'failed': reel_failed
+        },
+        'total_uploaded': len(carousel_uploaded) + len(reel_uploaded),
+        'total_failed': len(carousel_failed) + len(reel_failed)
     }
+    
+    logger.info("=" * 60)
+    logger.info("📊 UPLOAD SUMMARY")
+    logger.info("=" * 60)
+    logger.info(f"Carousels: {combined_result['carousel']['uploaded_count']} uploaded, {combined_result['carousel']['failed_count']} failed")
+    logger.info(f"Reels: {combined_result['reel']['uploaded_count']} uploaded, {combined_result['reel']['failed_count']} failed")
+    logger.info(f"Total: {combined_result['total_uploaded']} uploaded, {combined_result['total_failed']} failed")
+    logger.info(f"Status: {'✅ SUCCESS' if combined_result['success'] else '⚠️  PARTIAL'}")
+    
+    return combined_result
 
+if __name__ == "__main__":
+    import sys
+    import glob
 
-# if __name__ == "__main__":
-#     import sys
-#     import glob
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    # metadata generated at: pybenders\output_1\python\runs\2026-01-01_083340_metadata.json
+    # publisher pybenders\pybender\publishers\instagram_publisher.py
 
-#     # Configure logging
-#     logging.basicConfig(
-#         level=logging.INFO,
-#         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-#     )
-#     # metadata generated at: pybenders\output_1\python\runs\2026-01-01_083340_metadata.json
-#     # publisher pybenders\pybender\publishers\instagram_publisher.py
+    # Define paths
+    script_dir = Path(__file__).resolve().parent # pybenders/output_1
+    project_root = script_dir.parent.parent # pybenders
+    output_1_dir = project_root / "output_1" # pybenders/output_1
 
-#     # Define paths
-#     script_dir = Path(__file__).resolve().parent # pybenders/output_1
-#     project_root = script_dir.parent.parent # pybenders
-#     output_1_dir = project_root / "output_1" # pybenders/output_1
+    # Load .env if python-dotenv is available
+    if load_dotenv:
+        load_dotenv(project_root / ".env")
 
-#     # Load .env if python-dotenv is available
-#     if load_dotenv:
-#         load_dotenv(project_root / ".env")
+    # Parse CLI arguments
+    # Usage: python instagram_publisher.py <metadata_file>
+    metadata_override = None
+    test_mode = "--test" in sys.argv
+    
+    if len(sys.argv) > 1:
+        if sys.argv[1] != "--test":
+            metadata_override = sys.argv[1]
 
-#     # Optional override: CLI arg or env METADATA_FILE
-#     metadata_override = sys.argv[1] if len(sys.argv) > 1 else os.getenv("METADATA_FILE")
+    if metadata_override:
+        metadata_file = Path(metadata_override).resolve()
+        if not metadata_file.exists():
+            logger.error(f"Metadata file not found: {metadata_file}")
+            sys.exit(1)
+    else:
+        # Find the metadata JSON file in the python/runs directory
+        metadata_pattern = output_1_dir / "python" / "runs" / "*_metadata.json"
+        metadata_files = glob.glob(str(metadata_pattern))
 
-#     if metadata_override:
-#         metadata_file = Path(metadata_override).resolve()
-#         if not metadata_file.exists():
-#             logger.error(f"Metadata file not found: {metadata_file}")
-#             sys.exit(1)
-#     else:
-#         # Find the metadata JSON file in the python/runs directory
-#         metadata_pattern = output_1_dir / "python" / "runs" / "*_metadata.json"
-#         metadata_files = glob.glob(str(metadata_pattern))
+        if not metadata_files:
+            logger.error("No metadata JSON file found in output_1/python/runs/")
+            sys.exit(1)
 
-#         if not metadata_files:
-#             logger.error("No metadata JSON file found in output_1/python/runs/")
-#             sys.exit(1)
+        # Use the most recent metadata file
+        metadata_file = Path(sorted(metadata_files)[-1]).resolve()
 
-#         # Use the most recent metadata file
-#         metadata_file = Path(sorted(metadata_files)[-1]).resolve()
+    logger.info(f"Using metadata file: {metadata_file}")
 
-#     logger.info(f"Using metadata file: {metadata_file}")
+    # Get credentials from environment variables (no defaults)
+    username = os.getenv('INSTAGRAM_USERNAME')
+    password = os.getenv('INSTAGRAM_PASSWORD')
 
-#     # Get credentials from environment variables (no defaults)
-#     username = os.getenv('INSTAGRAM_USERNAME')
-#     password = os.getenv('INSTAGRAM_PASSWORD')
+    if not username or not password:
+        logger.error("Missing INSTAGRAM_USERNAME or INSTAGRAM_PASSWORD in environment variables")
+        sys.exit(1)
 
-#     if not username or not password:
-#         logger.error("Missing INSTAGRAM_USERNAME or INSTAGRAM_PASSWORD in environment variables")
-#         sys.exit(1)
+    # Test mode: validate files without uploading
+    if test_mode:
+        logger.info("=" * 60)
+        logger.info("🧪 TEST MODE: Validating carousel and reel files")
+        logger.info("=" * 60)
+        
+        try:
+            with open(metadata_file, 'r', encoding='utf-8') as f:
+                metadata = json.load(f)
+            
+            project_root_actual = metadata_file.parent.parent.parent.parent
+            questions = metadata.get('questions', [])
+            subject = metadata.get('subject', 'programming')
+            
+            carousel_count = 0
+            reel_count = 0
+            
+            for q in questions:
+                assets = q.get('assets', {})
+                carousel_images = assets.get('carousel_images', [])
+                video_path = assets.get('combined_reel')
+                
+                # Check carousel
+                if carousel_images:
+                    valid_count = 0
+                    for img in carousel_images:
+                        img_path = project_root_actual / img if not Path(img).is_absolute() else Path(img)
+                        if img_path.exists():
+                            valid_count += 1
+                            logger.info(f"✅ Carousel image found: {img_path.name}")
+                        else:
+                            logger.warning(f"❌ Carousel image missing: {img_path}")
+                    
+                    if valid_count == len(carousel_images):
+                        carousel_count += 1
+                
+                # Check reel
+                if video_path:
+                    vid_path = project_root_actual / video_path if not Path(video_path).is_absolute() else Path(video_path)
+                    if vid_path.exists():
+                        logger.info(f"✅ Reel video found: {vid_path.name}")
+                        reel_count += 1
+                    else:
+                        logger.warning(f"❌ Reel video missing: {vid_path}")
+            
+            logger.info("=" * 60)
+            logger.info(f"📊 Test Results: {carousel_count} complete carousels, {reel_count} reel videos")
+            logger.info("=" * 60)
+            sys.exit(0)
+            
+        except Exception as e:
+            logger.error(f"Test mode error: {e}")
+            sys.exit(1)
 
-#     # Upload reels
-#     result = upload_reels_from_metadata(
-#         metadata_file_path=metadata_file,
-#         username=username,
-#         password=password
-#     )
+    # Upload both carousel and reels with unified function
+    logger.info("=" * 60)
+    logger.info("📤 STARTING UNIFIED UPLOAD (Carousel + Reels)")
+    logger.info("=" * 60)
+    # print(carousel_images)
+    # print(video_path)
+    result = upload_from_metadata(
+        metadata_file_path=metadata_file,
+        username=username,
+        password=password
+    )
 
-#     # Exit with appropriate code
-#     sys.exit(0 if result['success'] else 1)
+    # Exit with appropriate code
+    sys.exit(0 if result['success'] else 1)
