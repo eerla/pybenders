@@ -3,50 +3,52 @@
 from typing import Dict
 
 def validate_code_output(q: dict):
-    assert len(q["title"].split()) <= 8, "Title too long"
-    assert q["code"].count("\n") <= 8, "Code too long"
-    assert len(q["question"].split(".")) <= 2, "Question too verbose"
-    assert all(len(opt) <= 60 for opt in q["options"]), "Option too long"
-    assert len(q["explanation"]) <= 180, "Explanation too long"
+    assert len(q["title"].split()) <= 8, "Title too long (max 8 words)"
+    assert q["code"].count("\n") <= 12, "Code too long (max 12 lines)"
+    assert len(q["question"]) <= 200, "Question too long (max 200 chars)"
+    assert all(len(opt) <= 60 for opt in q["options"]), "Option too long (max 60 chars)"
+    assert len(q["explanation"]) <= 300, "Explanation too long (max 300 chars)"
 
 
 def validate_query_output(q: dict):
-    assert len(q["title"].split()) <= 8, "Title too long"
-    assert q["code"].count("\n") <= 8, "Code too long (max 8 lines)"
+    assert len(q["title"].split()) <= 8, "Title too long (max 8 words)"
+    assert q["code"].count("\n") <= 12, "Code too long (max 12 lines)"
     assert "WITH" in q["code"] and "VALUES" in q["code"], "Code must embed sample data via CTE VALUES"
-    assert len(q["question"]) <= 110, "Question too long"
-    assert all(len(opt) <= 60 for opt in q["options"]), "Option too long"
-    assert len(q["explanation"]) <= 170, "Explanation too long"
+    assert len(q["question"]) <= 110, "Question too long (max 110 chars)"
+    assert all(len(opt) <= 60 for opt in q["options"]), "Option too long (max 60 chars)"
+    assert len(q["explanation"]) <= 300, "Explanation too long (max 300 chars)"
 
 
 def validate_pattern_match(q: dict):
-    assert len(q["title"].split()) <= 8, "Title too long"
-    assert q["code"].count("\n") <= 8, "Code too long"
-    assert len(q["question"].split(".")) <= 2, "Question too verbose"
-    assert all(len(opt) <= 60 for opt in q["options"]), "Option too long"
-    assert len(q["explanation"]) <= 180, "Explanation too long"
+    assert len(q["title"].split()) <= 6, "Title too long (max 6 words)"
+    assert len(q["code"]) <= 120, "Code too long (max 120 chars)"
+    assert len(q["question"]) <= 200, "Question too long (max 200 chars)"
+    assert all(len(opt) <= 60 for opt in q["options"]), "Option too long (max 60 chars)"
+    assert len(q["explanation"]) <= 300, "Explanation too long (max 300 chars)"
 
 def validate_scenario(q: dict):
-    assert len(q["title"].split()) <= 8
-    assert len(q["question"]) <= 220
-    assert all(len(opt) <= 80 for opt in q["options"])
-    assert len(q["explanation"]) <= 200
-    assert len(q["scenario"]) >= 30
+    assert len(q["title"].split()) <= 8, "Title too long (max 8 words)"
+    assert len(q["scenario"]) <= 350, "Scenario too long (max 350 chars)"
+    assert len(q["scenario"]) >= 30, "Scenario too short (min 30 chars)"
+    assert len(q["question"]) <= 150, "Question too long (max 150 chars)"
+    assert all(len(opt) <= 75 for opt in q["options"]), "Option too long (max 75 chars)"
+    assert len(q["explanation"]) <= 400, "Explanation too long (max 400 chars)"
 
 def validate_command_output(q: dict):
-    assert len(q["title"].split()) <= 8
-    assert q["code"].count("\n") <= 4     # short commands
-    assert len(q["question"]) <= 120
-    assert all(len(opt) <= 60 for opt in q["options"])
-    assert len(q["explanation"]) <= 160
+    assert len(q["title"].split()) <= 6, "Title too long (max 6 words)"
+    assert q["code"].count("\n") <= 6, "Code too long (max 6 lines)"
+    assert len(q["question"]) <= 120, "Question too long (max 120 chars)"
+    assert all(len(opt) <= 55 for opt in q["options"]), "Option too long (max 55 chars)"
+    assert len(q["explanation"]) <= 300, "Explanation too long (max 300 chars)"
 
 def validate_qa(q: dict):
-    assert len(q["title"].split()) <= 8
-    assert q["code"].strip() == "" or len(q["code"]) <= 40
-    assert len(q["question"]) <= 180
-    assert all(len(opt) <= 70 for opt in q["options"])
-    assert len(q["explanation"]) <= 200
-    assert len(q["scenario"]) >= 30
+    assert len(q["title"].split()) <= 7, "Title too long (max 7 words)"
+    assert len(q["scenario"]) <= 350, "Scenario too long (max 350 chars)"
+    assert len(q["scenario"]) >= 30, "Scenario too short (min 30 chars)"
+    assert q["code"].strip() == "" or len(q["code"]) <= 50, "Code too long (max 50 chars)"
+    assert len(q["question"]) <= 150, "Question too long (max 150 chars)"
+    assert all(len(opt) <= 75 for opt in q["options"]), "Option too long (max 75 chars)"
+    assert len(q["explanation"]) <= 400, "Explanation too long (max 400 chars)"
 
 VALIDATORS: Dict[str, callable] = {
     "code_output": validate_code_output,

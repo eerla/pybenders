@@ -1,3 +1,53 @@
+# Content length limits per subject (characters)
+# Optimized for mobile reel readability with current font sizes
+CONTENT_LIMITS = {
+    "python": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "javascript": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "rust": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "golang": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "sql": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "regex": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "linux": {
+        "scenario": 250,
+        "question": 200,
+        "explanation": 300,
+    },
+    "system_design": {
+        "scenario": 350,      # More context for architectural decisions
+        "question": 150,      # Questions are usually concise once context is set
+        "explanation": 400,   # Detailed reasoning for design trade-offs
+    },
+    "docker_k8s": {
+        "scenario": 350,      # More context for cluster/deployment scenarios
+        "question": 150,      # Questions are usually concise
+        "explanation": 400,   # Detailed reasoning for troubleshooting/decisions
+    },
+}
+
 PROMPT_TEMPLATES = {
     "code_output": """
                     You are a Senior {{subject}} expert creating SHORT-FORM content for Instagram reels.
@@ -18,11 +68,11 @@ PROMPT_TEMPLATES = {
 
                     Each question MUST contain:
                     - title: max 8 words
-                    - code: max 8 lines, no comments, no blank lines; use \\n for newlines and escape quotes as \\\"\"\\\" and backslashes as \\\\ in JSON
+                    - code: max 12 lines, no comments, no blank lines; use \\n for newlines and escape quotes as \\\"\"\\\" and backslashes as \\\\ in JSON
                     - question: exactly 1 sentence
                     - options: exactly 4 items, each under 60 characters
                     - correct: one of "A", "B", "C", "D"
-                    - explanation: max 2 short sentences, under 180 characters total
+                    - explanation: max 2-3 short sentences, under 300 characters total
 
                     Additional constraints:
                     - Avoid long variable names
@@ -58,43 +108,75 @@ PROMPT_TEMPLATES = {
                     STRICT RULES (must follow):
                     - Return ONLY valid JSON
                     - No text outside JSON
+                    - CRITICAL JSON ESCAPING: In the "code" field, multi-line SQL MUST use \\n escape sequences
+                      -- NEVER use backslash line continuations (\\) at end of lines
+                      -- ALWAYS use literal \\n characters for newlines within the JSON string
+                      -- Example: "WITH t AS (\\n  VALUES (1)\\n)\\nSELECT * FROM t;"
                     - Keep content concise and reel-friendly
                     - Everything must fit cleanly on a standard mobile phone screen (vertical reel)
                     - Do NOT exceed length limits below
                     - Make each of the {{n}} questions unique in logic, filter, aggregate, join, or NULL behavior
                     - ALWAYS embed up to 3–4 sample rows (and 3–4 columns) inline using a compact CTE (WITH + VALUES) inside "code" if needed to illustrate the logic
-                    - ALWAYS ask about the RESULT of the final SELECT (e.g., value, list, count) — not about the input data
+                    - NEVER ask vague "What is the output?" questions
+                    - ALWAYS ask SPECIFIC, TESTABLE questions with ONE correct answer
                     - Options MUST include exactly 1 correct answer and 3 plausible-but-wrong answers derived from the shown sample data
 
+                    CRITICAL: Question must be SPECIFIC and UNAMBIGUOUS. Choose ONE type:
+                    1. COUNT questions: "How many rows does this return?" → options: [0, 1, 2, 3]
+                    2. AGGREGATE questions: "What is the total/max/min/avg?" → options: specific numbers
+                    3. SPECIFIC VALUE questions: "What value does this return for [specific row/condition]?" → options: specific values
+                    4. FIRST/LAST questions: "What is the first row returned?" → options: specific row values
+                    5. EXISTS/NULL questions: "Does this return NULL?" or "How many NULLs appear?" → options: Yes/No or counts
+                    6. BEHAVIOR questions: "What happens when [specific condition]?" → options: specific outcomes
+
+                    FORBIDDEN question types:
+                    - "What is the output of the final SELECT?" (TOO VAGUE)
+                    - "What does the query return?" (TOO VAGUE)
+                    - Any question where multiple options could be partially correct
+
                     Each question MUST contain:
-                    - title: max 8 words
+                    - title: max 8 words, describe the SQL concept being tested
                     - code: one compact SQL snippet:
                       -- single CTE with inline sample data via VALUES
                       -- final SELECT performing the logic under test
-                      -- under 8 lines total; use literal \n for line breaks and 2-space indentation
-                    - question: exactly 1 sentence, under 110 characters, asking about the SELECT result
+                      -- under 12 lines total; use \\n for line breaks (NOT backslash continuations), 2-space indentation
+                    - question: exactly 1 sentence, under 110 characters, asking ONE SPECIFIC testable thing
                     - options: exactly 4 items (only ONE correct), each under 60 characters
+                      -- Options must directly answer the specific question asked
+                      -- If asking for count, show numbers; if asking for value, show values; if asking about behavior, show outcomes
                     - correct: one of "A", "B", "C", "D"
-                    - explanation: max 2 short sentences, under 170 characters total, showing why the chosen option matches the data
+                    - explanation: max 2-3 short sentences, under 300 characters total, explaining WHY this specific result occurs with step-by-step logic
 
                     Additional constraints:
                     - Use short, clear column names (e.g., id, name, amount, status)
                     - Keep data realistic and minimal—focus on logic, not volume
                     - Wrong options should be plausible mistakes (off-by-one, wrong aggregate, misread LIKE, NULL misinterpretation)
                     - Verify internally that exactly ONE option matches the result of the final SELECT using the provided sample data
-                    - If more than one option could be correct, adjust the sample data or logic to ensure uniqueness
+                    - BEFORE finalizing: Execute the query mentally with the sample data to ensure the correct answer is actually correct
+                    - If more than one option could be correct, adjust the sample data or make the question more specific
                     - Explanation must sound natural and spoken (like reel voiceover)
+
+                    GOOD EXAMPLES of specific questions:
+                    - "How many rows have amount > 100?"
+                    - "What is the maximum price?"
+                    - "What value appears for the row where id = 2?"
+                    - "How many NULL values are in the result?"
+                    - "What is the first name returned when ordered by date?"
+
+                    BAD EXAMPLES (never use these):
+                    - "What is the output of the final SELECT?" (which row? all rows? what aspect?)
+                    - "What does the query return?" (too vague)
 
                     JSON format:
                     [
                     {
                         "id": "q01",
                         "title": "LIKE Pattern Edge Case",
-                        "code": "WITH t(id, name) AS (\n  VALUES (1,'Alice'), (2,'Mark'), (3,'Sara'), (4,'James')\n)\nSELECT COUNT(*)\nFROM t\nWHERE name LIKE '%a%a%';",
-                        "question": "How many rows match?",
+                        "code": "WITH t(id, name) AS (\\n  VALUES (1,'Alice'), (2,'Mark'), (3,'Sara'), (4,'James')\\n)\\nSELECT COUNT(*)\\nFROM t\\nWHERE name LIKE '%a%a%';",
+                        "question": "How many rows match the pattern?",
                         "options": ["0", "1", "2", "3"],
                         "correct": "B",
-                        "explanation": "Only 'Sara' has two 'a' letters; count is 1."
+                        "explanation": "Only 'Sara' contains two 'a' letters; the count is 1."
                     }
                     ]
                     """,
@@ -127,7 +209,7 @@ PROMPT_TEMPLATES = {
                     - question: Ask about the OUTPUT/RESULT, exactly 1 sentence, under 155 characters
                     - options: exactly 4 items showing possible outputs, each under 60 characters
                     - correct: one of "A", "B", "C", "D"
-                    - explanation: max 2 short sentences explaining WHY, under 155 characters total
+                    - explanation: max 2-3 short sentences explaining WHY the pattern behaves this way, under 300 characters total
 
                     Question formats to rotate through:
                     1. "What does this return?" - for findall, search, match results
@@ -187,12 +269,12 @@ PROMPT_TEMPLATES = {
 
                 Each question MUST contain:
                 - title: max 8 words
-                - scenario: concise but COMPLETE setup with key requirements, scale, and workload (under 120 chars). This is the hook — it MUST provide enough context to answer the question correctly without external knowledge.                - code: ""  (always empty — no code or snippets needed)
-                - question: exactly 1 sentence, under 280 characters  # Big increase — now the star
-                - code: "" (always empty)
+                - scenario: concise but COMPLETE setup with key requirements, scale, and workload (under 350 chars). This is the hook — it MUST provide enough context to answer the question correctly without external knowledge.
+                - code: ""  (always empty — no code or snippets needed)
+                - question: exactly 1 sentence, under 150 characters (keep it focused and concise)
                 - options: exactly 4 items, each under 75 characters
                 - correct: one of "A", "B", "C", "D"
-                - explanation: 1-2 short confident sentences, like reel voiceover (under 210 chars total)
+                - explanation: 2-3 short confident sentences, like reel voiceover (under 400 chars total - use this space to explain WHY with trade-offs)
 
                 Additional constraints:
                 - Focus on practical real-world trade-offs, not theoretical designs
@@ -236,12 +318,12 @@ PROMPT_TEMPLATES = {
 
                     Each question MUST contain:
                     - title: max 6 words
-                    - code: shell command(s), max 4 lines, no sudo/destructive ops
+                    - code: shell command(s), max 6 lines, no sudo/destructive ops
                     - output: short expected output, max 3 lines, under 80 characters each
                     - question: exactly 1 sentence, under 120 characters
                     - options: exactly 4 items, each under 55 characters
                     - correct: one of "A", "B", "C", "D"
-                    - explanation: max 2 short sentences, under 155 characters total
+                    - explanation: max 2-3 short sentences explaining command behavior, under 300 characters total
 
                     Additional constraints:
                     - If the {{topic}} starts with "What does" followed by a common Linux command (e.g., "What does grep do?", "What does ls do?"), generate a command-purpose quiz: show the plain command (or simple safe usage), ask what it primarily does, with one correct description and three plausible but incorrect ones.
@@ -287,12 +369,12 @@ PROMPT_TEMPLATES = {
 
         Each question MUST contain:
         - title: max 7 words
-        - scenario: concise but COMPLETE context (e.g., config snippet, symptoms, cluster state). Under 120 characters. This is essential — the question must be answerable from this alone.
+        - scenario: concise but COMPLETE context (e.g., config snippet, symptoms, cluster state). Under 350 characters. This is essential — the question must be answerable from this alone.
         - code: short relevant snippet (under 50 chars) OR "" if not needed
-        - question: exactly 1 sentence, under 280 characters. Must reference the scenario (e.g., "In this case,", "Given this config,", "What should you do when...")
+        - question: exactly 1 sentence, under 150 characters. Must reference the scenario (e.g., "In this case,", "Given this config,", "What should you do when...")
         - options: exactly 4 items, each under 75 characters
         - correct: one of "A", "B", "C", "D"
-        - explanation: 1-2 short confident sentences, like reel voiceover (under 210 chars total)
+        - explanation: 2-3 short confident sentences, like reel voiceover (under 400 chars total - use this space to explain WHY with troubleshooting insights)
 
         Additional constraints:
         - If the {{topic}} starts with "What does" or "What is", generate a definition/purpose quiz: ask what the command, status, or resource primarily does, with one correct description and three plausible but incorrect alternatives.
