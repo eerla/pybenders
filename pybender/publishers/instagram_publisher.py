@@ -5,10 +5,10 @@ Follows best practices from:
 https://subzeroid.github.io/instagrapi/usage-guide/best-practices.html
 
 Features:
-- Session persistence to avoid repeated logins
+- Session persistence to avoid repeated logins (never logs out manually)
 - Automatic retry logic with delays
 - Proper error handling and logging
-- Configurable delays to mimic real user behavior
+- Random delays to mimic real user behavior
 - Optional proxy support
 """
 import logging
@@ -38,7 +38,7 @@ class InstagramVideoUploader:
     Uploads videos (Reels) to Instagram following best practices.
     
     Best practices implemented:
-    1. Session persistence - avoid repeated logins
+    1. Session persistence - avoid repeated logins (never logs out manually)
     2. Delay ranges - mimic real user behavior
     3. Proxy support - optional IP rotation
     4. Error handling and logging
@@ -49,7 +49,7 @@ class InstagramVideoUploader:
         self,
         username: str = "YOUR_INSTAGRAM_USERNAME",
         password: str = "YOUR_INSTAGRAM_PASSWORD",
-        session_file: str = "instagram_session.json",
+        session_file: Optional[Path] = None,
         proxy: Optional[str] = None,
         delay_range: list = [1, 3]
         ):
@@ -59,7 +59,7 @@ class InstagramVideoUploader:
         Args:
             username: Instagram username (placeholder by default)
             password: Instagram password (placeholder by default)
-            session_file: Path to store/load session JSON file
+            session_file: Path to store/load session JSON file (auto-generated if None)
             proxy: Optional proxy URL (e.g., "http://proxy:9137")
             delay_range: [min, max] delay in seconds between requests
                         Helps mimic real user behavior
@@ -74,7 +74,15 @@ class InstagramVideoUploader:
         """
         self.username = username
         self.password = password
+        
+        # Generate username-specific session file if not provided
+        if session_file is None:
+            safe_username = username.replace('@', '_at_').replace('.', '_')
+            session_file = Path(f"sessions/instagram_session_{safe_username}.json")
+        
         self.session_file = Path(session_file)
+        self.session_file.parent.mkdir(parents=True, exist_ok=True)
+        
         self.proxy = proxy
         self.delay_range = delay_range
         
@@ -165,6 +173,7 @@ class InstagramVideoUploader:
             self._set_proxy(proxy)
         
         logger.info(f"Initialized InstagramVideoUploader for user: {username}")
+        logger.info(f"Session file: {self.session_file}")
     
     def _set_proxy(self, proxy: str) -> None:
         """
@@ -223,25 +232,30 @@ class InstagramVideoUploader:
     
     def _validate_session(self) -> bool:
         """
-        Validate if current session is still active.
+        Validate if current session is still active using lightweight operation.
+        Uses user_info_by_username (lighter) instead of get_timeline_feed (heavier).
         
         Returns:
             True if session is valid, False otherwise
         """
         try:
-            # Try to fetch timeline to validate session
-            self.cl.get_timeline_feed()
-            logger.debug("Session validation successful")
+            # Use lightweight user info lookup to validate session
+            # This is less likely to trigger rate limits than timeline fetch
+            self.cl.user_info_by_username(self.username)
+            logger.debug("✓ Session validation successful")
             return True
         except LoginRequired:
             logger.warning("Session is no longer valid (LoginRequired)")
             return False
         except Exception as e:
-            if "user_has_logged_out" in str(e):
+            error_str = str(e)
+            # Check for explicit logout indicators
+            if "user_has_logged_out" in error_str or "logout_reason" in error_str:
                 logger.warning(f"Session logged out by Instagram: {e}")
                 return False
-            logger.warning(f"Session validation failed: {e}")
-            return False
+            # For other errors, assume session might still be valid to avoid re-logins
+            logger.debug(f"Session validation inconclusive (assuming valid): {e}")
+            return True  # Give benefit of doubt
     
     def _clear_session(self) -> None:
         """
@@ -285,15 +299,35 @@ class InstagramVideoUploader:
         
         return caption
     
+    def _human_delay(self, min_sec: float = 2.0, max_sec: float = 5.0) -> None:
+        """
+        Add a random delay to mimic human behavior.
+        
+        Args:
+            min_sec: Minimum delay in seconds
+            max_sec: Maximum delay in seconds
+        """
+        delay = random.uniform(min_sec, max_sec)
+        logger.debug(f"⏳ Human-like delay: {delay:.2f}s")
+        time.sleep(delay)
+    
     def login(self) -> bool:
         """
-        Login to Instagram with proper session handling.
+        Login to Instagram with proper session persistence (instagrapi best practices).
         
-        Follows best practices:
-        1. Try to load and validate existing session
-        2. If valid, use it
-        3. If invalid, do fresh login with credentials
-        4. Save session for future use
+        Strategy:
+        1. Try to load saved session from file
+        2. Wait 1s, then validate session with lightweight operation
+        3. If validation passes, session is ready
+        4. If validation fails, wait 3s then attempt fresh login
+        5. After fresh login, wait 3s before saving session
+        
+        This approach:
+        - Minimizes aggressive re-login attempts that trigger Instagram security
+        - Uses lightweight validation (user_info_by_username not timeline fetch)
+        - Includes strategic delays to avoid rate limiting
+        - Reuses saved sessions across multiple runs
+        - Never logs out manually (let session expire naturally)
         
         Returns:
             True if login successful, False otherwise
@@ -306,50 +340,65 @@ class InstagramVideoUploader:
             )
             return False
         
-        # Try to use saved session first
+        # Try to use saved session first (preferred)
         if self._load_session():
-            logger.info("Attempting to validate saved session...")
-            time.sleep(2)  # Brief delay before validation
+            logger.info(f"✓ Loaded saved session for {self.username}")
+            time.sleep(random.uniform(0.8, 1.5))  # Random delay before validation
             
             if self._validate_session():
-                logger.info("✓ Successfully logged in using saved session")
+                logger.info(f"✓ Session validation passed - reusing saved session")
                 return True
             else:
-                logger.info("✗ Saved session is invalid, clearing and attempting fresh login...")
+                logger.warning(f"✗ Saved session invalid - will attempt fresh login")
                 self._clear_session()
-                time.sleep(2)  # Delay before new login
-        
-        # Fresh login with credentials
+                time.sleep(random.uniform(2.5, 4.0))  # Random delay before fresh login
+        else:
+            logger.info(f"No saved session found at {self.session_file}")
+            
+        # Fresh login with credentials when no valid saved session
         try:
-            logger.info(f"Attempting fresh login with credentials for: {self.username}")
+            logger.info(f"→ Performing fresh login as {self.username}...")
             
-            # Ensure clean state
+            # Ensure clean client state
             self._clear_session()
-            time.sleep(1)
+            time.sleep(random.uniform(0.8, 1.5))
             
-            # Login
+            # Perform login
             self.cl.login(self.username, self.password)
-            logger.info("✓ Fresh login successful")
+            logger.info(f"✓ Fresh login successful")
             
-            # Brief delay before saving/validating
-            time.sleep(2)
+            # Random delay after login before saving session
+            time.sleep(random.uniform(2.5, 4.0))
             
-            # Validate the fresh login
-            if not self._validate_session():
-                logger.error("Fresh login failed validation")
-                self._clear_session()
-                return False
-            
-            # Save session for future use
+            # Save session for future runs
             if self._save_session():
-                logger.info("✓ Login successful and session saved")
+                logger.info(f"✓ Session persisted to file for future use")
                 return True
             else:
-                logger.warning("Login successful but failed to save session")
-                return True  # Login was successful even if save failed
-                
+                logger.warning("✗ Failed to save session, but login was successful")
+                return True  # Login succeeded even if save failed
+        
+        except ClientError as e:
+            # More specific error handling for Instagram API errors
+            error_msg = str(e)
+            if "challenge_required" in error_msg:
+                logger.error(f"✗ Login failed: Account requires security challenge (2FA/verification)")
+                logger.error(f"   Please log in via Instagram app/web first to complete verification")
+            elif "Please wait a few minutes" in error_msg or "rate limit" in error_msg.lower():
+                logger.error(f"✗ Login failed: Rate limited by Instagram. Wait 10-15 minutes and try again")
+            elif "The password you entered is incorrect" in error_msg:
+                logger.error(f"✗ Login failed: Incorrect password")
+            elif "The username you entered" in error_msg:
+                logger.error(f"✗ Login failed: Username not found")
+            else:
+                logger.error(f"✗ Login failed: {error_msg}")
+            
+            self._clear_session()
+            return False
+
         except Exception as e:
             logger.error(f"✗ Login failed: {e}")
+            logger.error(f"   This could be due to: incorrect credentials, 2FA required, or account restrictions")
             self._clear_session()
             return False
     
@@ -374,24 +423,6 @@ class InstagramVideoUploader:
         
         Returns:
             True if upload successful, False otherwise
-        
-        Example:
-            uploader = InstagramVideoUploader(username="user", password="pass")
-            uploader.login()
-            
-            # Option 1: Auto-generate thumbnail (safer)
-            success = uploader.upload_reel(
-                video_path="path/to/video.mp4",
-                caption="Check out this amazing reel! 🚀"
-            )
-            
-            # Option 2: Use custom thumbnail (may have validation errors)
-            success = uploader.upload_reel(
-                video_path="path/to/video.mp4",
-                caption="Check out this amazing reel! 🚀",
-                thumbnail_path="path/to/custom_thumbnail.png",
-                use_custom_thumbnail=True
-            )
         """
         video_path = Path(video_path)
         
@@ -427,6 +458,9 @@ class InstagramVideoUploader:
         
         logger.info(f"Starting reel upload: {video_path.name}")
         logger.info(f"Caption: {caption[:80]}...")
+        
+        # Human-like delay before upload
+        self._human_delay(1.5, 3.5)
         
         try:
             if use_custom_thumbnail and thumbnail_path:
@@ -484,17 +518,11 @@ class InstagramVideoUploader:
         Args:
             image_paths: List of image file paths (PNG, JPG, etc.)
             caption: Caption text for the carousel
+            subject: Subject for auto-generating caption if caption is empty
             retries: Number of retry attempts on failure
         
         Returns:
             True if upload successful, False otherwise
-        
-        Example:
-            images = ["path/to/image1.png", "path/to/image2.png"]
-            success = uploader.upload_carousel(
-                image_paths=images,
-                caption="Swipe to see more! 📸"
-            )
         """
         # Auto-generate caption from subject if not provided
         if not caption:
@@ -525,6 +553,9 @@ class InstagramVideoUploader:
                 
                 logger.info(f"Upload attempt {attempt}/{retries}")
                 
+                # Human-like delay before upload
+                self._human_delay(1.5, 3.5)
+                
                 # Upload carousel
                 media = self.cl.album_upload(
                     paths=[str(img) for img in image_paths],
@@ -540,21 +571,13 @@ class InstagramVideoUploader:
                 logger.error(f"Upload attempt {attempt} failed: {e}")
                 
                 if attempt < retries:
-                    delay = min(2 ** attempt, 30)
-                    logger.info(f"Retrying in {delay} seconds...")
+                    delay = random.uniform(2 ** attempt, 2 ** attempt + 5)
+                    logger.info(f"Retrying in {delay:.1f} seconds...")
                     time.sleep(delay)
                 else:
                     logger.error(f"All {retries} upload attempts failed")
         
         return False
-    
-    def logout(self) -> None:
-        """Logout from Instagram."""
-        try:
-            self.cl.logout()
-            logger.info("Logged out from Instagram")
-        except Exception as e:
-            logger.error(f"Error during logout: {e}")
     
     def get_account_info(self) -> Optional[Dict[str, Any]]:
         """
@@ -578,6 +601,110 @@ class InstagramVideoUploader:
             return None
 
 
+def move_uploaded_files(
+    carousel_data: Dict[str, Any],
+    reel_data: list,
+    uploaded_carousels: list,
+    uploaded_reels: list,
+    subject: str,
+    run_date: str,
+    project_root: Path
+    ) -> Dict[str, Any]:
+    """
+    Move successfully uploaded files to organized folders.
+    
+    Args:
+        carousel_data: Dictionary mapping question_id to carousel data with paths
+        reel_data: List of dictionaries with reel video data
+        uploaded_carousels: List of successfully uploaded carousel question IDs
+        uploaded_reels: List of successfully uploaded reel video paths
+        subject: Subject name (e.g., 'python', 'sql')
+        run_date: Run date string (e.g., '2026-01-01_205914')
+        project_root: Project root path
+    
+    Returns:
+        Dictionary with move operation results
+    """
+    results = {
+        'carousels_moved': 0,
+        'reels_moved': 0,
+        'errors': []
+    }
+    
+    # Setup target directories
+    uploaded_root = project_root / "uploaded" / subject / run_date
+    carousel_dir = uploaded_root / "carousels"
+    reel_dir = uploaded_root / "reels"
+    
+    try:
+        carousel_dir.mkdir(parents=True, exist_ok=True)
+        reel_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"📁 Created upload directories: {uploaded_root}")
+    except Exception as e:
+        error_msg = f"Failed to create upload directories: {e}"
+        logger.error(error_msg)
+        results['errors'].append(error_msg)
+        return results
+    
+    # Move successfully uploaded carousel images
+    logger.info("📦 Moving uploaded carousel images...")
+    for question_id in uploaded_carousels:
+        if question_id not in carousel_data:
+            continue
+        
+        try:
+            carousel_info = carousel_data[question_id]
+            image_paths = carousel_info['paths']
+            
+            # Create question-specific subfolder
+            question_folder = carousel_dir / question_id
+            question_folder.mkdir(parents=True, exist_ok=True)
+            
+            # Move all 6 carousel images
+            for img_path in image_paths:
+                try:
+                    target_path = question_folder / img_path.name
+                    shutil.move(str(img_path), str(target_path))
+                    logger.debug(f"  ✓ Moved: {img_path.name} -> {question_folder.name}/")
+                except Exception as e:
+                    error_msg = f"Failed to move {img_path.name}: {e}"
+                    logger.warning(f"  ⚠️  {error_msg}")
+                    results['errors'].append(error_msg)
+            
+            results['carousels_moved'] += 1
+            logger.info(f"  ✓ Moved carousel for {question_id}")
+            
+        except Exception as e:
+            error_msg = f"Failed to move carousel {question_id}: {e}"
+            logger.error(f"  ✗ {error_msg}")
+            results['errors'].append(error_msg)
+    
+    # Move successfully uploaded reel videos
+    logger.info("📦 Moving uploaded reel videos...")
+    for reel_path_str in uploaded_reels:
+        try:
+            reel_path = Path(reel_path_str)
+            if not reel_path.exists():
+                logger.warning(f"  ⚠️  Reel file not found (already moved?): {reel_path.name}")
+                continue
+            
+            target_path = reel_dir / reel_path.name
+            shutil.move(str(reel_path), str(target_path))
+            logger.info(f"  ✓ Moved: {reel_path.name}")
+            results['reels_moved'] += 1
+            
+        except Exception as e:
+            error_msg = f"Failed to move reel {Path(reel_path_str).name}: {e}"
+            logger.error(f"  ✗ {error_msg}")
+            results['errors'].append(error_msg)
+    
+    logger.info(f"📦 Move summary: {results['carousels_moved']} carousels, {results['reels_moved']} reels moved")
+    if results['errors']:
+        logger.warning(f"⚠️  {len(results['errors'])} errors occurred during move operations")
+    
+    return results
+
+
 def upload_from_metadata(
     metadata_file_path: Path,
     username: str,
@@ -594,29 +721,31 @@ def upload_from_metadata(
         metadata_file_path: Path to the metadata JSON file
         username: Instagram username
         password: Instagram password
-        session_dir: Optional directory for session files (defaults to output_1/sessions)
+        session_dir: Optional directory for session files (defaults to project_root/sessions)
         delay_between_uploads: Delay in seconds between carousel and reel uploads (default: 12)
     
     Returns:
-        Dictionary with combined upload results:
-        {
-            'success': bool,
-            'carousel': {'uploaded_count': int, 'failed_count': int, 'uploaded': list, 'failed': list},
-            'reel': {'uploaded_count': int, 'failed_count': int, 'uploaded': list, 'failed': list},
-            'total_uploaded': int,
-            'total_failed': int
-        }
+        Dictionary with combined upload results
     """
     metadata_file_path = Path(metadata_file_path).resolve()
     logger.info(f"📤 Starting unified upload from: {metadata_file_path}")
     
+    # Extract run_date from metadata filename (e.g., "2026-01-01_205914_metadata.json" -> "2026-01-01_205914")
+    run_date = metadata_file_path.stem.replace('_metadata', '')
+    logger.info(f"📅 Run date: {run_date}")
+    
     # Setup paths
     project_root = metadata_file_path.parent.parent.parent.parent
     if session_dir is None:
-        session_dir = metadata_file_path.parent.parent.parent / "sessions"
+        session_dir = project_root / "sessions"
     session_dir.mkdir(parents=True, exist_ok=True)
-    session_file = session_dir / "instagram_session.json"
     
+    # Use username-specific session filename to support multiple accounts
+    safe_username = username.replace('@', '_at_').replace('.', '_')
+    session_file = session_dir / f"instagram_session_{safe_username}.json"
+
+    logger.info(f"📂 Session file: {session_file}")
+        
     # Load metadata
     try:
         with open(metadata_file_path, 'r', encoding='utf-8') as f:
@@ -693,7 +822,7 @@ def upload_from_metadata(
     logger.info(f"Found {len(carousel_images_by_question)} carousels with complete image sets")
     logger.info(f"Found {len(reel_videos_with_metadata)} reel videos")
     
-    # Initialize uploader
+    # Initialize uploader with consistent session file path
     uploader = InstagramVideoUploader(
         username=username,
         password=password,
@@ -726,11 +855,14 @@ def upload_from_metadata(
             title = carousel_data['title']
             subject = carousel_data['subject']
             
-            # caption = f"{title}\n\n#{subject} #programming #coding #dailydoseofprogramming" # dynaically generated
             logger.info(f"Uploading carousel for {question_id}: {title}")
             uploader.upload_carousel(image_paths, subject=subject)
             carousel_uploaded.append(question_id)
-            time.sleep(random.uniform(10, 15))  # Rate limiting between uploads
+            
+            # Random delay between uploads
+            delay = random.uniform(10, 15)
+            logger.debug(f"⏳ Waiting {delay:.1f}s before next upload...")
+            time.sleep(delay)
         except Exception as e:
             logger.error(f"Failed to upload carousel {question_id}: {e}")
             carousel_failed.append(question_id)
@@ -739,8 +871,9 @@ def upload_from_metadata(
     
     # Wait before uploading reels
     if carousel_uploaded:
-        logger.info(f"⏳ Waiting {delay_between_uploads} seconds before uploading reels...")
-        time.sleep(delay_between_uploads)
+        delay = random.uniform(delay_between_uploads, delay_between_uploads + 5)
+        logger.info(f"⏳ Waiting {delay:.1f} seconds before uploading reels...")
+        time.sleep(delay)
     
     # Upload reels
     logger.info("=" * 60)
@@ -774,18 +907,37 @@ def upload_from_metadata(
                 uploader.upload_reel(video_path, caption=caption, subject=subject)
             
             reel_uploaded.append(str(video_path))
-            time.sleep(random.uniform(10, 15))  # Rate limiting between uploads
+            
+            # Random delay between uploads
+            delay = random.uniform(10, 15)
+            logger.debug(f"⏳ Waiting {delay:.1f}s before next upload...")
+            time.sleep(delay)
         except Exception as e:
             logger.error(f"Failed to upload reel {video_path.name}: {e}")
             reel_failed.append(str(video_path))
     
     logger.info(f"✅ Reels: {len(reel_uploaded)} uploaded, {len(reel_failed)} failed")
     
-    # # Logout
-    # try:
-    #     uploader.logout()
-    # except Exception as e:
-    #     logger.warning(f"Logout warning: {e}")
+    # Move uploaded files to organized folders
+    if carousel_uploaded or reel_uploaded:
+        logger.info("=" * 60)
+        logger.info("📦 ORGANIZING UPLOADED FILES")
+        logger.info("=" * 60)
+        
+        move_results = move_uploaded_files(
+            carousel_data=carousel_images_by_question,
+            reel_data=reel_videos_with_metadata,
+            uploaded_carousels=carousel_uploaded,
+            uploaded_reels=reel_uploaded,
+            subject=subject,
+            run_date=run_date,
+            project_root=project_root
+        )
+        
+        logger.info(f"✅ File organization complete: {move_results['carousels_moved']} carousels, {move_results['reels_moved']} reels")
+    
+    # Note: We never logout - let session expire naturally for better persistence
+    logger.info("Session kept active (no logout) - will be reused in next run")
     
     # Combine results
     combined_result = {
@@ -825,20 +977,17 @@ if __name__ == "__main__":
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    # metadata generated at: pybenders\output_1\python\runs\2026-01-01_083340_metadata.json
-    # publisher pybenders\pybender\publishers\instagram_publisher.py
 
     # Define paths
-    script_dir = Path(__file__).resolve().parent # pybenders/output_1
-    project_root = script_dir.parent.parent # pybenders
-    output_1_dir = project_root / "output_1" # pybenders/output_1
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent.parent
+    output_1_dir = project_root / "output_1"
 
     # Load .env if python-dotenv is available
     if load_dotenv:
         load_dotenv(project_root / ".env")
 
     # Parse CLI arguments
-    # Usage: python instagram_publisher.py <metadata_file>
     metadata_override = None
     test_mode = "--test" in sys.argv
     
@@ -865,7 +1014,7 @@ if __name__ == "__main__":
 
     logger.info(f"Using metadata file: {metadata_file}")
 
-    # Get credentials from environment variables (no defaults)
+    # Get credentials from environment variables
     username = os.getenv('INSTAGRAM_USERNAME')
     password = os.getenv('INSTAGRAM_PASSWORD')
 
@@ -927,12 +1076,11 @@ if __name__ == "__main__":
             logger.error(f"Test mode error: {e}")
             sys.exit(1)
 
-    # Upload both carousel and reels with unified function
+    # Upload both carousel and reels
     logger.info("=" * 60)
     logger.info("📤 STARTING UNIFIED UPLOAD (Carousel + Reels)")
     logger.info("=" * 60)
-    # print(carousel_images)
-    # print(video_path)
+    
     result = upload_from_metadata(
         metadata_file_path=metadata_file,
         username=username,
