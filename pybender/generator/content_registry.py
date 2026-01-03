@@ -508,4 +508,58 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "Simple deduction puzzles",
         ],
     ),
+
+    "psychology": ContentSpec(
+        subject="psychology",
+        content_type="wisdom_card",
+        assets=["statement", "explanation", "example", "application"],
+        topics=[
+            # Cognitive Biases (12 topics)
+            "Confirmation bias in daily decisions",
+            "Dunning-Kruger effect and expertise",
+            "Anchoring effect in negotiations",
+            "Availability heuristic and fear",
+            "Sunk cost fallacy in relationships",
+            "Halo effect in first impressions",
+            "Fundamental attribution error",
+            "Hindsight bias and regret",
+            "Recency bias in memory",
+            "Framing effect in choices",
+            "Loss aversion in decision making",
+            "Bandwagon effect and conformity",
+            
+            # Social Psychology (8 topics)
+            "Bystander effect in emergencies",
+            "Social proof and influence",
+            "Groupthink in organizations",
+            "Conformity and peer pressure",
+            "Obedience to authority figures",
+            "In-group bias and tribalism",
+            "Self-serving bias in success",
+            "Cognitive dissonance resolution",
+            
+            # Behavioral Economics (6 topics)
+            "Choice overload and paralysis",
+            "Default option power",
+            "Mental accounting tricks",
+            "Temporal discounting and patience",
+            "Endowment effect and ownership",
+            "Decoy effect in pricing",
+            
+            # Mental Health (6 topics)
+            "Stress response mechanisms",
+            "Anxiety spiral patterns",
+            "Depression and rumination",
+            "Burnout warning signs",
+            "Emotional regulation techniques",
+            "Growth mindset vs fixed mindset",
+            
+            # Decision Making (5 topics)
+            "Analysis paralysis causes",
+            "Intuition vs rational thinking",
+            "Decision fatigue impact",
+            "Regret minimization framework",
+            "Satisficing vs maximizing",
+        ]
+    ),
 }

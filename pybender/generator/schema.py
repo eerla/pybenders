@@ -35,7 +35,7 @@ class Question(BaseModel):
     explanation: str
 
 
-class MindBenderQuestion(BaseModel):
+class MindBenderQuestion(BaseModel): # mind_bender profile
     """Schema for brain teaser puzzle questions."""
     question_id: Optional[str] = None
     title: str  # "Number Pattern Challenge" (max 6 words)
@@ -49,3 +49,26 @@ class MindBenderQuestion(BaseModel):
     explanation: str  # Pattern explanation (max 300 chars)
     fun_fact: Optional[str] = ""  # Optional trivia (max 200 chars)
     
+
+class PsychologyCategory(str, Enum):
+    COGNITIVE_BIAS = "cognitive_bias"
+    SOCIAL_PSYCHOLOGY = "social_psychology"
+    BEHAVIORAL_ECONOMICS = "behavioral_economics"
+    MENTAL_HEALTH = "mental_health"
+    DECISION_MAKING = "decision_making"
+    PERCEPTION = "perception"
+    MEMORY = "memory"
+    EMOTIONS = "emotions"
+    RELATIONSHIPS = "relationships"
+    MOTIVATION = "motivation"
+
+class PsychologyCard(BaseModel): # wisdom_card profile
+    """Schema for psychology wisdom cards."""
+    question_id: Optional[str] = None
+    title: str  # "The Dunning-Kruger Effect" (max 6 words)
+    category: PsychologyCategory
+    statement: str  # Main fact (150 chars - short, punchy)
+    explanation: str  # Why it matters (250 chars)
+    real_example: str  # Everyday scenario (200 chars)
+    application: str  # "Try this: ..." actionable tip (150 chars)
+    source: Optional[str] = ""  # "Study: MIT 2023" or similar

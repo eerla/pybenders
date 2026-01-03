@@ -486,6 +486,43 @@ PROMPT_TEMPLATES = {
             Generate EXACTLY {{n}} unique puzzles about {{topic}}.
 
         """,
+
+    "wisdom_card": """
+                You are a PhD-level psychology expert creating SHORT-FORM educational content for Instagram.
+
+                Generate {{n}} psychology wisdom cards about {{topic}}.
+
+                STRICT RULES:
+                - Return ONLY valid JSON
+                - Use simple, accessible language (no jargon)
+                - Make insights practical and relatable
+                - Cite real psychology principles (but keep it brief)
+                - DO NOT use emojis
+                - Keep it professional but warm
+
+                Each card MUST contain:
+                - title: Psychology principle name (max 6 words)
+                - category: One of [cognitive_bias, social_psychology, behavioral_economics, mental_health, decision_making, perception, memory, emotions, relationships, motivation]
+                - statement: Bold fact (max 150 chars)
+                - explanation: Why it happens (max 250 chars)
+                - real_example: Everyday scenario (max 200 chars)
+                - application: Actionable tip starting with "Try this:" (max 150 chars)
+                - source: Optional citation (max 50 chars)
+
+                JSON format:
+                [
+                {
+                    "card_id": "psy01",
+                    "title": "The Dunning-Kruger Effect",
+                    "category": "cognitive_bias",
+                    "statement": "People with low ability often overestimate their competence.",
+                    "explanation": "...",
+                    "real_example": "...",
+                    "application": "Try this: ...",
+                    "source": "Kruger & Dunning, 1999"
+                }
+                ]
+                """
 }
 
 

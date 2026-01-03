@@ -67,6 +67,33 @@ def validate_mind_bender(q: dict):
     if q.get("fun_fact"):
         assert len(q["fun_fact"]) <= 200, "Fun fact too long (max 200 chars)"
 
+
+def validate_psychology_card(q: dict):
+    allowed_categories = {
+        "cognitive_bias",
+        "social_psychology",
+        "behavioral_economics",
+        "mental_health",
+        "decision_making",
+        "perception",
+        "memory",
+        "emotions",
+        "relationships",
+        "motivation",
+    }
+
+    assert len(q["title"].split()) <= 6, "Title too long (max 6 words)"
+    assert q.get("category") in allowed_categories, "Invalid category"
+    assert len(q["statement"]) <= 150, "Statement too long (max 150 chars)"
+    assert len(q["explanation"]) <= 250, "Explanation too long (max 250 chars)"
+    assert len(q["real_example"]) <= 200, "Real example too long (max 200 chars)"
+    assert len(q["application"]) <= 150, "Application too long (max 150 chars)"
+    if q.get("application"):
+        assert q["application"].lower().startswith("try this:"), "Application must start with 'Try this:'"
+    if q.get("source"):
+        assert len(q["source"]) <= 50, "Source too long (max 50 chars)"
+
+
 VALIDATORS: Dict[str, callable] = {
     "code_output": validate_code_output,
     "query_output": validate_query_output,
@@ -75,6 +102,7 @@ VALIDATORS: Dict[str, callable] = {
     "command_output": validate_command_output,
     "qa": validate_qa,
     "mind_bender": validate_mind_bender,
+    "wisdom_card": validate_psychology_card,
 }
 
 

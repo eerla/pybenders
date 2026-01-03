@@ -15,7 +15,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from typing import Dict, Tuple
 from pybender.generator.schema import MindBenderQuestion
-from pybender.render.mind_bender_themes import MIND_BENDERS_THEMES
+from pybender.render.themes import MIND_BENDERS_THEMES
 
 logger = logging.getLogger(__name__)
 
