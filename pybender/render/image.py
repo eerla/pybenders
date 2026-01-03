@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from pybender.config.logging_config import setup_logging
 from pybender.generator.question_gen import QuestionGenerator
-from pybender.generator.schema import Question
+from pybender.generator.schema import Question, MindBenderQuestion
 from pybender.render.carousel import CarouselRenderer
 from pybender.render.code_renderer import draw_editor_code_with_ide
 from pybender.render.layout_profiles import LAYOUT_PROFILES
@@ -1229,8 +1229,166 @@ class ImageRenderer:
         logger.info("✅ Complete transition sequence generated (4 images, 2 seconds total)")
         return transition_paths
 
-    def main(self, questions_per_run: int, subject: str = "python") -> Path:
+    def _render_mind_benders(self, questions_per_run: int, subject: str) -> Path:
+        """Handle brain teaser rendering with colorful themes for both reel and carousel formats."""
+        from pybender.render.mind_bender_renderer import MindBenderRenderer
+        
+        # --------------------------------------------------
+        # Run context
+        # --------------------------------------------------
+        RUN_DATE = datetime.now().strftime("%Y-%m-%d")
+        RUN_TIMESTAMP = datetime.now().strftime("%H%M%S")
+        RUN_ID = f"{RUN_DATE}_{RUN_TIMESTAMP}"
+        logger.info("Starting mind_benders run: %s", RUN_ID)
+        
+        # --------------------------------------------------
+        # Output directories
+        # --------------------------------------------------
+        base_img_dir = self.BASE_DIR / subject / "images"
+        reel_dir = base_img_dir / "reel"
+        carousel_dir = base_img_dir / "carousels"
+        welcome_img_path = base_img_dir / "welcome.png"
+        cta_dir = base_img_dir  # CTA images saved as reel_cta.png and carousel_cta.png
+        run_dir = self.BASE_DIR / subject / "runs" 
 
+        # Create directories
+        for d in [reel_dir, carousel_dir, run_dir]:
+            d.mkdir(parents=True, exist_ok=True)
+    
+        # --------------------------------------------------
+        # Generate puzzle questions
+        # --------------------------------------------------
+        logger.info("Generating %d brain teaser puzzles...", questions_per_run)
+        qg = QuestionGenerator()
+        questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)
+        
+        # Convert to MindBenderQuestion objects
+        mind_bender_questions = []
+        for q_dict in questions:
+            if isinstance(q_dict, dict):
+                mb_q = MindBenderQuestion(**q_dict)
+            else:
+                mb_q = q_dict
+            mind_bender_questions.append(mb_q)
+        
+        # Assign stable question IDs
+        for idx, q in enumerate(mind_bender_questions, start=1):
+            q.question_id = f"{RUN_ID}_q{idx:02d}"
+        
+        # --------------------------------------------------
+        # Initialize renderer and select theme
+        # --------------------------------------------------
+        renderer = MindBenderRenderer()
+        theme = renderer.select_random_theme()
+        logger.info(f"🎨 Using theme: {theme['name']}")
+
+        # Render theme-specific CTA for both formats (skips if exists)
+        cta_paths = renderer.render_theme_cta(theme, cta_dir)
+        
+        # --------------------------------------------------
+        # Metadata setup
+        # --------------------------------------------------
+        metadata = {
+            "run_id": RUN_ID,
+            "run_date": RUN_DATE,
+            "run_timestamp": RUN_TIMESTAMP,
+            "subject": subject,
+            "content_type": content_type,
+            "theme": theme["name"],
+            "generator": {
+                "model": self.MODEL,
+                "topic": topic if topic else "DEFAULT"
+            },
+            "questions": []
+        }
+        
+        # --------------------------------------------------
+        # Render puzzle cards for each question in both formats
+        # --------------------------------------------------
+        logger.info("Rendering brain teaser images (reel + carousel)...")
+        
+        for q in mind_bender_questions:
+            q_slug = slugify(q.title)
+            question_dict = q.model_dump() if hasattr(q, 'model_dump') else q.dict()
+            
+            # ==========================================
+            # WELCOME COVER - Per question with category
+            # ==========================================
+            reel_welcome_img = reel_dir / f"{q.question_id}_welcome.png"
+            carousel_welcome_img = carousel_dir / f"{q.question_id}_welcome.png"
+            
+            renderer.render_welcome_cover(theme, reel_welcome_img, size=renderer.REEL_SIZE, category=q.category)
+            renderer.render_welcome_cover(theme, carousel_welcome_img, size=renderer.CAROUSEL_SIZE, category=q.category)
+            
+            logger.info(f"✅ Rendered WELCOME covers: {q.title} ({q.category})")
+            
+            # ==========================================
+            # REEL FORMAT (1080x1920) - in reel/ directory
+            # ==========================================
+            reel_question_img = reel_dir / f"{q.question_id}_question.png"
+            reel_hint_img = reel_dir / f"{q.question_id}_hint.png"
+            reel_answer_img = reel_dir / f"{q.question_id}_answer.png"
+            
+            renderer.render_puzzle_card(question_dict, theme, reel_question_img, size=renderer.REEL_SIZE)
+            renderer.render_hint_card(question_dict, theme, reel_hint_img, size=renderer.REEL_SIZE)
+            renderer.render_answer_card(question_dict, theme, reel_answer_img, size=renderer.REEL_SIZE)
+            
+            logger.info(f"✅ Rendered (REEL): {q.title}")
+            
+            # ==========================================
+            # CAROUSEL FORMAT (1080x1080) - in carousels/ directory
+            # ==========================================
+            carousel_question_img = carousel_dir / f"{q.question_id}_question.png"
+            carousel_hint_img = carousel_dir / f"{q.question_id}_hint.png"
+            carousel_answer_img = carousel_dir / f"{q.question_id}_answer.png"
+            
+            renderer.render_puzzle_card(question_dict, theme, carousel_question_img, size=renderer.CAROUSEL_SIZE)
+            renderer.render_hint_card(question_dict, theme, carousel_hint_img, size=renderer.CAROUSEL_SIZE)
+            renderer.render_answer_card(question_dict, theme, carousel_answer_img, size=renderer.CAROUSEL_SIZE)
+            
+            logger.info(f"✅ Rendered (CAROUSEL): {q.title}")
+            
+            # Add to metadata
+            metadata["questions"].append({
+                "question_id": q.question_id,
+                "title": q.title,
+                "category": q.category,
+                "slug": q_slug,
+                "content": question_dict,
+                "assets": {
+                    "reel": {
+                        "welcome_image": str(reel_welcome_img),
+                        "question_image": str(reel_question_img),
+                        "hint_image": str(reel_hint_img),
+                        "answer_image": str(reel_answer_img)
+                    },
+                    "carousel": {
+                        "welcome_image": str(carousel_welcome_img),
+                        "question_image": str(carousel_question_img),
+                        "hint_image": str(carousel_hint_img),
+                        "answer_image": str(carousel_answer_img)
+                    }
+                }
+            })
+        
+        logger.info("All mind_bender images rendered successfully (reel + carousel)")
+        
+        
+        # --------------------------------------------------
+        # Write metadata.json
+        # --------------------------------------------------
+        metadata_path = run_dir / f"{RUN_ID}_metadata.json"
+        if self.WRITE_METADATA:
+            with open(metadata_path, "w", encoding="utf-8") as f:
+                json.dump(metadata, f, indent=2)
+            logger.info("Metadata written to %s", metadata_path)
+        
+        logger.info("Mind bender rendering process completed successfully")
+        return metadata_path
+
+    def _render_technical_content(self, questions_per_run: int, subject: str) -> Path:
+        """Handle technical content rendering (code-based subjects)."""
+        
         # --------------------------------------------------
         # Run context
         # --------------------------------------------------
@@ -1241,11 +1399,10 @@ class ImageRenderer:
         logger.info("Starting run: %s", RUN_ID)
 
         # --------------------------------------------------
-        # Output directories (type-based)
+        # Output directories (unified structure)
         # --------------------------------------------------
         base_img_dir = self.BASE_DIR / subject / "images"
-        question_dir = base_img_dir / "questions"
-        answer_dir = base_img_dir / "answers"
+        reel_dir = base_img_dir / "reel"
         carousel_dir = base_img_dir / "carousels"
         welcome_img_path = base_img_dir / "welcome.png"
         cta_img_path = base_img_dir / "cta.png"
@@ -1276,7 +1433,7 @@ class ImageRenderer:
 
         # -----------------CREATE DIRECTORIES---------------------------------
 
-        for d in [question_dir, answer_dir, carousel_dir, run_dir]:
+        for d in [reel_dir, carousel_dir, run_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
         metadata = {
@@ -1303,13 +1460,17 @@ class ImageRenderer:
 
             layout_profile = resolve_layout_profile(content_type)
             
-            question_img_out_path = question_dir / f"{q.question_id}_question.png"
-            answer_img_out_path = answer_dir / f"{q.question_id}_answer.png"
+            # REEL FORMAT (1080x1920)
+            reel_question_img = reel_dir / f"{q.question_id}_question.png"
+            reel_answer_img = reel_dir / f"{q.question_id}_answer.png"
 
-            # Render images (scenario included inline for QUESTION/SINGLE when applicable)
-            self.render_image(q, question_img_out_path, layout_profile, subject, RenderMode.QUESTION)
-            self.render_image(q, answer_img_out_path, layout_profile, subject, RenderMode.ANSWER)
+            # Render images to reel format (scenario included inline for QUESTION/SINGLE when applicable)
+            self.render_image(q, reel_question_img, layout_profile, subject, RenderMode.QUESTION)
+            self.render_image(q, reel_answer_img, layout_profile, subject, RenderMode.ANSWER)
 
+            logger.info(f"✅ Rendered (REEL): {q.title}")
+
+            # CAROUSEL FORMAT (1080x1080)
             carousel_images = carousel_renderer.generate_carousel_slides(
                 question=q,
                 carousel_dir=carousel_dir,
@@ -1323,8 +1484,10 @@ class ImageRenderer:
                 "slug": q_slug,
                 "content": q.model_dump(),
                 "assets": {
-                    "question_image": str(question_img_out_path),
-                    "answer_image": str(answer_img_out_path),
+                    "reel": {
+                        "question_image": str(reel_question_img),
+                        "answer_image": str(reel_answer_img)
+                    },
                     "carousel_images": carousel_images,
                 }
             })
@@ -1343,19 +1506,32 @@ class ImageRenderer:
         logger.info("Image rendering process completed successfully")
         return metadata_path
 
-# if __name__ == "__main__":
-#     renderer = ImageRenderer()
-#     # renderer.render_transition_sequence()
-#     # subjects = ["python"]
-#     subjects = [
-#         "python", "sql", "regex", "system_design", 
-#         "linux"
-#         ,"docker_k8s", "javascript", "rust", "golang"
-#     ]
-#     import time
-#     for subject in subjects:
-#         try:
-#             renderer.main(1, subject=subject)
-#             time.sleep(2)
-#         except Exception as e:
-#             logger.exception("Error rendering for subject %s", subject)
+    def main(self, questions_per_run: int, subject: str = "python") -> Path:
+        """
+        Main entry point for rendering pipeline.
+        Routes to specialized renderers based on subject type.
+        """
+        logger.info("Starting rendering pipeline for subject: %s", subject)
+
+        # Route to appropriate renderer
+        if subject == "mind_benders":
+            return self._render_mind_benders(questions_per_run, subject)
+        else:
+            return self._render_technical_content(questions_per_run, subject)
+
+if __name__ == "__main__":
+    renderer = ImageRenderer()
+    # renderer.render_transition_sequence()
+    subjects = ["python"]
+    # subjects = [
+    #     "python", "sql", "regex", "system_design", 
+    #     "linux", "mind_benders"
+    #     ,"docker_k8s", "javascript", "rust", "golang"
+    # ]
+    import time
+    for subject in subjects:
+        try:
+            renderer.main(1, subject=subject)
+            time.sleep(2)
+        except Exception as e:
+            logger.exception("Error rendering for subject %s", subject)

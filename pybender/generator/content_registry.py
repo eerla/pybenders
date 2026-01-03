@@ -466,4 +466,46 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "What is a DaemonSet?"
         ],
     ),
+
+    "mind_benders": ContentSpec(
+        subject="mind_benders",
+        content_type="puzzle",
+        assets=["puzzle", "explanation"],
+        topics=[
+            # Number Patterns
+            "Arithmetic sequences",
+            "Geometric sequences",
+            "Factorial patterns",
+            "Square and cube patterns",
+            "Fibonacci-like sequences",
+            "Prime number patterns",
+            
+            # Logic Puzzles
+            "Age and relationship puzzles",
+            "Classic riddles",
+            "Lateral thinking puzzles",
+            "Trick questions",
+            
+            # Math Tricks
+            "Number guessing tricks",
+            "Always-same-result puzzles",
+            "Division and multiplication tricks",
+            "Time and clock puzzles",
+            
+            # Visual Patterns
+            "Symbol equations",
+            "Shape sequences",
+            "Emoji math puzzles",
+            
+            # Word Logic
+            "Letter sequences (month initials, etc.)",
+            "Word association puzzles",
+            "Category odd-one-out",
+            
+            # Probability & Logic
+            "Counter-intuitive probability",
+            "Classic paradoxes (birthday, Monty Hall lite)",
+            "Simple deduction puzzles",
+        ],
+    ),
 }

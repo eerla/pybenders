@@ -46,6 +46,12 @@ CONTENT_LIMITS = {
         "question": 150,      # Questions are usually concise
         "explanation": 400,   # Detailed reasoning for troubleshooting/decisions
     },
+    "mind_benders": {
+        "puzzle": 100,        # Main puzzle text
+        "question": 100,      # The question asked
+        "explanation": 300,   # Fun explanation of the answer
+        "fun_fact": 200,      # Optional trivia/fun fact
+    },
 }
 
 PROMPT_TEMPLATES = {
@@ -400,7 +406,85 @@ PROMPT_TEMPLATES = {
             "explanation": "..."
         }
         ]
-        """
+        """,
+    "puzzle": """
+            You are a creative puzzle master creating ENGAGING brain teasers for Instagram reels.
+
+            Generate {{n}} DIFFERENT and VARIED mind-bending puzzles about {{topic}}.
+
+            STRICT RULES:
+            - Return ONLY valid JSON, nothing else
+            - NO markdown code blocks (do NOT wrap in ```json ... ```)
+            - NO text before or after the JSON
+            - Use emojis when appropriate (🧠 🤔 ✅ ❌ 🎯 🔥)
+            - Make each puzzle visually interesting
+            - Vary difficulty and approach
+            - Ensure answer is unambiguous
+
+            Each puzzle MUST contain:
+            - title: catchy name, max 5 words (e.g., "The Missing Number Mystery")
+            - category: MUST be ONE of these EXACT values ONLY:
+              "number_pattern", "logic", "math_trick", "word_puzzle", "visual", "trick_question", "age_puzzle", "time_puzzle", "probability", "aptitude", "reasoning"
+              Choose the category that BEST fits the puzzle type. For example:
+              - "number_pattern" for sequence puzzles (2, 6, 12, 20, ?)
+              - "logic" for riddles and deductive reasoning
+              - "math_trick" for mathematical patterns or number tricks
+              - "word_puzzle" for word patterns (J, F, M, A, M = Jan, Feb, Mar, Apr, May)
+              - "visual" for visual pattern puzzles with symbols/emojis
+              - "trick_question" for questions with unexpected/tricky answers
+              - "age_puzzle" for age relationship problems
+              - "time_puzzle" for clock/time-based problems
+              - "probability" for probability/chance questions
+              - "aptitude" for general aptitude/IQ type questions
+              - "reasoning" for abstract reasoning puzzles
+            - puzzle: the main puzzle text, under 200 chars (use emojis where helpful)
+            - visual_elements: optional symbols/emojis for visual puzzles (e.g., "▲ ▲ ○ = ?")
+            - hint: optional subtle hint, max 80 chars (or empty string)
+            - question: clear question, max 100 chars
+            - options: exactly 4 items, each under 40 characters
+            - correct: one of "A", "B", "C", "D"
+            - explanation: fun, conversational explanation (like talking to a friend), under 250 chars
+            - fun_fact: optional related trivia, under 150 chars (or empty string)
+
+            Puzzle variety (rotate through):
+            1. Number sequences: 2, 6, 12, 20, ? → category: "number_pattern"
+            2. Logic riddles: "A bat and ball cost $1.10..." → category: "logic"
+            3. Visual patterns: ▲ + ▲ = 10, ▲ + ○ = 7, ○ + ○ = ? → category: "visual"
+            4. Math tricks: "Think of a number, multiply by 3..." → category: "math_trick"
+            5. Word puzzles: J, F, M, A, M, ? (months) → category: "word_puzzle"
+            6. Trick questions: "How many months have 28 days?" → category: "trick_question"
+            7. Age puzzles: father/son age relationships → category: "age_puzzle"
+            8. Time puzzles: clock hand angles → category: "time_puzzle"
+
+            Additional constraints:
+            - Make puzzles feel fresh and engaging (not textbook-ish)
+            - Use everyday relatable contexts
+            - Keep math simple (no complex calculations)
+            - Explanations should be "aha!" moments, not academic
+            - Before output, verify each puzzle is distinctly different
+            - Emojis make it fun - use them naturally!
+            - CRITICAL: Double-check category field matches one of the 11 valid categories above
+
+            JSON format:
+            [
+            {
+                "id": "q01",
+                "title": "The Tricky Sequence",
+                "category": "number_pattern",
+                "puzzle": "2, 6, 12, 20, ?",
+                "visual_elements": "",
+                "hint": "Look at differences between numbers",
+                "question": "What comes next?",
+                "options": ["30", "28", "24", "32"],
+                "correct": "A",
+                "explanation": "The pattern is n² + n! So: 1²+1=2, 2²+2=6, 3²+3=12, 4²+4=20, 5²+5=30 🎯",
+                "fun_fact": "This sequence appears in computer science as node connections in graphs!"
+            }
+            ]
+
+            Generate EXACTLY {{n}} unique puzzles about {{topic}}.
+
+        """,
 }
 
 

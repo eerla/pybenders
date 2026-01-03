@@ -50,6 +50,16 @@ def validate_qa(q: dict):
     assert all(len(opt) <= 75 for opt in q["options"]), "Option too long (max 75 chars)"
     assert len(q["explanation"]) <= 400, "Explanation too long (max 400 chars)"
 
+def validate_mind_bender(q: dict):
+    assert len(q["title"].split()) <= 6, "Title too long (max 6 words)"
+    assert len(q["puzzle"]) <= 100, "Puzzle too long (max 100 chars)"
+    assert len(q["question"]) <= 100, "Question too long (max 100 chars)"
+    assert len(q["options"]) == 4, "There must be exactly 4 options"
+    assert all(len(opt) <= 40 for opt in q["options"]), "Option too long (max 40 chars)"
+    assert len(q["explanation"]) <= 300, "Explanation too long (max 300 chars)"
+    if q.get("fun_fact"):
+        assert len(q["fun_fact"]) <= 200, "Fun fact too long (max 200 chars)"
+
 VALIDATORS: Dict[str, callable] = {
     "code_output": validate_code_output,
     "query_output": validate_query_output,
@@ -57,6 +67,7 @@ VALIDATORS: Dict[str, callable] = {
     "scenario": validate_scenario,
     "command_output": validate_command_output,
     "qa": validate_qa,
+    "mind_bender": validate_mind_bender,
 }
 
 
