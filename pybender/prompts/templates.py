@@ -407,6 +407,7 @@ PROMPT_TEMPLATES = {
         }
         ]
         """,
+        
     "puzzle": """
             You are a creative puzzle master creating ENGAGING brain teasers for Instagram reels.
 

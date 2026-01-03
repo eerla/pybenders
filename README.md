@@ -2,15 +2,17 @@
 
 **AI-powered short-form content generator for Instagram Reels and Carousels**
 
-PyBenders generates daily programming MCQs and brain teasers across multiple subjects (Python, SQL, regex, system design, DevOps) with AI-generated questions, beautiful carousel cards, video reels, and automated Instagram upload. The pipeline goes from LLM prompt → validation → rendered images → carousel generation → video stitching → Instagram publishing.
+PyBenders generates daily programming MCQs and brain teasers across multiple subjects (Python, SQL, regex, system design, DevOps, mind benders) with AI-generated questions, beautiful carousel/reel cards, video reels, and automated Instagram upload. The pipeline goes from LLM prompt → validation → rendered images → dual-format generation (reel + carousel) → video stitching → Instagram publishing.
 
 ## Features
 
 ### Content Generation
-- **Multi-subject support**: Python, SQL, regex, system design, Linux, Docker/K8s, JavaScript, Rust, Go
-- **AI question generation**: Subject-aware LLM prompts with validation for code quality
-- **Carousel format**: 6-slide Instagram carousels per question (cover, question, countdown, answer, explanation, CTA)
-- **Video reels**: Smooth transitions with background music (4.8s question + 7s answer + explanation)
+- **Multi-subject support**: Python, SQL, regex, system design, Linux, Docker/K8s, JavaScript, Rust, Go, mind benders (brain teasers)
+- **AI question generation**: Subject-aware LLM prompts with validation for content quality
+- **Dual-format rendering**: Both reel (1080×1920) and carousel (1080×1080) images generated per question
+- **Carousel format**: 6-slide Instagram carousels for technical subjects (cover, question, countdown, answer, explanation, CTA)
+- **Mind benders format**: 5-card carousel with colorful themes (welcome, question, hint, answer, CTA)
+- **Video reels**: Two types - technical content (with countdown transitions) and mind benders (5-image sequence without transitions)
 - **Batch processing**: Generate 1-10+ questions per run; multi-subject sweeps in one command
 
 ### Instagram Publishing
@@ -41,8 +43,9 @@ PyBenders generates daily programming MCQs and brain teasers across multiple sub
 | System Design | scenario | Design a scalable API |
 | Linux | command_output | Bash command puzzles |
 | Docker/K8s | qa | Container orchestration Q&A |
+| Mind Benders | mind_bender | Logic puzzles, riddles, brain teasers |
 
-Each subject maps to a content type that controls the LLM prompt, validator rules, and renderer styling.
+Each subject maps to a content type that controls the LLM prompt, validator rules, and renderer styling. Mind benders use a unique colorful theme-based renderer with 5 rotating color palettes (sunset, ocean, mint, lavender, golden).
 
 ## Quick Start
 
