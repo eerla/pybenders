@@ -283,7 +283,8 @@ class MindBenderRenderer:
         y_pos += 60
 
         # CTA badge
-        badge_text = "Swipe for the challenge →"
+        format_type = self._get_format(size)
+        badge_text = "Keep watching for the challenge" if format_type == "reel" else "Swipe for the challenge →"
         badge_bbox = draw.textbbox((0, 0), badge_text, font=self.TEXT_FONT)
         badge_w = badge_bbox[2] - badge_bbox[0] + 80
         badge_h = badge_bbox[3] - badge_bbox[1] + 32
@@ -527,8 +528,9 @@ class MindBenderRenderer:
 
             y_pos += hint_box_h + 80
 
-        # CTA swipe prompt
-        cta_text = "Swipe to reveal the answer →"
+        # CTA swipe prompt (format-specific)
+        format_type = self._get_format(size)
+        cta_text = "Keep watching to reveal the answer" if format_type == "reel" else "Swipe to reveal the answer →"
         cta_lines = self._wrap_text_centered(cta_text, self.TEXT_FONT, card_w - 80)
         for line in cta_lines:
             draw.text(

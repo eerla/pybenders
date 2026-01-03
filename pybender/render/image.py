@@ -1533,19 +1533,19 @@ class ImageRenderer:
         else:
             return self._render_technical_content(questions_per_run, subject)
 
-if __name__ == "__main__":
-    renderer = ImageRenderer()
-    # renderer.render_transition_sequence()
-    subjects = ["mind_benders"]
-    # subjects = [
-    #     "python", "sql", "regex", "system_design", 
-    #     "linux", "mind_benders"
-    #     ,"docker_k8s", "javascript", "rust", "golang"
-    # ]
-    import time
-    for subject in subjects:
-        try:
-            renderer.main(1, subject=subject)
-            time.sleep(2)
-        except Exception as e:
-            logger.exception("Error rendering for subject %s", subject)
+# if __name__ == "__main__":
+#     renderer = ImageRenderer()
+#     # renderer.render_transition_sequence()
+#     subjects = ["mind_benders"]
+#     # subjects = [
+#     #     "python", "sql", "regex", "system_design", 
+#     #     "linux", "mind_benders"
+#     #     ,"docker_k8s", "javascript", "rust", "golang"
+#     # ]
+#     import time
+#     for subject in subjects:
+#         try:
+#             renderer.main(1, subject=subject)
+#             time.sleep(2)
+#         except Exception as e:
+#             logger.exception("Error rendering for subject %s", subject)

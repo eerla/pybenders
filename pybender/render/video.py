@@ -594,15 +594,15 @@ class VideoRenderer:
 
 
 
-if __name__ == "__main__":
-    renderer = VideoRenderer()
-    test_metadata_path = renderer.BASE_DIR / "mind_benders" / "runs" 
+# if __name__ == "__main__":
+#     renderer = VideoRenderer()
+#     test_metadata_path = renderer.BASE_DIR / "mind_benders" / "runs" 
     
-    if not test_metadata_path.exists():
-        logger.error("❌ Metadata directory not found at: %s", test_metadata_path)
-    else:
-        files = os.listdir(test_metadata_path)
-        for file in files:
-            if file.endswith(".json") and '011917' in file:
-                logger.info("Processing file: %s", file)
-                renderer.main(test_metadata_path / file)
+#     if not test_metadata_path.exists():
+#         logger.error("❌ Metadata directory not found at: %s", test_metadata_path)
+#     else:
+#         files = os.listdir(test_metadata_path)
+#         for file in files:
+#             if file.endswith(".json") and '011917' in file:
+#                 logger.info("Processing file: %s", file)
+#                 renderer.main(test_metadata_path / file)
