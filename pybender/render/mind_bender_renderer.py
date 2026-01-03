@@ -29,17 +29,17 @@ class MindBenderRenderer:
     # Layout configurations for different formats
     LAYOUT_CONFIG = {
         "reel": {
-            "welcome": {"card_margin": 80, "card_h": 900, "headline_y": 160, "spacing": 140},
+            "welcome": {"card_margin": 80, "card_h": 900, "headline_y": 220, "spacing": 140},
             "puzzle": {"card_margin": 60, "card_h": 1200, "content_y": 80, "shadow_blur": 20},
             "answer": {"card_margin": 60, "card_h": 1200, "content_y": 100, "shadow_blur": 20},
-            "hint": {"card_margin": 60, "card_h": 1300, "content_y": 80, "shadow_blur": 20},
+            "hint": {"card_margin": 60, "card_h": 1300, "content_y": 160, "shadow_blur": 20},
             "cta": {"card_w": 920, "card_h": 640, "content_y": 110, "shadow_blur": 18},
         },
         "carousel": {
-            "welcome": {"card_margin": 40, "card_h": 700, "headline_y": 80, "spacing": 100},
+            "welcome": {"card_margin": 40, "card_h": 700, "headline_y": 130, "spacing": 100},
             "puzzle": {"card_margin": 40, "card_h": 900, "content_y": 60, "shadow_blur": 16},
             "answer": {"card_margin": 40, "card_h": 900, "content_y": 60, "shadow_blur": 16},
-            "hint": {"card_margin": 40, "card_h": 950, "content_y": 50, "shadow_blur": 16},
+            "hint": {"card_margin": 40, "card_h": 950, "content_y": 120, "shadow_blur": 16},
             "cta": {"card_w": 700, "card_h": 500, "content_y": 80, "shadow_blur": 14},
         }
     }
@@ -56,7 +56,7 @@ class MindBenderRenderer:
         
         # Larger, more readable fonts for non-technical content
         self.TITLE_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Bold.ttf"), 56)
-        self.PUZZLE_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-SemiBold.ttf"), 72)
+        self.PUZZLE_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-SemiBold.ttf"), 56)
         self.TEXT_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 42)
         self.OPTION_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Medium.ttf"), 48)
         self.EXPLANATION_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 38)
@@ -230,28 +230,32 @@ class MindBenderRenderer:
 
         # Category badge (if provided)
         if category:
-            category_text = category.upper()
+            category_text = category.upper().replace("_", " ")
             cat_bbox = draw.textbbox((0, 0), category_text, font=self.TEXT_FONT)
             cat_w = cat_bbox[2] - cat_bbox[0] + 40
             cat_h = cat_bbox[3] - cat_bbox[1] + 16
             cat_x = center_x - cat_w // 2
             
+            badge_top = y_pos - 20
+            badge_bottom = y_pos + cat_h - 20
+            badge_center_y = badge_top + (badge_bottom - badge_top) // 2
+            
             draw.rounded_rectangle(
-                [cat_x, y_pos - 20, cat_x + cat_w, y_pos + cat_h - 20],
+                [cat_x, badge_top, cat_x + cat_w, badge_bottom],
                 radius=20,
                 fill=theme['accent']
             )
             draw.text(
-                (center_x, y_pos - 12),
+                (center_x, badge_center_y),
                 category_text,
                 font=self.TEXT_FONT,
-                fill=theme['text_primary'],
+                fill=(255, 255, 255),
                 anchor="mm"
             )
             y_pos += 80
 
         # Main headline (wrapped if needed)
-        headline = "🧠 Can YOU solve this?"
+        headline = "Can YOU solve this?"
         headline_lines = self._wrap_text_centered(headline, self.PUZZLE_FONT, card_w - 80)
         for line in headline_lines:
             draw.text(
@@ -303,115 +307,103 @@ class MindBenderRenderer:
         logger.info(f"✅ Saved mind_benders welcome cover: {output_path}")
         return output_path
 
-    def render_theme_cta(self, theme: Dict, output_dir: Path) -> Dict[str, Path]:
-        """Render CTA images for both reel and carousel formats.
-        
-        Args:
-            theme: Color theme dictionary
-            output_dir: Base directory to save images (will create reel_cta.png and carousel_cta.png)
-            
-        Returns:
-            Dict with 'reel' and 'carousel' paths
-        """
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        reel_cta_path = output_dir / "reel_cta.png"
-        carousel_cta_path = output_dir / "carousel_cta.png"
-        
-        # Check if both already exist
-        if reel_cta_path.exists() and carousel_cta_path.exists():
-            logger.info("✅ CTA images already exist")
-            return {"reel": reel_cta_path, "carousel": carousel_cta_path}
-        
-        # Generate both formats
-        for size, path, format_name in [(self.REEL_SIZE, reel_cta_path, "REEL"), 
-                                         (self.CAROUSEL_SIZE, carousel_cta_path, "CAROUSEL")]:
-            if path.exists():
-                logger.info(f"✅ {format_name} CTA already exists")
-                continue
-                
+    def render_theme_cta(
+        self,
+        theme: Dict,
+        reel_cta_path: Path,
+        carousel_cta_path: Path,
+    ) -> Dict[str, Path]:
+        """Render CTA images for both reel and carousel formats into specific paths."""
+
+        # Generate both formats (skip if file already exists at the provided path)
+        for size, path, format_name in [
+            (self.REEL_SIZE, reel_cta_path, "REEL"),
+            (self.CAROUSEL_SIZE, carousel_cta_path, "CAROUSEL"),
+        ]:
+            path.parent.mkdir(parents=True, exist_ok=True)
+
             width, height = size
             layout = self._get_layout(size, "cta")
-        
-        canvas = self.create_gradient_background(theme, size)
-        draw = ImageDraw.Draw(canvas)
 
-        card_w = layout['card_w']
-        card_h = layout['card_h']
-        card_x = (width - card_w) // 2
-        card_y = (height - card_h) // 2
+            canvas = self.create_gradient_background(theme, size)
+            draw = ImageDraw.Draw(canvas)
 
-        # Card with shadow
-        shadow = Image.new('RGBA', canvas.size, (0, 0, 0, 0))
-        shadow_draw = ImageDraw.Draw(shadow)
-        shadow_draw.rounded_rectangle(
-            [card_x + 12, card_y + 12, card_x + card_w + 12, card_y + card_h + 12],
-            radius=36,
-            fill=(0, 0, 0, 70)
-        )
-        shadow = shadow.filter(ImageFilter.GaussianBlur(layout['shadow_blur']))
-        canvas.paste(shadow, (0, 0), shadow)
+            card_w = layout['card_w']
+            card_h = layout['card_h']
+            card_x = (width - card_w) // 2
+            card_y = (height - card_h) // 2
 
-        draw.rounded_rectangle(
-            [card_x, card_y, card_x + card_w, card_y + card_h],
-            radius=36,
-            fill=theme['puzzle_box']
-        )
-
-        y = card_y + layout['content_y']
-        center_x = width // 2
-
-        title = "That’s the Answer"
-        title_lines = self._wrap_text_centered(title, self.PUZZLE_FONT, card_w - 100)
-        for line in title_lines:
-            draw.text(
-                (center_x, y),
-                line,
-                font=self.PUZZLE_FONT,
-                fill=theme['text_primary'],
-                anchor="mm"
+            # Card with shadow
+            shadow = Image.new('RGBA', canvas.size, (0, 0, 0, 0))
+            shadow_draw = ImageDraw.Draw(shadow)
+            shadow_draw.rounded_rectangle(
+                [card_x + 12, card_y + 12, card_x + card_w + 12, card_y + card_h + 12],
+                radius=36,
+                fill=(0, 0, 0, 70),
             )
-            y += 120
+            shadow = shadow.filter(ImageFilter.GaussianBlur(layout['shadow_blur']))
+            canvas.paste(shadow, (0, 0), shadow)
 
-        body_lines = [
-            "Hope that one stretched your brain.",
-            "Save & share if you liked it!",
-        ]
-        for raw_line in body_lines:
-            wrapped = self._wrap_text_centered(raw_line, self.TEXT_FONT, card_w - 100)
-            for line in wrapped:
+            draw.rounded_rectangle(
+                [card_x, card_y, card_x + card_w, card_y + card_h],
+                radius=36,
+                fill=theme['puzzle_box'],
+            )
+
+            y = card_y + layout['content_y']
+            center_x = width // 2
+
+            title = "That’s the Answer"
+            title_lines = self._wrap_text_centered(title, self.PUZZLE_FONT, card_w - 100)
+            for line in title_lines:
                 draw.text(
                     (center_x, y),
                     line,
-                    font=self.TEXT_FONT,
-                    fill=theme['text_secondary'],
-                    anchor="mm"
+                    font=self.PUZZLE_FONT,
+                    fill=theme['text_primary'],
+                    anchor="mm",
                 )
-                y += 70
+                y += 120
 
-        y += 20
-        badge_text = "Follow for daily mind benders"
-        badge_bbox = draw.textbbox((0, 0), badge_text, font=self.TEXT_FONT)
-        badge_w = badge_bbox[2] - badge_bbox[0] + 80
-        badge_h = badge_bbox[3] - badge_bbox[1] + 32
-        badge_x = center_x - badge_w // 2
+            body_lines = [
+                "Hope that one stretched your brain.",
+                "Save & share if you liked it!",
+            ]
+            for raw_line in body_lines:
+                wrapped = self._wrap_text_centered(raw_line, self.TEXT_FONT, card_w - 100)
+                for line in wrapped:
+                    draw.text(
+                        (center_x, y),
+                        line,
+                        font=self.TEXT_FONT,
+                        fill=theme['text_secondary'],
+                        anchor="mm",
+                    )
+                    y += 64 if size == self.CAROUSEL_SIZE else 70
 
-        draw.rounded_rectangle(
-            [badge_x, y, badge_x + badge_w, y + badge_h],
-            radius=28,
-            fill=theme['accent']
-        )
-        draw.text(
-            (center_x, y + badge_h // 2),
-            badge_text,
-            font=self.TEXT_FONT,
-            fill=(255, 255, 255),
-            anchor="mm"
-        )
+            y += 14 if size == self.CAROUSEL_SIZE else 20
+            badge_text = "Follow for daily mind benders"
+            badge_bbox = draw.textbbox((0, 0), badge_text, font=self.TEXT_FONT)
+            badge_w = badge_bbox[2] - badge_bbox[0] + 80
+            badge_h = badge_bbox[3] - badge_bbox[1] + 32
+            badge_x = center_x - badge_w // 2
 
-        canvas.save(path)
-        logger.info(f"✅ Saved {format_name} CTA: {path}")
-        
+            draw.rounded_rectangle(
+                [badge_x, y, badge_x + badge_w, y + badge_h],
+                radius=28,
+                fill=theme['accent'],
+            )
+            draw.text(
+                (center_x, y + badge_h // 2),
+                badge_text,
+                font=self.TEXT_FONT,
+                fill=(255, 255, 255),
+                anchor="mm",
+            )
+
+            canvas.save(path)
+            logger.info(f"✅ Saved {format_name} CTA: {path}")
+
         return {"reel": reel_cta_path, "carousel": carousel_cta_path}
 
     def render_hint_card(self, question: dict, theme: Dict, output_path: Path, size: Tuple[int, int] = None) -> Path:
@@ -457,11 +449,11 @@ class MindBenderRenderer:
 
         # Ego-triggering hook
         ego_hooks = [
-            "🤔 Getting close?",
-            "💡 Need a little nudge?",
-            "🔥 Here's your hint...",
-            "🎯 Still thinking? Let this help!",
-            "✨ You're almost there!",
+            "Getting close?",
+            "Need a little nudge?",
+            "Here's your hint...",
+            "Still thinking? Let this help!",
+            "You're almost there!",
         ]
         hook = random.choice(ego_hooks)
         hook_lines = self._wrap_text_centered(hook, self.TITLE_FONT, card_w - 80)
@@ -485,14 +477,16 @@ class MindBenderRenderer:
         mini_puzzle_font = ImageFont.truetype(str(self.INTER_DIR / "Inter-SemiBold.ttf"), 52)
         lines = puzzle_text.split('\n')
         for line in lines:
-            draw.text(
-                (center_x, y_pos),
-                line,
-                font=mini_puzzle_font,
-                fill=theme['text_primary'],
-                anchor="mm"
-            )
-            y_pos += 70
+            wrapped_lines = self._wrap_text_centered(line, mini_puzzle_font, card_w - 100)
+            for wrapped_line in wrapped_lines:
+                draw.text(
+                    (center_x, y_pos),
+                    wrapped_line,
+                    font=mini_puzzle_font,
+                    fill=theme['text_primary'],
+                    anchor="mm"
+                )
+                y_pos += 70
 
         y_pos += 60
 
@@ -517,25 +511,17 @@ class MindBenderRenderer:
                 outline=theme['accent'],
                 width=2
             )
-            
-            # Hint icon
-            draw.text(
-                (card_x + 80, y_pos + 40),
-                "💡",
-                font=self.EMOJI_FONT,
-                anchor="mm"
-            )
 
-            # Hint text (wrapped)
-            hint_lines = self._wrap_text(hint_text, self.TEXT_FONT, card_w - 200)
+            # Hint text (wrapped and centered)
+            hint_lines = self._wrap_text_centered(hint_text, self.TEXT_FONT, card_w - 100)
             hint_y = y_pos + 50
             for line in hint_lines:
                 draw.text(
-                    (card_x + 150, hint_y),
+                    (center_x, hint_y),
                     line,
                     font=self.TEXT_FONT,
                     fill=theme['text_primary'],
-                    anchor="lm"
+                    anchor="mm"
                 )
                 hint_y += 50
 
@@ -600,7 +586,7 @@ class MindBenderRenderer:
         
         # Category badge
         category = question.get('category', 'puzzle').replace('_', ' ').title()
-        badge_text = f"🧠 {category}"
+        badge_text = category
         bbox = draw.textbbox((0, 0), badge_text, font=self.TEXT_FONT)
         badge_w = bbox[2] - bbox[0] + 40
         badge_h = bbox[3] - bbox[1] + 20
@@ -619,7 +605,7 @@ class MindBenderRenderer:
             anchor="mm"
         )
         
-        y_pos += badge_h + 60
+        y_pos += badge_h + 58
         
         # Puzzle text (large, centered) - with wrapping
         puzzle_text = question.get('puzzle', '')
@@ -637,13 +623,26 @@ class MindBenderRenderer:
                     fill=theme['text_primary'],
                     anchor="mm"
                 )
-                y_pos += 90
+                y_pos += 66
         
-        y_pos += 40
+        y_pos += 30
         
-        # Question (wrapped if needed)
+        # Question (wrapped if needed) - adjust spacing based on number of lines
         question_text = question['question']
         question_lines = self._wrap_text_centered(question_text, self.TEXT_FONT, card_w - 100)
+        
+        # Calculate space needed for options (2x2 grid + spacing)
+        options_grid_height = 278  # 2 rows * 120px height + 38px spacing between rows
+        
+        # Calculate available space for question
+        card_bottom = card_y + card_h - 38  # Leave 38px margin at bottom
+        available_space = card_bottom - y_pos
+        space_for_question = available_space - options_grid_height - 38  # 38px spacing before options
+        
+        # Dynamically adjust question line spacing based on available space
+        question_line_spacing = max(36, space_for_question // max(len(question_lines), 1) - 10)
+        question_line_spacing = min(54, question_line_spacing)  # Cap at 54 max
+        
         for line in question_lines:
             draw.text(
                 (center_x, y_pos),
@@ -652,9 +651,9 @@ class MindBenderRenderer:
                 fill=theme['text_secondary'],
                 anchor="mm"
             )
-            y_pos += 60
+            y_pos += question_line_spacing
 
-        y_pos += 40
+        y_pos += 18
         
         # Options (A, B, C, D in grid)
         option_labels = ['A', 'B', 'C', 'D']
@@ -670,7 +669,7 @@ class MindBenderRenderer:
             col = idx % 2
             
             opt_x = card_x + 60 + (col * (col_width + 40))
-            opt_y = grid_start_y + (row * (row_height + 30))
+            opt_y = grid_start_y + (row * (row_height + 28))
             
             # Option box
             draw.rounded_rectangle(
@@ -752,10 +751,11 @@ class MindBenderRenderer:
         center_x = width // 2
         y_pos = card_y + layout['content_y']
         
-        # "Answer" header with checkmark
+        # "Answer" header
+        answer_header = "Answer"
         draw.text(
             (center_x, y_pos),
-            "✅ Answer",
+            answer_header,
             font=self.TITLE_FONT,
             fill=theme['accent'],
             anchor="mm"
@@ -794,7 +794,7 @@ class MindBenderRenderer:
         # Fun fact (if exists, wrapped)
         if question.get('fun_fact'):
             y_pos += 60
-            fun_fact_text = f"💡 {question['fun_fact']}"
+            fun_fact_text = f"Fun Fact: {question['fun_fact']}"
             fun_fact_lines = self._wrap_text_centered(fun_fact_text, self.TEXT_FONT, card_w - 100)
             for line in fun_fact_lines:
                 draw.text(

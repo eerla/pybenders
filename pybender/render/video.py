@@ -5,7 +5,7 @@ import gc
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from moviepy.audio.AudioClip import AudioArrayClip
@@ -58,25 +58,51 @@ class VideoRenderer:
         
         return metadata
 
-    @staticmethod
-    def get_question_assets(metadata: Dict[str, Any]) -> List[Dict[str, Path]]:
+    def get_question_assets(self, metadata: dict) -> list[dict]:
         """
-        Extract image asset paths for each question.
+        Extract question and answer image paths from metadata.
+        Returns list of asset dicts (one per question).
+        
+        Supports both old flat structure and new nested structure:
+        - Old: assets["question_image"]
+        - New: assets["reel"]["question_image"]
         """
         assets = []
-
-        for q in metadata.get("questions", []):
+        subject = metadata.get("subject", "")
+        theme = metadata.get("theme")  # For mind_benders
+        
+        for q in metadata["questions"]:
             q_assets = q.get("assets", {})
-
-            assets.append({
-                "question_id": q["question_id"],
-                "title": q["title"],
-                "question_image": Path(q_assets["question_image"]),
-                "answer_image": Path(q_assets["answer_image"]),
-                # "single_post_image": Path(q_assets["single_post_image"]),
-                "subject": metadata.get("subject", ""),
-            })
-
+            
+            # Detect structure type
+            if "reel" in q_assets:
+                # NEW nested structure
+                reel_assets = q_assets["reel"]
+                asset_dict = {
+                    "subject": subject,
+                    "question_id": q["question_id"],
+                    "theme": theme,
+                    "question_image": reel_assets["question_image"],
+                    "answer_image": reel_assets["answer_image"],
+                }
+                
+                # Add optional mind_benders-specific images
+                if "welcome_image" in reel_assets:
+                    asset_dict["welcome_image"] = reel_assets["welcome_image"]
+                if "hint_image" in reel_assets:
+                    asset_dict["hint_image"] = reel_assets["hint_image"]
+                if "cta_image" in reel_assets:
+                    asset_dict["cta_image"] = reel_assets["cta_image"]
+                    
+                assets.append(asset_dict)
+            else:
+                # OLD flat structure (backward compatibility)
+                assets.append({
+                    "question_image": q_assets["question_image"],
+                    "answer_image": q_assets["answer_image"],
+                    "subject": subject,
+                    "question_id": q["question_id"]
+                })
         return assets 
 
     def generate_combined_reel(
@@ -287,9 +313,175 @@ class VideoRenderer:
                 del all_clips, final_video, audio_clip
                 gc.collect()  # Force garbage collection
 
+    def generate_mind_benders_reel(
+        self,
+        welcome_img: Path,
+        question_img: Path,
+        hint_img: Path,
+        answer_img: Path,
+        cta_img: Path,
+        out_path: Path,
+        music_path: Optional[Path] = None,
+    ):
+        """
+        Generate mind_benders reel with 5-image sequence (no transitions).
+        
+        Sequence:
+        - Welcome: 2s
+        - Question: 5s  
+        - Hint: 3s
+        - Answer: 6s
+        - CTA: 2s
+        Total: 18s
+        """
+        logger.info("🎬 Generating mind_benders reel: %s", out_path.name)
+        
+        # --------------------------------------------------
+        # Timing Configuration
+        # --------------------------------------------------
+        WELCOME_DUR = 2.0
+        QUESTION_DUR = 5.0
+        HINT_DUR = 3.0
+        ANSWER_DUR = 6.0
+        CTA_DUR = 2.0
+        FADE_DUR = 0.2
+        
+        # --------------------------------------------------
+        # 1. Welcome Clip (0-2s)
+        # --------------------------------------------------
+        welcome_clip = (
+            ImageClip(str(welcome_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(WELCOME_DUR)
+            .set_fps(self.FPS)
+            .set_start(0)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 2. Question Clip (1.8-6.8s with overlap)
+        # --------------------------------------------------
+        question_clip = (
+            ImageClip(str(question_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(QUESTION_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR - FADE_DUR)
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 3. Hint Clip (6.6-9.6s with overlap)
+        # --------------------------------------------------
+        hint_clip = (
+            ImageClip(str(hint_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(HINT_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + QUESTION_DUR - (FADE_DUR * 2))
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 4. Answer Clip (9.4-15.4s with overlap)
+        # --------------------------------------------------
+        answer_clip = (
+            ImageClip(str(answer_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(ANSWER_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + QUESTION_DUR + HINT_DUR - (FADE_DUR * 3))
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 5. CTA Clip (15.2-17.2s with overlap)
+        # --------------------------------------------------
+        cta_clip = (
+            ImageClip(str(cta_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CTA_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + QUESTION_DUR + HINT_DUR + ANSWER_DUR - (FADE_DUR * 4))
+            .fx(vfx.fadein, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # Composite
+        # --------------------------------------------------
+        total_duration = max(
+            welcome_clip.end,
+            question_clip.end,
+            hint_clip.end,
+            answer_clip.end,
+            cta_clip.end,
+        )
+        
+        final_video = CompositeVideoClip(
+            [welcome_clip, question_clip, hint_clip, answer_clip, cta_clip],
+            size=(self.VIDEO_W, self.VIDEO_H)
+        ).set_duration(total_duration).set_fps(self.FPS)
+        
+        # --------------------------------------------------
+        # Audio
+        # --------------------------------------------------
+        audio_clip = None
+        if music_path and music_path.exists():
+            audio_clip = AudioFileClip(str(music_path))
+            audio = (
+                audio_clip
+                .subclip(0, final_video.duration)
+                .volumex(0.30)
+            )
+            final_video = final_video.set_audio(audio)
+        else:
+            # Silent track
+            samples = int(final_video.duration * 44100)
+            silence = np.zeros((samples, 2), dtype=np.float32)
+            final_video = final_video.set_audio(
+                AudioArrayClip(silence, fps=44100)
+            )
+        
+        # --------------------------------------------------
+        # Export
+        # --------------------------------------------------
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        all_clips = [welcome_clip, question_clip, hint_clip, answer_clip, cta_clip]
+        
+        try:
+            final_video.write_videofile(
+                str(out_path),
+                codec="libx264",
+                audio_codec="aac",
+                fps=self.FPS,
+                preset="ultrafast",
+                threads=1
+            )
+            logger.info("✅ Mind benders reel generated at: %s", out_path)
+        finally:
+            # CRITICAL: Clean up MoviePy resources
+            try:
+                if audio_clip:
+                    audio_clip.close()
+                for clip in all_clips:
+                    clip.close()
+                final_video.close()
+            except Exception as e:
+                logger.warning(f"Error during clip cleanup: {e}")
+            finally:
+                del all_clips, final_video, audio_clip
+                gc.collect()
+
     def process_question_v2(self, asset: dict) -> dict:
         """
         Generate single combined reel per question.
+        
+        Supports:
+        - Technical content: 2 images + transitions (question, answer)
+        - Mind benders: 5 images, no transitions (welcome, question, hint, answer, cta)
         
         Output structure:
         output/
@@ -300,30 +492,47 @@ class VideoRenderer:
         question_img = asset["question_image"]
         answer_img = asset["answer_image"]
         subject = asset["subject"]
-        question_id = self.extract_question_id_from_image(Path(question_img))
+        question_id = asset["question_id"]
         
         # Output path
         combined_path = self.BASE_DIR / subject / "reels" / f"{question_id}.mp4"
-        transition_img_base = self.ASSETS_DIR / "transitions"
-        # Image paths
-        welcome_img = self.BASE_DIR / subject / "images" / "welcome.png"
-        cta_img = self.BASE_DIR / subject / "images" / "cta.png"
-        transition_imgs = {
-            "base": transition_img_base / "transition_base.png",
-            "2": transition_img_base / "transition_2.png",
-            "1": transition_img_base / "transition_1.png",
-            "ready": transition_img_base / "transition_ready.png",
-        }
         
-        # Generate combined reel
-        self.generate_combined_reel(
-            welcome_img=welcome_img,
-            question_img=Path(question_img),
-            transition_imgs=transition_imgs,
-            answer_img=Path(answer_img),
-            cta_img=cta_img,
-            out_path=combined_path
+        # Check if this is mind_benders (has all 5 images)
+        is_mind_benders = all(
+            key in asset 
+            for key in ["welcome_image", "hint_image", "cta_image"]
         )
+        
+        if is_mind_benders:
+            # Generate mind_benders reel (5 images, no transitions)
+            self.generate_mind_benders_reel(
+                welcome_img=Path(asset["welcome_image"]),
+                question_img=Path(question_img),
+                hint_img=Path(asset["hint_image"]),
+                answer_img=Path(answer_img),
+                cta_img=Path(asset["cta_image"]),
+                out_path=combined_path
+            )
+        else:
+            # Generate technical content reel (2 images + transitions)
+            transition_img_base = self.ASSETS_DIR / "transitions"
+            welcome_img = self.BASE_DIR / subject / "images" / "welcome.png"
+            cta_img = self.BASE_DIR / subject / "images" / "cta.png"
+            transition_imgs = {
+                "base": transition_img_base / "transition_base.png",
+                "2": transition_img_base / "transition_2.png",
+                "1": transition_img_base / "transition_1.png",
+                "ready": transition_img_base / "transition_ready.png",
+            }
+            
+            self.generate_combined_reel(
+                welcome_img=welcome_img,
+                question_img=Path(question_img),
+                transition_imgs=transition_imgs,
+                answer_img=Path(answer_img),
+                cta_img=cta_img,
+                out_path=combined_path
+            )
         
         return {
             "question_id": question_id,
@@ -385,15 +594,15 @@ class VideoRenderer:
 
 
 
-# if __name__ == "__main__":
-#     renderer = VideoRenderer()
-#     test_metadata_path = renderer.BASE_DIR / "python" / "runs"
+if __name__ == "__main__":
+    renderer = VideoRenderer()
+    test_metadata_path = renderer.BASE_DIR / "mind_benders" / "runs" 
     
-#     if not test_metadata_path.exists():
-#         logger.error("❌ Metadata directory not found at: %s", test_metadata_path)
-#     else:
-#         files = os.listdir(test_metadata_path)
-#         for file in files:
-#             if file.endswith(".json"):
-#                 logger.info("Processing file: %s", file)
-#                 renderer.main(test_metadata_path / file)
+    if not test_metadata_path.exists():
+        logger.error("❌ Metadata directory not found at: %s", test_metadata_path)
+    else:
+        files = os.listdir(test_metadata_path)
+        for file in files:
+            if file.endswith(".json") and '011917' in file:
+                logger.info("Processing file: %s", file)
+                renderer.main(test_metadata_path / file)

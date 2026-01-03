@@ -53,6 +53,13 @@ def validate_qa(q: dict):
 def validate_mind_bender(q: dict):
     assert len(q["title"].split()) <= 6, "Title too long (max 6 words)"
     assert len(q["puzzle"]) <= 100, "Puzzle too long (max 100 chars)"
+    
+    # Validate combined puzzle + visual_elements (as rendered together)
+    puzzle_combined = q["puzzle"]
+    if q.get("visual_elements"):
+        puzzle_combined += f"\n{q['visual_elements']}"
+    assert len(puzzle_combined) <= 230, "Combined puzzle + visual_elements too long (max 230 chars)"
+    
     assert len(q["question"]) <= 100, "Question too long (max 100 chars)"
     assert len(q["options"]) == 4, "There must be exactly 4 options"
     assert all(len(opt) <= 40 for opt in q["options"]), "Option too long (max 40 chars)"

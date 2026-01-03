@@ -73,6 +73,7 @@ class ImageRenderer:
         self.BASE_DIR = Path("output_1")
         self.WRITE_METADATA = True  # Set to True to write metadata.json
         self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
+        self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
         # self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
         # Fonts
         self.FONT_DIR = Path("pybender/assets/fonts")
@@ -1247,8 +1248,6 @@ class ImageRenderer:
         base_img_dir = self.BASE_DIR / subject / "images"
         reel_dir = base_img_dir / "reel"
         carousel_dir = base_img_dir / "carousels"
-        welcome_img_path = base_img_dir / "welcome.png"
-        cta_dir = base_img_dir  # CTA images saved as reel_cta.png and carousel_cta.png
         run_dir = self.BASE_DIR / subject / "runs" 
 
         # Create directories
@@ -1258,9 +1257,17 @@ class ImageRenderer:
         # --------------------------------------------------
         # Generate puzzle questions
         # --------------------------------------------------
-        logger.info("Generating %d brain teaser puzzles...", questions_per_run)
-        qg = QuestionGenerator()
-        questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)
+        if self.USE_STATIC_QUESTIONS:
+            logger.info("Using static questions from output/questions.json")
+            with open("output/questions.json", "r") as f:
+                questions_data = json.load(f)
+                topic, content_type = "mind_benders", "puzzle"
+                # topic, content_type = "javascript", "code_output"
+                questions = [MindBenderQuestion(**q) for q in questions_data]
+        else:
+            logger.info(f"Generating {questions_per_run} brain teaser puzzles for subject '{subject}' from LLM...")
+            qg = QuestionGenerator()
+            questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)
         
         # Convert to MindBenderQuestion objects
         mind_bender_questions = []
@@ -1271,9 +1278,10 @@ class ImageRenderer:
                 mb_q = q_dict
             mind_bender_questions.append(mb_q)
         
-        # Assign stable question IDs
-        for idx, q in enumerate(mind_bender_questions, start=1):
-            q.question_id = f"{RUN_ID}_q{idx:02d}"
+        if self.GENERATE_NEW_QIDS:
+            # Assign stable question IDs
+            for idx, q in enumerate(mind_bender_questions, start=1):
+                q.question_id = f"{RUN_ID}_q{idx:02d}"
         
         # --------------------------------------------------
         # Initialize renderer and select theme
@@ -1282,9 +1290,6 @@ class ImageRenderer:
         theme = renderer.select_random_theme()
         logger.info(f"🎨 Using theme: {theme['name']}")
 
-        # Render theme-specific CTA for both formats (skips if exists)
-        cta_paths = renderer.render_theme_cta(theme, cta_dir)
-        
         # --------------------------------------------------
         # Metadata setup
         # --------------------------------------------------
@@ -1323,6 +1328,13 @@ class ImageRenderer:
             logger.info(f"✅ Rendered WELCOME covers: {q.title} ({q.category})")
             
             # ==========================================
+            # CTA PER QUESTION (reel + carousel)
+            # ==========================================
+            reel_cta_img = reel_dir / f"{q.question_id}_cta.png"
+            carousel_cta_img = carousel_dir / f"{q.question_id}_cta.png"
+            renderer.render_theme_cta(theme, reel_cta_img, carousel_cta_img)
+            
+            # ==========================================
             # REEL FORMAT (1080x1920) - in reel/ directory
             # ==========================================
             reel_question_img = reel_dir / f"{q.question_id}_question.png"
@@ -1358,12 +1370,14 @@ class ImageRenderer:
                 "assets": {
                     "reel": {
                         "welcome_image": str(reel_welcome_img),
+                        "cta_image": str(reel_cta_img),
                         "question_image": str(reel_question_img),
                         "hint_image": str(reel_hint_img),
                         "answer_image": str(reel_answer_img)
                     },
                     "carousel": {
                         "welcome_image": str(carousel_welcome_img),
+                        "cta_image": str(carousel_cta_img),
                         "question_image": str(carousel_question_img),
                         "hint_image": str(carousel_hint_img),
                         "answer_image": str(carousel_answer_img)
@@ -1522,7 +1536,7 @@ class ImageRenderer:
 if __name__ == "__main__":
     renderer = ImageRenderer()
     # renderer.render_transition_sequence()
-    subjects = ["python"]
+    subjects = ["mind_benders"]
     # subjects = [
     #     "python", "sql", "regex", "system_design", 
     #     "linux", "mind_benders"
