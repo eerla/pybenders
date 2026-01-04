@@ -108,7 +108,7 @@ output_1/
 │   └── reels/                  # Video files
 └── runs/
     └── 2026-01-01_205914_metadata.json  # Content manifest
-
+```
 **Published content:**
 ```
 uploaded/
