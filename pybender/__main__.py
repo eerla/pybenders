@@ -17,7 +17,9 @@ SUBJECTS = [
         "rust", 
         "sql", 
         "system_design",
-        "mind_benders"
+        "mind_benders",
+        "finance",
+        "psychology",
     ]
 
 logger = logging.getLogger(__name__)
@@ -45,7 +47,9 @@ def main():
             "regex", 
             "rust", 
             "sql", 
-            "system_design"
+            "system_design",
+            "finance",
+            "psychology",
         ],
         help="Subject for the reels (default: run all subjects)"
     )

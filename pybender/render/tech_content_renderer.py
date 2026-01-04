@@ -32,14 +32,15 @@ class TechContentRenderer:
         self.CORRECT_BG = (20, 45, 70)
         self.SUCCESS_COLOR = (52, 211, 153)
         self.SUBJECT_ACCENTS = {
-            "python": (52, 211, 153),
-            "javascript": (251, 191, 36),
-            "sql": (59, 130, 246),
-            "regex": (236, 72, 153),
-            "system_design": (107, 114, 128),
-            "docker_k8s": (14, 165, 233),
-            "rust": (244, 114, 182),
-            "mind_benders": (249, 115, 22),
+            "python": (19, 88, 174),      # cyan
+            "sql": (88, 157, 246),         # azure
+            "regex": (255, 107, 107),       # amber
+            "linux": (72, 187, 120),       # green
+            "javascript": (255, 223, 99),  # gold
+            "rust": (237, 125, 49),        # orange
+            "system_design": (129, 140, 248),  # indigo
+            "docker_k8s": (59, 130, 246),      # kubernetes blue
+            "golang": (0, 173, 216),           # go cyan
         }
         
         # Fonts

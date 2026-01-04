@@ -36,13 +36,13 @@ class ImageRenderer:
         # self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
 
         
-        self.WRITE_METADATA = False  # Set to True to write metadata.json
-        self.USE_STATIC_QUESTIONS = True  # Set to True to use static questions from output/questions.json
-        self.GENERATE_NEW_QIDS = False  # Set to True to assign new question IDs
+        # self.WRITE_METADATA = False  # Set to True to write metadata.json
+        # self.USE_STATIC_QUESTIONS = True  # Set to True to use static questions from output/questions.json
+        # self.GENERATE_NEW_QIDS = False  # Set to True to assign new question IDs
 
-        # self.WRITE_METADATA = True  # Set to True to write metadata.json
-        # self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
-        # self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
+        self.WRITE_METADATA = True  # Set to True to write metadata.json
+        self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
+        self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
 
     # ---------- SHARED HELPERS ----------
     def _new_run_context(self) -> tuple[str, str, str]:
@@ -659,27 +659,27 @@ class ImageRenderer:
         else:
             return self._render_technical_content(questions_per_run, subject)
 
-if __name__ == "__main__":
-    renderer = ImageRenderer()
-    subjects = [
-        "python", "sql", "regex", "system_design", 
-        "linux", "mind_benders", "psychology", "finance"
-        ,"docker_k8s", "javascript", "rust", "golang"
-        ]
+# if __name__ == "__main__":
+#     renderer = ImageRenderer()
+#     subjects = [
+#         "python", "sql", "regex", "system_design", 
+#         "linux", "mind_benders", "psychology", "finance"
+#         ,"docker_k8s", "javascript", "rust", "golang"
+#         ]
 
-    import sys
-    import time
-    subject = sys.argv[1] 
+#     import sys
+#     import time
+#     subject = sys.argv[1] 
 
-    if subject and subject in subjects:
-        renderer.main(1, subject=subject)
-        time.sleep(2)
-        sys.exit(0)
+#     if subject and subject in subjects:
+#         renderer.main(1, subject=subject)
+#         time.sleep(2)
+#         sys.exit(0)
 
-    else:
-        for subject in subjects:
-            try:
-                renderer.main(1, subject=subject)
-                time.sleep(2)
-            except Exception as e:
-                logger.exception("Error rendering for subject %s", subject)
+#     else:
+#         for subject in subjects:
+#             try:
+#                 renderer.main(1, subject=subject)
+#                 time.sleep(2)
+#             except Exception as e:
+#                 logger.exception("Error rendering for subject %s", subject)

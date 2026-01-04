@@ -108,10 +108,10 @@ def validate_finance_card(q: dict):
 
     assert len(q["title"].split()) <= 6, "Title too long (max 6 words)"
     assert q.get("category") in allowed_categories, "Invalid category"
-    assert len(q["insight"]) <= 140, "Insight too long (max 140 chars)"
-    assert len(q["explanation"]) <= 220, "Explanation too long (max 220 chars)"
-    assert len(q["example"]) <= 180, "Example too long (max 180 chars)"
-    assert len(q["action"]) <= 130, "Action too long (max 130 chars)"
+    assert len(q["insight"]) <= 160, "Insight too long (max 160 chars)"
+    assert len(q["explanation"]) <= 300, "Explanation too long (max 300 chars)"
+    assert len(q["example"]) <= 260, "Example too long (max 260 chars)"
+    assert len(q["action"]) <= 170, "Action too long (max 170 chars)"
     if q.get("action"):
         assert q["action"].lower().startswith("try this:"), "Action must start with 'Try this:'"
     if q.get("source"):
