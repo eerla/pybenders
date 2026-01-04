@@ -55,6 +55,7 @@ class PsychologyRenderer:
         self.TITLE_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Bold.ttf"), 56)
         self.PUZZLE_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-SemiBold.ttf"), 56)
         self.TEXT_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 42)
+        self.BADGE_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 32)
         self.OPTION_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Medium.ttf"), 48)
         self.EXPLANATION_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 38)
         self.EMOJI_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 64)
@@ -540,8 +541,12 @@ class PsychologyRenderer:
 
             y += 14 if size == self.CAROUSEL_SIZE else 20
             badge_text = "Follow for daily psychology insights"
-            badge_bbox = draw.textbbox((0, 0), badge_text, font=self.TEXT_FONT)
-            badge_w = badge_bbox[2] - badge_bbox[0] + 80
+            # Cap badge width to leave space on sides (margin of 60px on each side)
+            max_badge_width = card_w - 120
+            badge_font = self.BADGE_FONT if size == self.CAROUSEL_SIZE else self.TEXT_FONT
+            badge_bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
+            badge_text_width = badge_bbox[2] - badge_bbox[0]
+            badge_w = min(max_badge_width, badge_text_width + 80)
             badge_h = badge_bbox[3] - badge_bbox[1] + 32
             badge_x = center_x - badge_w // 2
 
@@ -553,7 +558,7 @@ class PsychologyRenderer:
             draw.text(
                 (center_x, y + badge_h // 2),
                 badge_text,
-                font=self.TEXT_FONT,
+                font=badge_font,
                 fill=(255, 255, 255),
                 anchor="mm",
             )

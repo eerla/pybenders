@@ -1,20 +1,12 @@
 [
       {
-        "question_id": "2026-01-03_010940_q01",
-        "title": "The Monty Hall Dilemma",
-        "category": "probability",
-        "puzzle": "You choose a door; 1 has a car, others",
-        "visual_elements": "",
-        "hint": "Think about the initial choice probabilities.",
-        "question": "Should you switch doors?",
-        "options": [
-          "Yes",
-          "No",
-          "Only if uncertain",
-          "It doesn't matter"
-        ],
-        "correct": "A",
-        "explanation": "You should switch! Initially, there's a 1/3 chance you picked the car. After one goat is revealed, switching gives you 2/3 chance of winning.",
-        "fun_fact": "This puzzle is famous in probability theory and often surprises even seasoned mathematicians!"
+        "question_id": "2026-01-03_170230_q01",
+        "title": "Self-Serving Bias in Success",
+        "category": "cognitive_bias",
+        "statement": "We credit ourselves for success but blame others for failure.",
+        "explanation": "This bias helps protect our self-esteem, making us feel good about our achievements while avoiding personal responsibility for setbacks.",
+        "real_example": "After getting a promotion, you think your hard work paid off, but if you miss a deadline, you blame team issues.",
+        "application": "Try this: Reflect on a recent failure and identify your role in it to improve growth and accountability.",
+        "source": "Miller & Ross, 1975"
       }
 ] 

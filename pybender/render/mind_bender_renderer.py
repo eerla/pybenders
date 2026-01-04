@@ -37,7 +37,7 @@ class MindBenderRenderer:
         },
         "carousel": {
             "welcome": {"card_margin": 40, "card_h": 700, "headline_y": 130, "spacing": 100},
-            "puzzle": {"card_margin": 40, "card_h": 900, "content_y": 60, "shadow_blur": 16},
+            "puzzle": {"card_margin": 40, "card_h": 1000, "content_y": 52, "shadow_blur": 16},
             "answer": {"card_margin": 40, "card_h": 900, "content_y": 60, "shadow_blur": 16},
             "hint": {"card_margin": 40, "card_h": 950, "content_y": 120, "shadow_blur": 16},
             "cta": {"card_w": 700, "card_h": 500, "content_y": 80, "shadow_blur": 14},
@@ -57,8 +57,10 @@ class MindBenderRenderer:
         # Larger, more readable fonts for non-technical content
         self.TITLE_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Bold.ttf"), 56)
         self.PUZZLE_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-SemiBold.ttf"), 56)
+        self.PUZZLE_FONT_CAROUSEL = ImageFont.truetype(str(self.INTER_DIR / "Inter-SemiBold.ttf"), 52)
         self.TEXT_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 42)
         self.OPTION_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Medium.ttf"), 48)
+        self.OPTION_FONT_CAROUSEL = ImageFont.truetype(str(self.INTER_DIR / "Inter-Medium.ttf"), 44)
         self.EXPLANATION_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 38)
         self.EMOJI_FONT = ImageFont.truetype(str(self.INTER_DIR / "Inter-Regular.ttf"), 64)
     
@@ -416,6 +418,7 @@ class MindBenderRenderer:
         if size is None:
             size = self.REEL_SIZE
         width, height = size
+        format_type = self._get_format(size)
         layout = self._get_layout(size, "hint")
         
         canvas = self.create_gradient_background(theme, size)
@@ -457,26 +460,31 @@ class MindBenderRenderer:
             "You're almost there!",
         ]
         hook = random.choice(ego_hooks)
-        hook_lines = self._wrap_text_centered(hook, self.TITLE_FONT, card_w - 80)
+        hook_font = self.TITLE_FONT if format_type == "reel" else self.TEXT_FONT
+        hook_lines = self._wrap_text_centered(hook, hook_font, card_w - 80)
+        hook_line_spacing = 60 if format_type == "reel" else 48
         for line in hook_lines:
             draw.text(
                 (center_x, y_pos),
                 line,
-                font=self.TITLE_FONT,
+                font=hook_font,
                 fill=theme['accent'],
                 anchor="mm"
             )
-            y_pos += 60
+            y_pos += hook_line_spacing
 
-        y_pos += 40
+        y_pos += 32 if format_type == "carousel" else 40
 
         # Mini puzzle (smaller, centered)
         puzzle_text = question.get('puzzle', '')
         if question.get('visual_elements'):
             puzzle_text += f"\n{question['visual_elements']}"
         
-        mini_puzzle_font = ImageFont.truetype(str(self.INTER_DIR / "Inter-SemiBold.ttf"), 52)
+        # Use smaller font for carousel
+        mini_puzzle_size = 48 if format_type == "carousel" else 52
+        mini_puzzle_font = ImageFont.truetype(str(self.INTER_DIR / "Inter-SemiBold.ttf"), mini_puzzle_size)
         lines = puzzle_text.split('\n')
+        puzzle_line_spacing = 62 if format_type == "carousel" else 70
         for line in lines:
             wrapped_lines = self._wrap_text_centered(line, mini_puzzle_font, card_w - 100)
             for wrapped_line in wrapped_lines:
@@ -487,9 +495,9 @@ class MindBenderRenderer:
                     fill=theme['text_primary'],
                     anchor="mm"
                 )
-                y_pos += 70
+                y_pos += puzzle_line_spacing
 
-        y_pos += 60
+        y_pos += 48 if format_type == "carousel" else 60
 
         # Divider line
         draw.line(
@@ -497,14 +505,14 @@ class MindBenderRenderer:
             fill=theme['accent'],
             width=2
         )
-        y_pos += 60
+        y_pos += 48 if format_type == "carousel" else 60
 
         # Hint box (highlighted)
         hint_text = question.get('hint', '')
         if hint_text:
             # Hint background box (slightly lighter)
             hint_bg = tuple(min(c + 8, 255) for c in theme['card_bg'])
-            hint_box_h = 200
+            hint_box_h = 160 if format_type == "carousel" else 200
             draw.rounded_rectangle(
                 [card_x + 40, y_pos, card_x + card_w - 40, y_pos + hint_box_h],
                 radius=24,
@@ -514,24 +522,26 @@ class MindBenderRenderer:
             )
 
             # Hint text (wrapped and centered)
-            hint_lines = self._wrap_text_centered(hint_text, self.TEXT_FONT, card_w - 100)
-            hint_y = y_pos + 50
+            hint_font = self.TEXT_FONT
+            hint_lines = self._wrap_text_centered(hint_text, hint_font, card_w - 100)
+            hint_y = y_pos + (36 if format_type == "carousel" else 50)
+            hint_line_spacing = 42 if format_type == "carousel" else 50
             for line in hint_lines:
                 draw.text(
                     (center_x, hint_y),
                     line,
-                    font=self.TEXT_FONT,
+                    font=hint_font,
                     fill=theme['text_primary'],
                     anchor="mm"
                 )
-                hint_y += 50
+                hint_y += hint_line_spacing
 
-            y_pos += hint_box_h + 80
+            y_pos += hint_box_h + (60 if format_type == "carousel" else 80)
 
         # CTA swipe prompt (format-specific)
-        format_type = self._get_format(size)
         cta_text = "Keep watching to reveal the answer" if format_type == "reel" else "Swipe to reveal the answer →"
         cta_lines = self._wrap_text_centered(cta_text, self.TEXT_FONT, card_w - 80)
+        cta_line_spacing = 48 if format_type == "carousel" else 60
         for line in cta_lines:
             draw.text(
                 (center_x, y_pos),
@@ -540,7 +550,7 @@ class MindBenderRenderer:
                 fill=theme['accent'],
                 anchor="mm"
             )
-            y_pos += 60
+            y_pos += cta_line_spacing
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         canvas.save(output_path)
@@ -552,6 +562,7 @@ class MindBenderRenderer:
         if size is None:
             size = self.REEL_SIZE
         width, height = size
+        format_type = self._get_format(size)
         layout = self._get_layout(size, "puzzle")
         
         canvas = self.create_gradient_background(theme, size)
@@ -607,25 +618,26 @@ class MindBenderRenderer:
             anchor="mm"
         )
         
-        y_pos += badge_h + 58
+        y_pos += badge_h + (50 if format_type == "carousel" else 58)
         
         # Puzzle text (large, centered) - with wrapping
+        puzzle_font = self.PUZZLE_FONT if format_type == "reel" else self.PUZZLE_FONT_CAROUSEL
         puzzle_text = question.get('puzzle', '')
         if question.get('visual_elements'):
             puzzle_text += f"\n{question['visual_elements']}"
         
         lines = puzzle_text.split('\n')
         for text_line in lines:
-            wrapped = self._wrap_text_centered(text_line, self.PUZZLE_FONT, card_w - 100)
+            wrapped = self._wrap_text_centered(text_line, puzzle_font, card_w - 100)
             for line in wrapped:
                 draw.text(
                     (center_x, y_pos),
                     line,
-                    font=self.PUZZLE_FONT,
+                    font=puzzle_font,
                     fill=theme['text_primary'],
                     anchor="mm"
                 )
-                y_pos += 66
+                y_pos += 60 if format_type == "carousel" else 66
         
         y_pos += 30
         
@@ -634,7 +646,9 @@ class MindBenderRenderer:
         question_lines = self._wrap_text_centered(question_text, self.TEXT_FONT, card_w - 100)
         
         # Calculate space needed for options (2x2 grid + spacing)
-        options_grid_height = 278  # 2 rows * 120px height + 38px spacing between rows
+        row_height = 100 if format_type == "carousel" else 120
+        row_spacing = 24 if format_type == "carousel" else 28
+        options_grid_height = (row_height * 2) + row_spacing
         
         # Calculate available space for question
         card_bottom = card_y + card_h - 38  # Leave 38px margin at bottom
@@ -664,14 +678,13 @@ class MindBenderRenderer:
         # 2x2 grid
         grid_start_y = y_pos
         col_width = (card_w - 120) // 2
-        row_height = 120
         
         for idx, (label, option) in enumerate(zip(option_labels, options)):
             row = idx // 2
             col = idx % 2
             
             opt_x = card_x + 60 + (col * (col_width + 40))
-            opt_y = grid_start_y + (row * (row_height + 28))
+            opt_y = grid_start_y + (row * (row_height + row_spacing))
             
             # Option box
             draw.rounded_rectangle(
@@ -681,7 +694,7 @@ class MindBenderRenderer:
             )
             
             # Label circle
-            circle_r = 25
+            circle_r = 22 if format_type == "carousel" else 25
             circle_x = opt_x + 30
             circle_y = opt_y + row_height // 2
             draw.ellipse(
@@ -700,13 +713,14 @@ class MindBenderRenderer:
             # Option text (wrapped to fit in box)
             text_x = opt_x + 80
             available_width = (col_width - 100)  # Space after label circle + margins
-            option_wrapped = self._wrap_text(option, self.OPTION_FONT, available_width)
+            option_font = self.OPTION_FONT if format_type == "reel" else self.OPTION_FONT_CAROUSEL
+            option_wrapped = self._wrap_text(option, option_font, available_width)
             opt_text_y = opt_y + row_height // 2 - ((len(option_wrapped) - 1) * 20)  # Center multi-line text
             for opt_line in option_wrapped[:2]:  # Max 2 lines per option
                 draw.text(
                     (text_x, opt_text_y),
                     opt_line,
-                    font=self.OPTION_FONT,
+                    font=option_font,
                     fill=theme['text_primary'],
                     anchor="lm"
                 )

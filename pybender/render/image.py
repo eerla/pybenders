@@ -27,9 +27,13 @@ class ImageRenderer:
         # Output and assets
         self.BASE_DIR = Path("output_1")
         # self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
-        self.WRITE_METADATA = True  # Set to True to write metadata.json
-        self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
-        self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
+        self.WRITE_METADATA = False  # Set to True to write metadata.json
+        self.USE_STATIC_QUESTIONS = True  # Set to True to use static questions from output/questions.json
+        self.GENERATE_NEW_QIDS = False  # Set to True to assign new question IDs
+
+        # self.WRITE_METADATA = True  # Set to True to write metadata.json
+        # self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
+        # self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
 
     # ---------- SHARED HELPERS ----------
     def _new_run_context(self) -> tuple[str, str, str]:
@@ -104,8 +108,7 @@ class ImageRenderer:
                 mb_q = q_dict
             mind_bender_questions.append(mb_q)
 
-        if self.GENERATE_NEW_QIDS:
-            mind_bender_questions = self._assign_qids(mind_bender_questions, RUN_ID)
+        mind_bender_questions = self._assign_qids(mind_bender_questions, RUN_ID)
         
         # --------------------------------------------------
         # Initialize renderer and select theme
@@ -215,8 +218,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Write metadata.json
         # --------------------------------------------------
-        if self.WRITE_METADATA:
-            metadata_path = self._write_metadata(run_dir, RUN_ID, metadata)
+        metadata_path = self._write_metadata(run_dir, RUN_ID, metadata)
         
         logger.info("Mind bender rendering process completed successfully")
         return metadata_path
@@ -260,8 +262,7 @@ class ImageRenderer:
             psychology_statements.append(pc)
 
         # Assign stable question IDs
-        if self.GENERATE_NEW_QIDS:
-            questions = self._assign_qids(psychology_statements, RUN_ID)
+        questions = self._assign_qids(psychology_statements, RUN_ID)
         
         # --------------------------------------------------
         # Initialize renderer and select theme
@@ -394,8 +395,7 @@ class ImageRenderer:
         # --------------------------------------------------
         # Write metadata.json
         # --------------------------------------------------
-        if self.WRITE_METADATA:
-            metadata_path = self._write_metadata(run_dir, RUN_ID, metadata)
+        metadata_path = self._write_metadata(run_dir, RUN_ID, metadata)
         
         logger.info("Mind bender rendering process completed successfully")
         return metadata_path
