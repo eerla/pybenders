@@ -7,7 +7,12 @@ from pydantic import ValidationError
 
 from pybender.config.logging_config import setup_logging
 from pybender.generator.question_gen import QuestionGenerator
-from pybender.generator.schema import Question, MindBenderQuestion, PsychologyCard, FinanceCard
+from pybender.generator.schema import (
+    Question, 
+    MindBenderQuestion, 
+    PsychologyCard,
+    FinanceCard
+)
 from pybender.render.layout_resolver import resolve_layout_profile
 from pybender.render.render_mode import RenderMode
 from pybender.render.text_utils import slugify

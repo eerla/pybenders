@@ -53,17 +53,22 @@ CONTENT_LIMITS = {
         "fun_fact": 200,      # Optional trivia/fun fact
     },
     "finance": {
-        "insight": 140,
-        "explanation": 220,
-        "example": 180,
-        "action": 130,
+        "insight": 160,
+        "explanation": 300,
+        "example": 260,
+        "action": 170,
+    },
+    "psychology": {
+        "statement": 170,     # Punchy headline with room for nuance
+        "explanation": 340,   # 2-3 full sentences explaining mechanism
+        "real_example": 300,  # Concrete scenario with specific details
+        "application": 220,   # "Try this:" + actionable steps
     },
 
-            
 }
 
 PROMPT_TEMPLATES = {
-    
+
     "code_output": """
                     You are a Senior {{subject}} expert creating SHORT-FORM content for Instagram reels.
 
@@ -497,65 +502,102 @@ PROMPT_TEMPLATES = {
         """,
 
     "wisdom_card": """
-                You are a PhD-level psychology expert creating SHORT-FORM educational content for Instagram.
+                You are a PhD-level psychology expert creating SHORT-FORM educational content for Instagram reels.
 
-                Generate {{n}} psychology wisdom cards about {{topic}}.
+                Generate {{n}} SUBSTANTIVE psychology wisdom cards about {{topic}}.
 
-                STRICT RULES:
-                - Return ONLY valid JSON
-                - Use simple, accessible language (no jargon)
-                - Make insights practical and relatable
-                - Cite real psychology principles (but keep it brief)
-                - DO NOT use emojis
-                - Keep it professional but warm
+                STRICT RULES (must follow exactly):
+                - Return ONLY valid JSON array, no other text
+                - Obey length limits: statement ≤ 170 chars, explanation ≤ 340 chars, real_example ≤ 300 chars, application ≤ 220 chars
+                - application MUST start with "Try this:" (9 chars), leaving 211 chars for actionable guidance
+                - Use simple, accessible language (no jargon unless briefly defined)
+                - Make insights practical and deeply relatable
+                - Cite REAL psychology principles—base on verified research or established theories
+                - DO NOT use emojis or special characters
+                - Keep tone professional yet warm and conversational
+                - Make each card distinctly varied in principle, angle, or application; avoid repetition
 
                 Each card MUST contain:
-                - title: Psychology principle name (max 6 words)
-                - category: One of [cognitive_bias, social_psychology, behavioral_economics, mental_health, decision_making, perception, memory, emotions, relationships, motivation]
-                - statement: Bold fact (max 150 chars)
-                - explanation: Why it happens (max 250 chars)
-                - real_example: Everyday scenario (max 200 chars)
-                - application: Actionable tip starting with "Try this:" (max 150 chars)
-                - source: Optional citation (max 50 chars)
+                - title: Psychology principle name (≤ 6 words or 50 chars)
+                - category: ONE of [cognitive_bias, social_psychology, behavioral_economics, mental_health, decision_making, perception, memory, emotions, relationships, motivation]
+                - statement: Bold, compelling fact (≤ 170 chars). This is the hook—make it clear and intriguing. State the principle or phenomenon directly.
+                - explanation: Detailed "why this happens" (≤ 340 chars). Use 2-3 full sentences to explain the MECHANISM or ROOT CAUSE. Use "because" to connect concepts. Answer: Why do people behave this way? What's the underlying psychology?
+                - real_example: Concrete, specific scenario (≤ 300 chars). Include realistic details (names, timeframes, specific situations). Show the principle in action, not in abstract.
+                - application: Practical, step-by-step guidance starting with "Try this:" (≤ 220 chars total). Provide 1-2 actionable steps someone can use TODAY or THIS WEEK in their own life.
+                - source: Real, verifiable citation or researcher name (≤ 50 chars). E.g., "Kahneman & Tversky, 1979" or "Stanford Social Psychology Lab"
+
+                Tone & Style:
+                - Statements: Direct, bold, attention-grabbing. Present the insight as a discovery, not a lecture.
+                - Explanations: Conversational, like explaining to a smart friend. Use active voice. Explain the mechanism, not just state the fact.
+                - Examples: Specific and relatable. Use real contexts (work, relationships, shopping, learning, etc.). Include specific numbers, timeframes, or situations. Make it memorable.
+                - Applications: Imperative and clear. Start with "Try this:" then give 1-2 doable steps. Use actionable verbs: "Ask yourself," "Notice when," "Reflect on," "Try," "Set," etc.
+                - Avoid: Fluff, generic life advice, obvious tips (e.g., "work hard"), or motivational clichés
+
+                Variety guidance:
+                - Vary psychological areas: Mix cognitive biases, social dynamics, emotional patterns, decision-making, relationships, motivation, etc.
+                - Vary audience perspectives: Students, professionals, parents, partners, leaders, creative people, etc.
+                - Vary life domains: Work scenarios, relationships, money/shopping, learning, health, social situations, self-improvement, etc.
+                - Avoid: Repeating the same principle from different angles. Each card should introduce a DIFFERENT psychological insight.
+                - Avoid: Overused examples like "the marshmallow test" or "default effect" unless taking a fresh angle
+
+                Citation requirement:
+                - If citing a named effect or bias: Include researcher name and year (e.g., "Dunning & Kruger, 1999")
+                - If citing a type of effect: Reference the field (e.g., "Social Psychology Research", "Cognitive Science")
+                - If describing a therapy/technique: Credit the origin (e.g., "Cognitive Behavioral Therapy", "Mindfulness Research")
+                - Citations must be REAL—do not invent or hallucinate researcher names or years
 
                 JSON format:
                 [
-                {
-                    "card_id": "psy01",
-                    "title": "The Dunning-Kruger Effect",
-                    "category": "cognitive_bias",
-                    "statement": "People with low ability often overestimate their competence.",
-                    "explanation": "...",
-                    "real_example": "...",
-                    "application": "Try this: ...",
-                    "source": "Kruger & Dunning, 1999"
-                }
+                    {
+                        "title": "The Dunning-Kruger Effect",
+                        "category": "cognitive_bias",
+                        "statement": "Incompetent people often overestimate their abilities.",
+                        "explanation": "Because they lack the knowledge to recognize their gaps, they can't accurately assess themselves. Without expertise, you can't see what you don't know. This gap between perceived and actual ability is largest at the beginning of skill development.",
+                        "real_example": "A new programmer joins a team and confidently offers architectural advice, while the senior engineer—knowing all the edge cases and pitfalls—is more cautious. The novice doesn't yet understand what they don't know.",
+                        "application": "Try this: When learning something new, actively seek feedback from experts and assume there's more you don't see yet. Notice when overconfidence creeps in.",
+                        "source": "Dunning & Kruger, 1999"
+                    }
                 ]
                 """,
 
     "finance_card": """
                     You are a finance educator creating SHORT-FORM content for Instagram reels.
 
-                    Generate EXACTLY {{n}} concise finance insights about {{topic}}.
+                    Generate EXACTLY {{n}} concise yet SUBSTANTIVE finance insights about {{topic}}.
 
-                    STRICT RULES (must follow):
-                    - Return ONLY valid JSON
-                    - No text outside JSON
-                    - Keep everything short, punchy, and mobile-friendly
-                    - Obey length limits: insight ≤ 140 chars, explanation ≤ 220 chars, example ≤ 180 chars, action ≤ 130 chars
-                    - action MUST start with "Try this:"
-                    - title: max 6 words
-                    - Provide realistic, specific examples (no fluff)
-                    - Use clear language for non-experts; avoid jargon unless briefly defined
+                    STRICT RULES (must follow exactly):
+                    - Return ONLY valid JSON array, no other text
+                    - Keep everything mobile-friendly and visually clear
+                    - Obey length limits: insight ≤ 160 chars, explanation ≤ 300 chars, example ≤ 260 chars, action ≤ 170 chars
+                    - action MUST start with "Try this:" (9 chars), leaving 161 chars for step-by-step guidance
+                    - title: max 6 words or 50 characters
+                    - Provide DETAILED, realistic examples with proper context (not vague scenarios)
+                    - Use clear language for non-experts; define jargon briefly when necessary
+                    - Use plain ASCII text only: no emojis, symbols, or special characters
+                    - Base all insights on real, verifiable finance facts or principles—do not invent or hallucinate information
+                    - Make each insight distinctly varied in angle, focus, or application; avoid repeating overused examples
+                    - For each insight, think step-by-step: Recall a real finance fact, verify accuracy, then create a unique angle
+                    - Source is MANDATORY: Provide a short, real citation (e.g., "IRS Publication 590", "Federal Reserve 2023") ≤ 50 chars
 
                     Each item MUST contain:
-                    - title: short headline (≤ 6 words)
+                    - title: clear headline (≤ 6 words or 50 chars)
                     - category: one of [investing, budgeting, taxes, personal_finance, markets, risk_management, retirement, fintech]
-                    - insight: main point (≤ 140 chars)
-                    - explanation: why it matters (≤ 220 chars)
-                    - example: concrete scenario (≤ 180 chars)
-                    - action: starts with "Try this:" and gives a practical step (≤ 130 chars)
-                    - source: optional short citation (≤ 50 chars)
+                    - insight: main concept or principle (≤ 160 chars). This is the hook—make it clear and compelling.
+                    - explanation: detailed "why this matters" (≤ 300 chars). Use 2-3 full sentences to explain the reasoning, benefits, or risks involved.
+                    - example: concrete, specific scenario (≤ 260 chars). Include realistic numbers, timeframes, or situations. Avoid generic placeholders.
+                    - action: practical, step-by-step guidance starting with "Try this:" (≤ 170 chars total). Provide 1-2 actionable steps someone can do today or this week.
+                    - source: real, verifiable citation (≤ 50 chars)
+
+                    Tone & Style:
+                    - Explanations: Conversational, like talking to a smart friend. Use "because" to connect concepts. Explain the mechanism, not just the fact.
+                    - Examples: Use real-world scenarios with specific numbers (not "some money" but "$50/month"). Include timeframes ("over 10 years", "next quarter").
+                    - Actions: Give clear, sequential steps. Use imperative: "Open your broker account," "Calculate your take-home after taxes," etc.
+                    - Avoid: Fluff, generic advice, or motivational clichés. Be specific and practical.
+
+                    Variety guidance:
+                    - Vary perspectives: retail investor, employee benefits, saver, borrower, risk-averse, aggressive, etc.
+                    - Vary scenarios: different income levels, life stages, market conditions, geographic contexts
+                    - Avoid: Repeating "diversify," "compound interest," or "emergency fund" unless approaching from a fresh angle
 
                     JSON format:
                     [
