@@ -16,7 +16,8 @@ SUBJECTS = [
         "regex", 
         "rust", 
         "sql", 
-        "system_design"
+        "system_design",
+        "mind_benders"
     ]
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,8 @@ def main():
             "docker_k8s", 
             "golang", 
             "javascript", 
-            "linux", 
+            "linux",
+            "mind_benders",
             "python", 
             "regex", 
             "rust", 

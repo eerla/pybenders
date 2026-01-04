@@ -7,7 +7,7 @@ from openai import OpenAI
 
 from pybender.config.logging_config import setup_logging
 from pybender.config.settings import OPENAI_API_KEY, MODEL
-from pybender.generator.schema import Question
+from pybender.generator.schema import Question, MindBenderQuestion, PsychologyCard
 from pybender.generator.content_registry import CONTENT_REGISTRY
 from pybender.prompts.templates import PROMPT_TEMPLATES
 from pybender.validation.validate_questions import validate_questions
@@ -61,9 +61,19 @@ class QuestionGenerator:
         try:
             logger.info("🧠 Generating %s questions via LLM for %s on topic: %s", n, subject, topic)
             raw = self.get_llm_response(prompt)
-            logger.debug("💬 Raw LLM response:\n%s", raw)
+            logger.info("💬 Raw LLM response:\n%s", raw)
             if not raw or not raw.strip():
                 raise ValueError(f"LLM returned empty response for subject {subject} on topic {topic}")
+            
+            # Strip markdown code blocks if present (e.g., ```json ... ```)
+            raw = raw.strip()
+            if raw.startswith("```"):
+                # Remove opening code block marker (```json or ```)
+                raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+            if raw.endswith("```"):
+                # Remove closing code block marker
+                raw = raw.rsplit("\n", 1)[0] if "\n" in raw else raw[:-3]
+            raw = raw.strip()
             
             data = json.loads(raw)
         except json.JSONDecodeError:
@@ -88,6 +98,12 @@ class QuestionGenerator:
 
         if failed:
             logger.warning("⚠️ Dropping %s questions after %s retries", len(failed), self.MAX_RETRIES)
+
+        # Return subject-specific question models
+        if subject == "mind_benders" or content_type == "puzzle":
+            return [MindBenderQuestion(**q) for q in valid], topic, content_type
+        if content_type == "wisdom_card":
+            return [PsychologyCard(**q) for q in valid], topic, content_type
 
         return [Question(**q) for q in valid], topic, content_type
 

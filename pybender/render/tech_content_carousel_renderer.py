@@ -30,7 +30,7 @@ def _ensure_logging_configured() -> None:
         setup_logging()
 
 
-class CarouselRenderer:
+class TechContentCarouselRenderer:
     """
     Generates carousel slides for Instagram posts.
     

@@ -1,17 +1,12 @@
 [
-    {
-        "question_id": "2025-12-31_184703_q01",
-        "title": "Walrus Operator in Filtering",
-        "code": "nums = [1, 2, 3, 4, 5]\nresult = [n for n in nums if (x := n) % 2 == 0]\nprint(result)",
-        "scenario": "",
-        "question": "What does 'result' contain after execution?",
-        "options": [
-          "[2, 4]",
-          "[1, 3, 5]",
-          "[1, 2, 3, 4, 5]",
-          "[0]"
-        ],
-        "correct": "A",
-        "explanation": "Here, the walrus operator assigns 'n' to 'x' during filtering. Only even numbers are added to 'result', which gives us [2, 4]."
+      {
+        "question_id": "2026-01-03_170230_q01",
+        "title": "Self-Serving Bias in Success",
+        "category": "cognitive_bias",
+        "statement": "We credit ourselves for success but blame others for failure.",
+        "explanation": "This bias helps protect our self-esteem, making us feel good about our achievements while avoiding personal responsibility for setbacks.",
+        "real_example": "After getting a promotion, you think your hard work paid off, but if you miss a deadline, you blame team issues.",
+        "application": "Try this: Reflect on a recent failure and identify your role in it to improve growth and accountability.",
+        "source": "Miller & Ross, 1975"
       }
-]
+] 

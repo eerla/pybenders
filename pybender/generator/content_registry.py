@@ -58,7 +58,9 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "Yield from delegation in generators",
             "Structural pattern matching (match/case in 3.10+)",
             "Positional-only and keyword-only parameters",
-            "Dataclasses internals and field defaults"
+            "Dataclasses internals and field defaults",
+            "Python with Regex",
+            "Python memory management and reference counting",
         ],
     ),
 
@@ -463,5 +465,101 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "What does ConfigMap do?"
             "What is a DaemonSet?"
         ],
+    ),
+
+    "mind_benders": ContentSpec(
+        subject="mind_benders",
+        content_type="puzzle",
+        assets=["puzzle", "explanation"],
+        topics=[
+            # Number Patterns
+            "Arithmetic sequences",
+            "Geometric sequences",
+            "Factorial patterns",
+            "Square and cube patterns",
+            "Fibonacci-like sequences",
+            "Prime number patterns",
+            
+            # Logic Puzzles
+            "Age and relationship puzzles",
+            "Classic riddles",
+            "Lateral thinking puzzles",
+            "Trick questions",
+            
+            # Math Tricks
+            "Number guessing tricks",
+            "Always-same-result puzzles",
+            "Division and multiplication tricks",
+            "Time and clock puzzles",
+            
+            # Visual Patterns
+            "Symbol equations",
+            "Shape sequences",
+            "Emoji math puzzles",
+            
+            # Word Logic
+            "Letter sequences (month initials, etc.)",
+            "Word association puzzles",
+            "Category odd-one-out",
+            
+            # Probability & Logic
+            "Counter-intuitive probability",
+            "Classic paradoxes (birthday, Monty Hall lite)",
+            "Simple deduction puzzles",
+        ],
+    ),
+
+    "psychology": ContentSpec(
+        subject="psychology",
+        content_type="wisdom_card",
+        assets=["statement", "explanation", "example", "application"],
+        topics=[
+            # Cognitive Biases (12 topics)
+            "Confirmation bias in daily decisions",
+            "Dunning-Kruger effect and expertise",
+            "Anchoring effect in negotiations",
+            "Availability heuristic and fear",
+            "Sunk cost fallacy in relationships",
+            "Halo effect in first impressions",
+            "Fundamental attribution error",
+            "Hindsight bias and regret",
+            "Recency bias in memory",
+            "Framing effect in choices",
+            "Loss aversion in decision making",
+            "Bandwagon effect and conformity",
+            
+            # Social Psychology (8 topics)
+            "Bystander effect in emergencies",
+            "Social proof and influence",
+            "Groupthink in organizations",
+            "Conformity and peer pressure",
+            "Obedience to authority figures",
+            "In-group bias and tribalism",
+            "Self-serving bias in success",
+            "Cognitive dissonance resolution",
+            
+            # Behavioral Economics (6 topics)
+            "Choice overload and paralysis",
+            "Default option power",
+            "Mental accounting tricks",
+            "Temporal discounting and patience",
+            "Endowment effect and ownership",
+            "Decoy effect in pricing",
+            
+            # Mental Health (6 topics)
+            "Stress response mechanisms",
+            "Anxiety spiral patterns",
+            "Depression and rumination",
+            "Burnout warning signs",
+            "Emotional regulation techniques",
+            "Growth mindset vs fixed mindset",
+            
+            # Decision Making (5 topics)
+            "Analysis paralysis causes",
+            "Intuition vs rational thinking",
+            "Decision fatigue impact",
+            "Regret minimization framework",
+            "Satisficing vs maximizing",
+        ]
     ),
 }
