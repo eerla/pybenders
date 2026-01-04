@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import gc
+import random
+import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
@@ -37,7 +39,30 @@ class VideoRenderer:
         # self.BASE_DIR = Path(r"G:\My Drive\output") # Change to google drive path
         self.RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.RUN_DATE = datetime.now().strftime("%Y%m%d")
-        self.ASSETS_DIR = Path("pybender/assets/backgrounds")
+        self.ASSETS_DIR = Path("pybender/assets")
+
+    def _get_random_audio_clip(self) -> Optional[Path]:
+        """
+        Select a random audio clip from the audio_clips folder.
+        
+        Returns:
+            Path to random audio clip, or None if folder is empty
+        """
+        audio_dir = self.ASSETS_DIR / "music" / "audio_clips"
+        
+        if not audio_dir.exists():
+            logger.warning(f"Audio clips directory not found: {audio_dir}")
+            return None
+        
+        audio_files = [f for f in audio_dir.glob("*") if f.is_file() and f.suffix.lower() in [".mp3", ".wav", ".m4a", ".aac"]]
+        
+        if not audio_files:
+            logger.warning(f"No audio clips found in: {audio_dir}")
+            return None
+        
+        selected_clip = random.choice(audio_files)
+        logger.info(f"🎵 Selected random audio clip: {selected_clip.name}")
+        return selected_clip
 
     @staticmethod
     def extract_question_id_from_image(path: Path) -> str:
@@ -60,49 +85,70 @@ class VideoRenderer:
 
     def get_question_assets(self, metadata: dict) -> list[dict]:
         """
-        Extract question and answer image paths from metadata.
+        Extract question image paths from metadata.
         Returns list of asset dicts (one per question).
         
-        Supports both old flat structure and new nested structure:
-        - Old: assets["question_image"]
-        - New: assets["reel"]["question_image"]
+        All content types now use nested reel structure:
+        - Technical (python, js, etc): question_image, answer_image + transitions
+        - Mind benders: welcome, question, hint, answer, cta
+        - Finance: welcome, insight, explanation, example, action, cta
+        - Psychology: welcome, statement, explanation, example, application, cta
         """
         assets = []
         subject = metadata.get("subject", "")
-        theme = metadata.get("theme")  # For mind_benders
+        theme = metadata.get("theme")
         
         for q in metadata["questions"]:
-            q_assets = q.get("assets", {})
+            reel_assets = q.get("assets", {}).get("reel", {})
             
-            # Detect structure type
-            if "reel" in q_assets:
-                # NEW nested structure
-                reel_assets = q_assets["reel"]
-                asset_dict = {
-                    "subject": subject,
-                    "question_id": q["question_id"],
-                    "theme": theme,
+            asset_dict = {
+                "subject": subject,
+                "question_id": q["question_id"],
+                "theme": theme,
+            }
+            
+            # Finance: has insight_image
+            if "insight_image" in reel_assets:
+                asset_dict.update({
+                    "welcome_image": reel_assets["welcome_image"],
+                    "insight_image": reel_assets["insight_image"],
+                    "explanation_image": reel_assets["explanation_image"],
+                    "example_image": reel_assets["example_image"],
+                    "action_image": reel_assets["action_image"],
+                    "cta_image": reel_assets["cta_image"],
+                    "type": "finance",
+                })
+            # Psychology: has statement_image
+            elif "statement_image" in reel_assets:
+                asset_dict.update({
+                    "welcome_image": reel_assets["welcome_image"],
+                    "statement_image": reel_assets["statement_image"],
+                    "explanation_image": reel_assets["explanation_image"],
+                    "example_image": reel_assets["example_image"],
+                    "application_image": reel_assets["application_image"],
+                    "cta_image": reel_assets["cta_image"],
+                    "type": "psychology",
+                })
+            # Mind benders: has hint_image
+            elif "hint_image" in reel_assets:
+                asset_dict.update({
+                    "welcome_image": reel_assets["welcome_image"],
+                    "question_image": reel_assets["question_image"],
+                    "hint_image": reel_assets["hint_image"],
+                    "answer_image": reel_assets["answer_image"],
+                    "cta_image": reel_assets["cta_image"],
+                    "type": "mind_benders",
+                })
+            # Technical: only question_image + answer_image
+            else:
+                asset_dict.update({
                     "question_image": reel_assets["question_image"],
                     "answer_image": reel_assets["answer_image"],
-                }
-                
-                # Add optional mind_benders-specific images
-                if "welcome_image" in reel_assets:
-                    asset_dict["welcome_image"] = reel_assets["welcome_image"]
-                if "hint_image" in reel_assets:
-                    asset_dict["hint_image"] = reel_assets["hint_image"]
-                if "cta_image" in reel_assets:
-                    asset_dict["cta_image"] = reel_assets["cta_image"]
-                    
-                assets.append(asset_dict)
-            else:
-                # OLD flat structure (backward compatibility)
-                assets.append({
-                    "question_image": q_assets["question_image"],
-                    "answer_image": q_assets["answer_image"],
-                    "subject": subject,
-                    "question_id": q["question_id"]
+                    "type": "technical",
                 })
+            
+            assets.append(asset_dict)
+        
         return assets 
 
     def generate_combined_reel(
@@ -126,8 +172,21 @@ class VideoRenderer:
         - CTA (2s) with fade-in
         
         Total: 20 seconds (optimal for Reels)
+        
+        Audio: Randomly selected from audio_clips folder
         """
-        music_path = kwargs.get("music_path") or Path("pybender/assets/music/chill_loop.mp3")
+        music_path = self._get_random_audio_clip()
+        
+        # --------------------------------------------------
+        # Setup temp directory for MoviePy
+        # --------------------------------------------------
+        subject = out_path.parent.parent.name  # Extract subject from path
+        temp_dir = (self.BASE_DIR / subject / "temp").absolute()
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save and set temp directory for Python's tempfile module
+        original_tempdir = tempfile.tempdir
+        tempfile.tempdir = str(temp_dir)
         
         # --------------------------------------------------
         # Durations (in seconds)
@@ -312,6 +371,9 @@ class VideoRenderer:
             finally:
                 del all_clips, final_video, audio_clip
                 gc.collect()  # Force garbage collection
+                
+                # Restore original temp directory
+                tempfile.tempdir = original_tempdir
 
     def generate_mind_benders_reel(
         self,
@@ -333,8 +395,24 @@ class VideoRenderer:
         - Answer: 6s
         - CTA: 2s
         Total: 18s
+        
+        Audio: Randomly selected from audio_clips folder
         """
         logger.info("🎬 Generating mind_benders reel: %s", out_path.name)
+        
+        # Get random audio clip (ignore music_path parameter if provided)
+        music_path = self._get_random_audio_clip()
+        
+        # --------------------------------------------------
+        # Setup temp directory for MoviePy
+        # --------------------------------------------------
+        subject = out_path.parent.parent.name  # Extract subject from path
+        temp_dir = (self.BASE_DIR / subject / "temp").absolute()
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save and set temp directory for Python's tempfile module
+        original_tempdir = tempfile.tempdir
+        tempfile.tempdir = str(temp_dir)
         
         # --------------------------------------------------
         # Timing Configuration
@@ -474,6 +552,397 @@ class VideoRenderer:
             finally:
                 del all_clips, final_video, audio_clip
                 gc.collect()
+                
+                # Restore original temp directory
+                tempfile.tempdir = original_tempdir
+
+    def generate_finance_reel(
+        self,
+        welcome_img: Path,
+        insight_img: Path,
+        explanation_img: Path,
+        example_img: Path,
+        action_img: Path,
+        cta_img: Path,
+        out_path: Path,
+    ):
+        """
+        Generate finance reel with 6-card sequence.
+        
+        Sequence:
+        - Welcome: 2s
+        - Insight: 4s
+        - Explanation: 4s
+        - Example: 4s
+        - Action: 4s
+        - CTA: 2s
+        Total: 20s
+        
+        Audio: Randomly selected from audio_clips folder
+        """
+        logger.info("💰 Generating finance reel: %s", out_path.name)
+        
+        # Get random audio clip
+        music_path = self._get_random_audio_clip()
+        
+        # --------------------------------------------------
+        # Setup temp directory for MoviePy
+        # --------------------------------------------------
+        subject = out_path.parent.parent.name  # Extract subject from path
+        temp_dir = (self.BASE_DIR / subject / "temp").absolute()
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save and set temp directory for Python's tempfile module
+        original_tempdir = tempfile.tempdir
+        tempfile.tempdir = str(temp_dir)
+        
+        # --------------------------------------------------
+        # Timing Configuration
+        # --------------------------------------------------
+        WELCOME_DUR = 2.0
+        CARD_DUR = 4.0
+        CTA_DUR = 2.0
+        FADE_DUR = 0.3
+        
+        # --------------------------------------------------
+        # 1. Welcome Clip (0-2s)
+        # --------------------------------------------------
+        welcome_clip = (
+            ImageClip(str(welcome_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(WELCOME_DUR)
+            .set_fps(self.FPS)
+            .set_start(0)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 2. Insight Clip (1.7-5.7s with overlap)
+        # --------------------------------------------------
+        insight_clip = (
+            ImageClip(str(insight_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CARD_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR - FADE_DUR)
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 3. Explanation Clip (5.4-9.4s with overlap)
+        # --------------------------------------------------
+        explanation_clip = (
+            ImageClip(str(explanation_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CARD_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + CARD_DUR - (FADE_DUR * 2))
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 4. Example Clip (9.1-13.1s with overlap)
+        # --------------------------------------------------
+        example_clip = (
+            ImageClip(str(example_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CARD_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + (CARD_DUR * 2) - (FADE_DUR * 3))
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 5. Action Clip (12.8-16.8s with overlap)
+        # --------------------------------------------------
+        action_clip = (
+            ImageClip(str(action_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CARD_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + (CARD_DUR * 3) - (FADE_DUR * 4))
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 6. CTA Clip (16.5-18.5s with overlap)
+        # --------------------------------------------------
+        cta_clip = (
+            ImageClip(str(cta_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CTA_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + (CARD_DUR * 4) - (FADE_DUR * 5))
+            .fx(vfx.fadein, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # Composite
+        # --------------------------------------------------
+        total_duration = max(
+            welcome_clip.end,
+            insight_clip.end,
+            explanation_clip.end,
+            example_clip.end,
+            action_clip.end,
+            cta_clip.end,
+        )
+        
+        final_video = CompositeVideoClip(
+            [welcome_clip, insight_clip, explanation_clip, example_clip, action_clip, cta_clip],
+            size=(self.VIDEO_W, self.VIDEO_H)
+        ).set_duration(total_duration).set_fps(self.FPS)
+        
+        # --------------------------------------------------
+        # Audio
+        # --------------------------------------------------
+        audio_clip = None
+        if music_path and music_path.exists():
+            audio_clip = AudioFileClip(str(music_path))
+            audio = (
+                audio_clip
+                .subclip(0, final_video.duration)
+                .volumex(0.30)
+            )
+            final_video = final_video.set_audio(audio)
+        else:
+            # Silent track
+            samples = int(final_video.duration * 44100)
+            silence = np.zeros((samples, 2), dtype=np.float32)
+            final_video = final_video.set_audio(
+                AudioArrayClip(silence, fps=44100)
+            )
+        
+        # --------------------------------------------------
+        # Export
+        # --------------------------------------------------
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        all_clips = [welcome_clip, insight_clip, explanation_clip, example_clip, action_clip, cta_clip]
+        
+        try:
+            final_video.write_videofile(
+                str(out_path),
+                codec="libx264",
+                audio_codec="aac",
+                fps=self.FPS,
+                preset="ultrafast",
+                threads=1
+            )
+            logger.info("✅ Finance reel generated at: %s", out_path)
+        finally:
+            # CRITICAL: Clean up MoviePy resources
+            try:
+                if audio_clip:
+                    audio_clip.close()
+                for clip in all_clips:
+                    clip.close()
+                final_video.close()
+            except Exception as e:
+                logger.warning(f"Error during clip cleanup: {e}")
+            finally:
+                del all_clips, final_video, audio_clip
+                gc.collect()
+                
+                # Restore original temp directory
+                tempfile.tempdir = original_tempdir
+
+    def generate_psychology_reel(
+        self,
+        welcome_img: Path,
+        statement_img: Path,
+        explanation_img: Path,
+        example_img: Path,
+        application_img: Path,
+        cta_img: Path,
+        out_path: Path,
+    ):
+        """
+        Generate psychology reel with 6-card sequence.
+        
+        Sequence:
+        - Welcome: 2s
+        - Statement: 4s
+        - Explanation: 4s
+        - Example: 4s
+        - Application: 4s
+        - CTA: 2s
+        Total: 20s
+        
+        Audio: Randomly selected from audio_clips folder
+        """
+        logger.info("🧠 Generating psychology reel: %s", out_path.name)
+        
+        # Get random audio clip
+        music_path = self._get_random_audio_clip()
+        
+        # --------------------------------------------------
+        # Setup temp directory for MoviePy
+        # --------------------------------------------------
+        subject = out_path.parent.parent.name  # Extract subject from path
+        temp_dir = (self.BASE_DIR / subject / "temp").absolute()
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save and set temp directory for Python's tempfile module
+        original_tempdir = tempfile.tempdir
+        tempfile.tempdir = str(temp_dir)
+        
+        # --------------------------------------------------
+        # Timing Configuration
+        # --------------------------------------------------
+        WELCOME_DUR = 2.0
+        CARD_DUR = 4.0
+        CTA_DUR = 2.0
+        FADE_DUR = 0.3
+        
+        # --------------------------------------------------
+        # 1. Welcome Clip (0-2s)
+        # --------------------------------------------------
+        welcome_clip = (
+            ImageClip(str(welcome_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(WELCOME_DUR)
+            .set_fps(self.FPS)
+            .set_start(0)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 2. Statement Clip (1.7-5.7s with overlap)
+        # --------------------------------------------------
+        statement_clip = (
+            ImageClip(str(statement_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CARD_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR - FADE_DUR)
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 3. Explanation Clip (5.4-9.4s with overlap)
+        # --------------------------------------------------
+        explanation_clip = (
+            ImageClip(str(explanation_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CARD_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + CARD_DUR - (FADE_DUR * 2))
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 4. Example Clip (9.1-13.1s with overlap)
+        # --------------------------------------------------
+        example_clip = (
+            ImageClip(str(example_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CARD_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + (CARD_DUR * 2) - (FADE_DUR * 3))
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 5. Application Clip (12.8-16.8s with overlap)
+        # --------------------------------------------------
+        application_clip = (
+            ImageClip(str(application_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CARD_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + (CARD_DUR * 3) - (FADE_DUR * 4))
+            .fx(vfx.fadein, FADE_DUR)
+            .fx(vfx.fadeout, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # 6. CTA Clip (16.5-18.5s with overlap)
+        # --------------------------------------------------
+        cta_clip = (
+            ImageClip(str(cta_img))
+            .resize(height=self.VIDEO_H)
+            .set_duration(CTA_DUR)
+            .set_fps(self.FPS)
+            .set_start(WELCOME_DUR + (CARD_DUR * 4) - (FADE_DUR * 5))
+            .fx(vfx.fadein, FADE_DUR)
+        )
+        
+        # --------------------------------------------------
+        # Composite
+        # --------------------------------------------------
+        total_duration = max(
+            welcome_clip.end,
+            statement_clip.end,
+            explanation_clip.end,
+            example_clip.end,
+            application_clip.end,
+            cta_clip.end,
+        )
+        
+        final_video = CompositeVideoClip(
+            [welcome_clip, statement_clip, explanation_clip, example_clip, application_clip, cta_clip],
+            size=(self.VIDEO_W, self.VIDEO_H)
+        ).set_duration(total_duration).set_fps(self.FPS)
+        
+        # --------------------------------------------------
+        # Audio
+        # --------------------------------------------------
+        audio_clip = None
+        if music_path and music_path.exists():
+            audio_clip = AudioFileClip(str(music_path))
+            audio = (
+                audio_clip
+                .subclip(0, final_video.duration)
+                .volumex(0.30)
+            )
+            final_video = final_video.set_audio(audio)
+        else:
+            # Silent track
+            samples = int(final_video.duration * 44100)
+            silence = np.zeros((samples, 2), dtype=np.float32)
+            final_video = final_video.set_audio(
+                AudioArrayClip(silence, fps=44100)
+            )
+        
+        # --------------------------------------------------
+        # Export
+        # --------------------------------------------------
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        all_clips = [welcome_clip, statement_clip, explanation_clip, example_clip, application_clip, cta_clip]
+        
+        try:
+            final_video.write_videofile(
+                str(out_path),
+                codec="libx264",
+                audio_codec="aac",
+                fps=self.FPS,
+                preset="ultrafast",
+                threads=1
+            )
+            logger.info("✅ Psychology reel generated at: %s", out_path)
+        finally:
+            # CRITICAL: Clean up MoviePy resources
+            try:
+                if audio_clip:
+                    audio_clip.close()
+                for clip in all_clips:
+                    clip.close()
+                final_video.close()
+            except Exception as e:
+                logger.warning(f"Error during clip cleanup: {e}")
+            finally:
+                del all_clips, final_video, audio_clip
+                gc.collect()
+                
+                # Restore original temp directory
+                tempfile.tempdir = original_tempdir
 
     def process_question_v2(self, asset: dict) -> dict:
         """
@@ -482,6 +951,8 @@ class VideoRenderer:
         Supports:
         - Technical content: 2 images + transitions (question, answer)
         - Mind benders: 5 images, no transitions (welcome, question, hint, answer, cta)
+        - Finance: 6 cards (welcome, insight, explanation, example, action, cta)
+        - Psychology: 6 cards (welcome, statement, explanation, example, application, cta)
         
         Output structure:
         output/
@@ -489,33 +960,51 @@ class VideoRenderer:
             └─ reels/
                 └─ {question_id}.mp4
         """
-        question_img = asset["question_image"]
-        answer_img = asset["answer_image"]
         subject = asset["subject"]
         question_id = asset["question_id"]
+        content_type = asset.get("type", "technical")
         
         # Output path
         combined_path = self.BASE_DIR / subject / "reels" / f"{question_id}.mp4"
         
-        # Check if this is mind_benders (has all 5 images)
-        is_mind_benders = all(
-            key in asset 
-            for key in ["welcome_image", "hint_image", "cta_image"]
-        )
-        
-        if is_mind_benders:
-            # Generate mind_benders reel (5 images, no transitions)
+        # Route to appropriate renderer based on content type
+        if content_type == "finance":
+            # Finance: 6-card sequence
+            self.generate_finance_reel(
+                welcome_img=Path(asset["welcome_image"]),
+                insight_img=Path(asset["insight_image"]),
+                explanation_img=Path(asset["explanation_image"]),
+                example_img=Path(asset["example_image"]),
+                action_img=Path(asset["action_image"]),
+                cta_img=Path(asset["cta_image"]),
+                out_path=combined_path
+            )
+        elif content_type == "psychology":
+            # Psychology: 6-card sequence
+            self.generate_psychology_reel(
+                welcome_img=Path(asset["welcome_image"]),
+                statement_img=Path(asset["statement_image"]),
+                explanation_img=Path(asset["explanation_image"]),
+                example_img=Path(asset["example_image"]),
+                application_img=Path(asset["application_image"]),
+                cta_img=Path(asset["cta_image"]),
+                out_path=combined_path
+            )
+        elif content_type == "mind_benders":
+            # Mind benders: 5-image sequence, no transitions
             self.generate_mind_benders_reel(
                 welcome_img=Path(asset["welcome_image"]),
-                question_img=Path(question_img),
+                question_img=Path(asset["question_image"]),
                 hint_img=Path(asset["hint_image"]),
-                answer_img=Path(answer_img),
+                answer_img=Path(asset["answer_image"]),
                 cta_img=Path(asset["cta_image"]),
                 out_path=combined_path
             )
         else:
-            # Generate technical content reel (2 images + transitions)
-            transition_img_base = self.ASSETS_DIR / "transitions"
+            # Default: Technical content (2 images + transitions)
+            question_img = asset["question_image"]
+            answer_img = asset["answer_image"]
+            transition_img_base = self.ASSETS_DIR / "backgrounds" / "transitions"
             welcome_img = self.BASE_DIR / subject / "images" / "welcome.png"
             cta_img = self.BASE_DIR / subject / "images" / "cta.png"
             transition_imgs = {
@@ -596,13 +1085,16 @@ class VideoRenderer:
 
 # if __name__ == "__main__":
 #     renderer = VideoRenderer()
-#     test_metadata_path = renderer.BASE_DIR / "mind_benders" / "runs" 
+#     subjects = ["python", "finance", "psychology", "mind_benders"]
+
+#     for subject in subjects:
+#         test_metadata_path = renderer.BASE_DIR / subject / "runs" 
     
-#     if not test_metadata_path.exists():
-#         logger.error("❌ Metadata directory not found at: %s", test_metadata_path)
-#     else:
-#         files = os.listdir(test_metadata_path)
-#         for file in files:
-#             if file.endswith(".json") and '011917' in file:
+#         if not test_metadata_path.exists():
+#             logger.error("❌ Metadata directory not found at: %s", test_metadata_path)
+#         else:
+#             files = os.listdir(test_metadata_path)
+#             for file in files[-1:]:  # Process only the latest file for testing
+#                 # if file.endswith(".json") and '170658' in file:
 #                 logger.info("Processing file: %s", file)
 #                 renderer.main(test_metadata_path / file)

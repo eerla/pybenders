@@ -3,9 +3,16 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from pybender.config.logging_config import setup_logging
 from pybender.generator.question_gen import QuestionGenerator
-from pybender.generator.schema import Question, MindBenderQuestion, PsychologyCard
+from pybender.generator.schema import (
+    Question, 
+    MindBenderQuestion, 
+    PsychologyCard,
+    FinanceCard
+)
 from pybender.render.layout_resolver import resolve_layout_profile
 from pybender.render.render_mode import RenderMode
 from pybender.render.text_utils import slugify
@@ -27,13 +34,15 @@ class ImageRenderer:
         # Output and assets
         self.BASE_DIR = Path("output_1")
         # self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
-        self.WRITE_METADATA = False  # Set to True to write metadata.json
-        self.USE_STATIC_QUESTIONS = True  # Set to True to use static questions from output/questions.json
-        self.GENERATE_NEW_QIDS = False  # Set to True to assign new question IDs
 
-        # self.WRITE_METADATA = True  # Set to True to write metadata.json
-        # self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
-        # self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
+        
+        # self.WRITE_METADATA = False  # Set to True to write metadata.json
+        # self.USE_STATIC_QUESTIONS = True  # Set to True to use static questions from output/questions.json
+        # self.GENERATE_NEW_QIDS = False  # Set to True to assign new question IDs
+
+        self.WRITE_METADATA = True  # Set to True to write metadata.json
+        self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
+        self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
 
     # ---------- SHARED HELPERS ----------
     def _new_run_context(self) -> tuple[str, str, str]:
@@ -113,9 +122,11 @@ class ImageRenderer:
         # --------------------------------------------------
         # Initialize renderer and select theme
         # --------------------------------------------------
-        renderer = MindBenderRenderer()
+        # Change theme_variant to "light" for vibrant colors, "dark" for muted/soft colors
+        theme_variant = "dark"  # Options: "dark" (muted) or "light" (vibrant)
+        renderer = MindBenderRenderer(theme_variant=theme_variant)
         theme = renderer.select_random_theme()
-        logger.info(f"🎨 Using theme: {theme['name']}")
+        logger.info(f"🎨 Using theme: {theme['name']} ({theme_variant} variant)")
 
         # --------------------------------------------------
         # Metadata setup
@@ -267,9 +278,11 @@ class ImageRenderer:
         # --------------------------------------------------
         # Initialize renderer and select theme
         # --------------------------------------------------
-        renderer = PsychologyRenderer()
+        # Change theme_variant to "light" for vibrant colors, "dark" for muted/soft colors
+        theme_variant = "dark"  # Options: "dark" (muted) or "light" (vibrant)
+        renderer = PsychologyRenderer(theme_variant=theme_variant)
         theme = renderer.select_random_theme()
-        logger.info(f"🎨 Using theme: {theme['name']}")
+        logger.info(f"🎨 Using theme: {theme['name']} ({theme_variant} variant)")
 
         # --------------------------------------------------
         # Metadata setup
@@ -400,6 +413,122 @@ class ImageRenderer:
         logger.info("Mind bender rendering process completed successfully")
         return metadata_path
 
+    def _render_finance_cards(self, questions_per_run: int, subject: str) -> Path:
+        from pybender.render.finance_renderer import FinanceRenderer
+
+        run_date, run_timestamp, run_id = self._new_run_context()
+        logger.info("Starting %s run: %s", subject, run_id)
+
+        base_img_dir, reel_dir, carousel_dir, run_dir = self._ensure_output_dirs(subject)
+
+        if self.USE_STATIC_QUESTIONS:
+            logger.info("Using static questions from output/questions.json")
+            with open("output/questions.json", "r") as f:
+                questions_data = json.load(f)
+            topic, content_type = "finance", "finance_card"
+            try:
+                questions = [FinanceCard(**q) for q in questions_data]
+            except ValidationError:
+                logger.warning("Static questions.json not in finance format; regenerating via LLM")
+                qg = QuestionGenerator()
+                questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)
+        else:
+            logger.info("Generating %s finance insights for subject '%s' from LLM...", questions_per_run, subject)
+            qg = QuestionGenerator()
+            questions, topic, content_type = qg.generate_questions(questions_per_run, subject=subject)
+
+        if self.GENERATE_NEW_QIDS:
+            questions = self._assign_qids(questions, run_id)
+
+        renderer = FinanceRenderer()
+        theme = renderer.select_random_theme()
+        logger.info("🎨 Using theme: %s", theme.get("name", "finance"))
+
+        metadata = {
+            "run_id": run_id,
+            "run_date": run_date,
+            "run_timestamp": run_timestamp,
+            "subject": subject,
+            "content_type": content_type,
+            "theme": theme.get("name", "finance"),
+            "generator": {
+                "model": self.MODEL,
+                "topic": topic if topic else "DEFAULT",
+            },
+            "questions": [],
+        }
+
+        logger.info("Rendering finance images (reel + carousel)...")
+        for q in questions:
+            q_slug = slugify(q.title)
+            content_dict = q.model_dump() if hasattr(q, "model_dump") else q.dict()
+
+            reel_welcome = reel_dir / f"{q.question_id}_welcome.png"
+            carousel_welcome = carousel_dir / f"{q.question_id}_welcome.png"
+            renderer.render_welcome_card(theme, reel_welcome, size=renderer.REEL_SIZE, category=q.category)
+            renderer.render_welcome_card(theme, carousel_welcome, size=renderer.CAROUSEL_SIZE, category=q.category)
+
+            reel_insight = reel_dir / f"{q.question_id}_insight.png"
+            carousel_insight = carousel_dir / f"{q.question_id}_insight.png"
+            renderer.render_insight_card(q, theme, reel_insight, size=renderer.REEL_SIZE)
+            renderer.render_insight_card(q, theme, carousel_insight, size=renderer.CAROUSEL_SIZE)
+
+            reel_expl = reel_dir / f"{q.question_id}_explanation.png"
+            carousel_expl = carousel_dir / f"{q.question_id}_explanation.png"
+            renderer.render_explanation_card(q, theme, reel_expl, size=renderer.REEL_SIZE)
+            renderer.render_explanation_card(q, theme, carousel_expl, size=renderer.CAROUSEL_SIZE)
+
+            reel_example = reel_dir / f"{q.question_id}_example.png"
+            carousel_example = carousel_dir / f"{q.question_id}_example.png"
+            renderer.render_example_card(q, theme, reel_example, size=renderer.REEL_SIZE)
+            renderer.render_example_card(q, theme, carousel_example, size=renderer.CAROUSEL_SIZE)
+
+            reel_action = reel_dir / f"{q.question_id}_action.png"
+            carousel_action = carousel_dir / f"{q.question_id}_action.png"
+            renderer.render_action_card(q, theme, reel_action, size=renderer.REEL_SIZE)
+            renderer.render_action_card(q, theme, carousel_action, size=renderer.CAROUSEL_SIZE)
+
+            reel_cta = reel_dir / f"{q.question_id}_cta.png"
+            carousel_cta = carousel_dir / f"{q.question_id}_cta.png"
+            renderer.render_cta_card(theme, reel_cta, carousel_cta)
+
+            metadata["questions"].append(
+                {
+                    "question_id": q.question_id,
+                    "title": q.title,
+                    "category": q.category,
+                    "slug": q_slug,
+                    "content": content_dict,
+                    "assets": {
+                        "reel": {
+                            "welcome_image": str(reel_welcome),
+                            "insight_image": str(reel_insight),
+                            "explanation_image": str(reel_expl),
+                            "example_image": str(reel_example),
+                            "action_image": str(reel_action),
+                            "cta_image": str(reel_cta),
+                        },
+                        "carousel": {
+                            "welcome_image": str(carousel_welcome),
+                            "insight_image": str(carousel_insight),
+                            "explanation_image": str(carousel_expl),
+                            "example_image": str(carousel_example),
+                            "action_image": str(carousel_action),
+                            "cta_image": str(carousel_cta),
+                        },
+                    },
+                }
+            )
+
+        logger.info("All finance images rendered successfully")
+
+        metadata_path = run_dir / f"{run_id}_metadata.json"
+        if self.WRITE_METADATA:
+            metadata_path = self._write_metadata(run_dir, run_id, metadata)
+
+        logger.info("Finance rendering process completed successfully")
+        return metadata_path
+
     def _render_technical_content(self, questions_per_run: int, subject: str) -> Path:
         from pybender.render.tech_content_renderer import TechContentRenderer
         from pybender.render.tech_content_carousel_renderer import TechContentCarouselRenderer
@@ -525,30 +654,32 @@ class ImageRenderer:
             return self._render_mind_benders(questions_per_run, subject)
         elif subject == "psychology":
             return self._render_psychology_cards(questions_per_run, subject)
+        elif subject == "finance":
+            return self._render_finance_cards(questions_per_run, subject)
         else:
             return self._render_technical_content(questions_per_run, subject)
 
-if __name__ == "__main__":
-    renderer = ImageRenderer()
-    subjects = [
-        "python", "sql", "regex", "system_design", 
-        "linux", "mind_benders", "psychology"
-        ,"docker_k8s", "javascript", "rust", "golang"
-        ]
+# if __name__ == "__main__":
+#     renderer = ImageRenderer()
+#     subjects = [
+#         "python", "sql", "regex", "system_design", 
+#         "linux", "mind_benders", "psychology", "finance"
+#         ,"docker_k8s", "javascript", "rust", "golang"
+#         ]
 
-    import sys
-    import time
-    subject = sys.argv[1] 
+#     import sys
+#     import time
+#     subject = sys.argv[1] 
 
-    if subject and subject in subjects:
-        renderer.main(1, subject=subject)
-        time.sleep(2)
-        sys.exit(0)
+#     if subject and subject in subjects:
+#         renderer.main(1, subject=subject)
+#         time.sleep(2)
+#         sys.exit(0)
 
-    else:
-        for subject in subjects:
-            try:
-                renderer.main(1, subject=subject)
-                time.sleep(2)
-            except Exception as e:
-                logger.exception("Error rendering for subject %s", subject)
+#     else:
+#         for subject in subjects:
+#             try:
+#                 renderer.main(1, subject=subject)
+#                 time.sleep(2)
+#             except Exception as e:
+#                 logger.exception("Error rendering for subject %s", subject)

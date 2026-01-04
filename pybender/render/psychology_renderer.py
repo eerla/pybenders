@@ -9,7 +9,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from typing import Dict, Tuple, List
 from pybender.generator.schema import PsychologyCard
-from pybender.render.themes import PSYCHOLOGY_THEMES
+from pybender.render.themes import PSYCHOLOGY_THEMES, PSYCHOLOGY_LIGHT_THEMES
 from pybender.render.text_utils import wrap_text
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,23 @@ class PsychologyRenderer:
         }
     }
 
-    def __init__(self):
-        self.WIDTH, self.HEIGHT = self.REEL_SIZE
+    def __init__(self, theme_variant: str = "dark"):
+        """
+        Initialize PsychologyRenderer.
         
-        # Theme definitions
-        self.THEMES = PSYCHOLOGY_THEMES
+        Args:
+            theme_variant: "dark" for muted/soft colors or "light" for vibrant/playful colors
+        """
+        self.WIDTH, self.HEIGHT = self.REEL_SIZE
+        self.theme_variant = theme_variant
+        
+        # Theme definitions - select based on variant
+        if theme_variant == "light":
+            self.THEMES = PSYCHOLOGY_LIGHT_THEMES
+            logger.info("🎨 Using LIGHT (vibrant) theme variant")
+        else:
+            self.THEMES = PSYCHOLOGY_THEMES
+            logger.info("🎨 Using DARK (muted) theme variant")
         
         # Fonts (friendly, rounded)
         self.FONT_DIR = Path("pybender/assets/fonts")
@@ -209,7 +221,6 @@ class PsychologyRenderer:
         )
         
         center_x = width // 2
-        y_pos = card_y + layout['content_y']
         
         # Category badge
         category = card['category'].replace('_', ' ').title()
@@ -217,8 +228,22 @@ class PsychologyRenderer:
         bbox = draw.textbbox((0, 0), badge_text, font=self.TEXT_FONT)
         badge_w = bbox[2] - bbox[0] + 40
         badge_h = bbox[3] - bbox[1] + 20
-        badge_x = center_x - badge_w // 2
         
+        # Title and statement
+        title = card['title']
+        title_lines = self._wrap_text_centered(title, self.TITLE_FONT, card_w - 100)
+        statement = card['statement']
+        statement_lines = self._wrap_text_centered(statement, self.PUZZLE_FONT, card_w - 100)
+        
+        badge_h_with_gap = badge_h + 80
+        title_h = len(title_lines) * 80 + 40
+        statement_h = len(statement_lines) * 90
+        total_block_h = badge_h_with_gap + title_h + statement_h
+        
+        y_pos = card_y + (card_h - total_block_h) // 2
+        
+        # Draw badge
+        badge_x = center_x - badge_w // 2
         draw.rounded_rectangle(
             [badge_x, y_pos, badge_x + badge_w, y_pos + badge_h],
             radius=25,
@@ -232,11 +257,9 @@ class PsychologyRenderer:
             anchor="mm"
         )
         
-        y_pos += badge_h + 80
+        y_pos += badge_h_with_gap
         
-        # Title (principle name)
-        title = card['title']
-        title_lines = self._wrap_text_centered(title, self.TITLE_FONT, card_w - 100)
+        # Draw title
         for line in title_lines:
             draw.text(
                 (center_x, y_pos),
@@ -249,9 +272,7 @@ class PsychologyRenderer:
         
         y_pos += 40
         
-        # Statement (bold fact) - largest text on this card
-        statement = card['statement']
-        statement_lines = self._wrap_text_centered(statement, self.PUZZLE_FONT, card_w - 100)
+        # Draw statement
         for line in statement_lines:
             draw.text(
                 (center_x, y_pos),
@@ -300,10 +321,19 @@ class PsychologyRenderer:
         )
         
         center_x = width // 2
-        y_pos = card_y + layout['content_y']
         
-        # Header
+        # Header and explanation
         header = "Why It Matters"
+        explanation = card['explanation']
+        explanation_lines = self._wrap_text_centered(explanation, self.TEXT_FONT, card_w - 100)
+        source_h = 0
+        if card.get('source'):
+            source_h = 60
+        
+        total_block_h = 100 + len(explanation_lines) * 70 + source_h
+        y_pos = card_y + (card_h - total_block_h) // 2
+        
+        # Draw header
         draw.text(
             (center_x, y_pos),
             header,
@@ -313,9 +343,7 @@ class PsychologyRenderer:
         )
         y_pos += 100
         
-        # Explanation text (wrapped)
-        explanation = card['explanation']
-        explanation_lines = self._wrap_text_centered(explanation, self.TEXT_FONT, card_w - 100)
+        # Draw explanation
         for line in explanation_lines:
             draw.text(
                 (center_x, y_pos),
@@ -326,7 +354,7 @@ class PsychologyRenderer:
             )
             y_pos += 70
         
-        # Source citation (if available)
+        # Draw source citation (if available)
         if card.get('source'):
             y_pos += 40
             source_text = f"Source: {card['source']}"
@@ -376,10 +404,16 @@ class PsychologyRenderer:
         )
         
         center_x = width // 2
-        y_pos = card_y + layout['content_y']
         
-        # Header
+        # Header and example
         header = "Real-Life Example"
+        example = card['real_example']
+        example_lines = self._wrap_text_centered(example, self.TEXT_FONT, card_w - 100)
+        
+        total_block_h = 100 + len(example_lines) * 70
+        y_pos = card_y + (card_h - total_block_h) // 2
+        
+        # Draw header
         draw.text(
             (center_x, y_pos),
             header,
@@ -389,9 +423,7 @@ class PsychologyRenderer:
         )
         y_pos += 100
         
-        # Example text (wrapped)
-        example = card['real_example']
-        example_lines = self._wrap_text_centered(example, self.TEXT_FONT, card_w - 100)
+        # Draw example
         for line in example_lines:
             draw.text(
                 (center_x, y_pos),
@@ -440,10 +472,16 @@ class PsychologyRenderer:
         )
         
         center_x = width // 2
-        y_pos = card_y + layout['content_y']
         
-        # Header
+        # Header and application
         header = "Try This Today"
+        application = card['application']
+        app_lines = self._wrap_text_centered(application, self.TEXT_FONT, card_w - 100)
+        
+        total_block_h = 100 + len(app_lines) * 70
+        y_pos = card_y + (card_h - total_block_h) // 2
+        
+        # Draw header
         draw.text(
             (center_x, y_pos),
             header,
@@ -453,9 +491,7 @@ class PsychologyRenderer:
         )
         y_pos += 100
         
-        # Application text (wrapped, actionable)
-        application = card['application']
-        app_lines = self._wrap_text_centered(application, self.TEXT_FONT, card_w - 100)
+        # Draw application
         for line in app_lines:
             draw.text(
                 (center_x, y_pos),

@@ -72,3 +72,26 @@ class PsychologyCard(BaseModel): # wisdom_card profile
     real_example: str  # Everyday scenario (200 chars)
     application: str  # "Try this: ..." actionable tip (150 chars)
     source: Optional[str] = ""  # "Study: MIT 2023" or similar
+
+
+class FinanceCategory(str, Enum):
+    INVESTING = "investing"
+    BUDGETING = "budgeting"
+    TAXES = "taxes"
+    PERSONAL_FINANCE = "personal_finance"
+    MARKETS = "markets"
+    RISK_MANAGEMENT = "risk_management"
+    RETIREMENT = "retirement"
+    FINTECH = "fintech"
+
+
+class FinanceCard(BaseModel):
+    """Schema for finance insight cards."""
+    question_id: Optional[str] = None
+    title: str  # "Index Funds Beat Most Funds" (max 6 words)
+    category: FinanceCategory
+    insight: str  # Main point (140 chars)
+    explanation: str  # Why it matters (220 chars)
+    example: str  # Concrete scenario (180 chars)
+    action: str  # "Try this: ..." actionable tip (130 chars)
+    source: Optional[str] = ""  # Optional citation (50 chars)
