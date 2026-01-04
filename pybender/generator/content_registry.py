@@ -562,4 +562,27 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "Satisficing vs maximizing",
         ]
     ),
+
+    "finance": ContentSpec(
+                subject="finance",
+                content_type="finance_card",
+                assets=["insight", "explanation", "example", "action"],
+                topics=[
+                    "Index funds vs active funds",
+                    "Dollar-cost averaging",
+                    "Asset allocation and rebalancing",
+                    "Emergency funds and cash management",
+                    "Retirement accounts (401k/IRA) basics",
+                    "Taxes: capital gains and brackets",
+                    "Risk management and diversification",
+                    "Bonds vs stocks vs alternatives",
+                    "Inflation and real returns",
+                    "Behavioral finance pitfalls",
+                    "Budgeting frameworks (50/30/20)",
+                    "Debt payoff strategies",
+                    "Credit scores and utilization",
+                    "Market cycles and drawdowns",
+                    "Fintech tools and automation",
+                ],
+            ),
 }

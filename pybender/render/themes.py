@@ -107,3 +107,18 @@ PSYCHOLOGY_THEMES = {
         "puzzle_box": (255, 255, 255),
     },
 }
+
+
+FINANCE_THEMES = {
+    "onyx_gold": {
+        "name": "Onyx Gold",
+        "bg_primary": (11, 11, 14),      # Near black
+        "bg_secondary": (20, 20, 26),    # Dark charcoal
+        "card_bg": (22, 22, 28),         # Dark card
+        "puzzle_box": (26, 26, 32),      # Slightly lighter
+        "text_primary": (245, 245, 245), # Ivory
+        "text_secondary": (201, 201, 209),
+        "accent": (212, 175, 55),        # Gold
+        "accent_soft": (171, 139, 40),   # Muted gold
+    },
+}

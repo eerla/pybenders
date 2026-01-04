@@ -1,12 +1,12 @@
 [
       {
-        "question_id": "2026-01-03_170230_q01",
-        "title": "Self-Serving Bias in Success",
-        "category": "cognitive_bias",
-        "statement": "We credit ourselves for success but blame others for failure.",
-        "explanation": "This bias helps protect our self-esteem, making us feel good about our achievements while avoiding personal responsibility for setbacks.",
-        "real_example": "After getting a promotion, you think your hard work paid off, but if you miss a deadline, you blame team issues.",
-        "application": "Try this: Reflect on a recent failure and identify your role in it to improve growth and accountability.",
-        "source": "Miller & Ross, 1975"
+        "question_id": "2026-01-03_195722_q01",
+        "title": "Index vs Active Funds",
+        "category": "investing",
+        "insight": "Index funds often outperform active funds over time.",
+        "explanation": "While active funds aim to beat the market through stock picking, they often incur higher fees and underperform benchmarks, especially after costs.",
+        "example": "In the last decade, the S&P 500 index fund returned around 14% annually while many actively managed funds returned less than 8%.",
+        "action": "Try this: Invest in a low-cost index fund instead of high-fee active funds.",
+        "source": "Morningstar Research"
       }
 ] 

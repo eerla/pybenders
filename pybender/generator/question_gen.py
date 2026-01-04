@@ -7,7 +7,7 @@ from openai import OpenAI
 
 from pybender.config.logging_config import setup_logging
 from pybender.config.settings import OPENAI_API_KEY, MODEL
-from pybender.generator.schema import Question, MindBenderQuestion, PsychologyCard
+from pybender.generator.schema import Question, MindBenderQuestion, PsychologyCard, FinanceCard
 from pybender.generator.content_registry import CONTENT_REGISTRY
 from pybender.prompts.templates import PROMPT_TEMPLATES
 from pybender.validation.validate_questions import validate_questions
@@ -104,6 +104,8 @@ class QuestionGenerator:
             return [MindBenderQuestion(**q) for q in valid], topic, content_type
         if content_type == "wisdom_card":
             return [PsychologyCard(**q) for q in valid], topic, content_type
+        if content_type == "finance_card":
+            return [FinanceCard(**q) for q in valid], topic, content_type
 
         return [Question(**q) for q in valid], topic, content_type
 

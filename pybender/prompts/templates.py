@@ -52,9 +52,18 @@ CONTENT_LIMITS = {
         "explanation": 300,   # Fun explanation of the answer
         "fun_fact": 200,      # Optional trivia/fun fact
     },
+    "finance": {
+        "insight": 140,
+        "explanation": 220,
+        "example": 180,
+        "action": 130,
+    },
+
+            
 }
 
 PROMPT_TEMPLATES = {
+    
     "code_output": """
                     You are a Senior {{subject}} expert creating SHORT-FORM content for Instagram reels.
 
@@ -522,8 +531,48 @@ PROMPT_TEMPLATES = {
                     "source": "Kruger & Dunning, 1999"
                 }
                 ]
-                """
+                """,
+
+    "finance_card": """
+                    You are a finance educator creating SHORT-FORM content for Instagram reels.
+
+                    Generate EXACTLY {{n}} concise finance insights about {{topic}}.
+
+                    STRICT RULES (must follow):
+                    - Return ONLY valid JSON
+                    - No text outside JSON
+                    - Keep everything short, punchy, and mobile-friendly
+                    - Obey length limits: insight ≤ 140 chars, explanation ≤ 220 chars, example ≤ 180 chars, action ≤ 130 chars
+                    - action MUST start with "Try this:"
+                    - title: max 6 words
+                    - Provide realistic, specific examples (no fluff)
+                    - Use clear language for non-experts; avoid jargon unless briefly defined
+
+                    Each item MUST contain:
+                    - title: short headline (≤ 6 words)
+                    - category: one of [investing, budgeting, taxes, personal_finance, markets, risk_management, retirement, fintech]
+                    - insight: main point (≤ 140 chars)
+                    - explanation: why it matters (≤ 220 chars)
+                    - example: concrete scenario (≤ 180 chars)
+                    - action: starts with "Try this:" and gives a practical step (≤ 130 chars)
+                    - source: optional short citation (≤ 50 chars)
+
+                    JSON format:
+                    [
+                        {
+                            "title": "...",
+                            "category": "investing",
+                            "insight": "...",
+                            "explanation": "...",
+                            "example": "...",
+                            "action": "Try this: ...",
+                            "source": "..."
+                        }
+                    ]
+                    """,
+
 }
+
 
 
 

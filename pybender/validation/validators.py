@@ -94,6 +94,30 @@ def validate_psychology_card(q: dict):
         assert len(q["source"]) <= 50, "Source too long (max 50 chars)"
 
 
+def validate_finance_card(q: dict):
+    allowed_categories = {
+        "investing",
+        "budgeting",
+        "taxes",
+        "personal_finance",
+        "markets",
+        "risk_management",
+        "retirement",
+        "fintech",
+    }
+
+    assert len(q["title"].split()) <= 6, "Title too long (max 6 words)"
+    assert q.get("category") in allowed_categories, "Invalid category"
+    assert len(q["insight"]) <= 140, "Insight too long (max 140 chars)"
+    assert len(q["explanation"]) <= 220, "Explanation too long (max 220 chars)"
+    assert len(q["example"]) <= 180, "Example too long (max 180 chars)"
+    assert len(q["action"]) <= 130, "Action too long (max 130 chars)"
+    if q.get("action"):
+        assert q["action"].lower().startswith("try this:"), "Action must start with 'Try this:'"
+    if q.get("source"):
+        assert len(q["source"]) <= 50, "Source too long (max 50 chars)"
+
+
 VALIDATORS: Dict[str, callable] = {
     "code_output": validate_code_output,
     "query_output": validate_query_output,
@@ -103,6 +127,7 @@ VALIDATORS: Dict[str, callable] = {
     "qa": validate_qa,
     "mind_bender": validate_mind_bender,
     "wisdom_card": validate_psychology_card,
+    "finance_card": validate_finance_card,
 }
 
 
