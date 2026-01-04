@@ -15,7 +15,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from typing import Dict, Tuple
 from pybender.generator.schema import MindBenderQuestion
-from pybender.render.themes import MIND_BENDERS_THEMES
+from pybender.render.themes import MIND_BENDERS_THEMES, MIND_BENDERS_LIGHT_THEMES
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +44,23 @@ class MindBenderRenderer:
         }
     }
     
-    def __init__(self):
-        self.WIDTH, self.HEIGHT = self.REEL_SIZE
+    def __init__(self, theme_variant: str = "dark"):
+        """
+        Initialize MindBenderRenderer.
         
-        # Theme definitions
-        self.THEMES = MIND_BENDERS_THEMES
+        Args:
+            theme_variant: "dark" for muted/soft colors or "light" for vibrant/playful colors
+        """
+        self.WIDTH, self.HEIGHT = self.REEL_SIZE
+        self.theme_variant = theme_variant
+        
+        # Theme definitions - select based on variant
+        if theme_variant == "light":
+            self.THEMES = MIND_BENDERS_LIGHT_THEMES
+            logger.info("🎨 Using LIGHT (vibrant) theme variant")
+        else:
+            self.THEMES = MIND_BENDERS_THEMES
+            logger.info("🎨 Using DARK (muted) theme variant")
         
         # Fonts (friendly, rounded)
         self.FONT_DIR = Path("pybender/assets/fonts")

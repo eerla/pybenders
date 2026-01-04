@@ -117,9 +117,11 @@ class ImageRenderer:
         # --------------------------------------------------
         # Initialize renderer and select theme
         # --------------------------------------------------
-        renderer = MindBenderRenderer()
+        # Change theme_variant to "light" for vibrant colors, "dark" for muted/soft colors
+        theme_variant = "dark"  # Options: "dark" (muted) or "light" (vibrant)
+        renderer = MindBenderRenderer(theme_variant=theme_variant)
         theme = renderer.select_random_theme()
-        logger.info(f"🎨 Using theme: {theme['name']}")
+        logger.info(f"🎨 Using theme: {theme['name']} ({theme_variant} variant)")
 
         # --------------------------------------------------
         # Metadata setup
@@ -271,9 +273,11 @@ class ImageRenderer:
         # --------------------------------------------------
         # Initialize renderer and select theme
         # --------------------------------------------------
-        renderer = PsychologyRenderer()
+        # Change theme_variant to "light" for vibrant colors, "dark" for muted/soft colors
+        theme_variant = "dark"  # Options: "dark" (muted) or "light" (vibrant)
+        renderer = PsychologyRenderer(theme_variant=theme_variant)
         theme = renderer.select_random_theme()
-        logger.info(f"🎨 Using theme: {theme['name']}")
+        logger.info(f"🎨 Using theme: {theme['name']} ({theme_variant} variant)")
 
         # --------------------------------------------------
         # Metadata setup

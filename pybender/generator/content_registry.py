@@ -472,40 +472,107 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
         content_type="puzzle",
         assets=["puzzle", "explanation"],
         topics=[
-            # Number Patterns
-            "Arithmetic sequences",
-            "Geometric sequences",
-            "Factorial patterns",
-            "Square and cube patterns",
-            "Fibonacci-like sequences",
-            "Prime number patterns",
+            # Fun Number Games
+            "Find the missing number",
+            "Number chain patterns",
+            "Quick number sequences",
+            "Digit spot patterns",
+            "Magic number tricks",
+            "Number guessing games",
+            "Add and subtract puzzles",
             
-            # Logic Puzzles
-            "Age and relationship puzzles",
-            "Classic riddles",
-            "Lateral thinking puzzles",
-            "Trick questions",
+            # Basic Math Fun
+            "Simple addition riddles",
+            "Quick subtraction games",
+            "Easy multiplication tricks",
+            "Division brain teasers",
+            "Fill in the math symbol",
+            "Balance the equation",
+            "Math crossword puzzles",
+            "Number pyramid games",
+            "Missing operator puzzles",
             
-            # Math Tricks
-            "Number guessing tricks",
-            "Always-same-result puzzles",
-            "Division and multiplication tricks",
-            "Time and clock puzzles",
+            # Pattern Games
+            "What's the pattern? (numbers)",
+            "Color sequence puzzles",
+            "Shape pattern games",
+            "Growing pattern riddles",
+            "Repeating pattern spots",
+            "Pattern prediction games",
+            "Complete the grid pattern",
+            "Row and column patterns",
+            "Number grid puzzles",
             
-            # Visual Patterns
+            # Brain Teaser Logic
+            "Who said what? (riddles)",
+            "Age guess puzzles",
+            "Family tree teasers",
+            "Quick logic questions",
+            "Trick questions (the fun kind)",
+            "Lateral thinking brain teasers",
+            
+            # Time & Day Puzzles
+            "Clock and time riddles",
+            "Calendar day puzzles",
+            "What day is it? puzzles",
+            "Time logic games",
+            
+            # Visual Fun
+            "Spot the pattern (shapes)",
+            "Emoji math games",
             "Symbol equations",
-            "Shape sequences",
-            "Emoji math puzzles",
+            "Picture riddles",
+            "Shape spot-the-difference",
+            "Match the pair games",
+            "Spot what's different",
+            "Complete the shape sequence",
+            "Rotating pattern puzzles",
             
-            # Word Logic
-            "Letter sequences (month initials, etc.)",
-            "Word association puzzles",
-            "Category odd-one-out",
+            # Word Play
+            "Guess the word from clues",
+            "Letter order puzzles",
+            "Word scramble logic",
+            "Name that month/day riddle",
+            "Hidden words puzzle",
+            "Word pattern games",
             
-            # Probability & Logic
-            "Counter-intuitive probability",
-            "Classic paradoxes (birthday, Monty Hall lite)",
-            "Simple deduction puzzles",
+            # Direction & Position
+            "Left, right, up, down? (compass games)",
+            "Where is it? (position puzzles)",
+            "Who sits where? (seating games)",
+            "Find your way (path puzzles)",
+            
+            # True or False Logic
+            "Is the statement true?",
+            "Which one doesn't fit?",
+            "Spot the odd one out",
+            "Does this follow the rule?",
+            
+            # Comparison Games
+            "Compare and find (bigger, smaller, heavier)",
+            "Match the pairs",
+            "Is this similar to that?",
+            "Find what's alike",
+            
+            # Mini Mysteries
+            "Who did what? (deduction)",
+            "Solve the puzzle clue by clue",
+            "Mystery box riddles",
+            "Detective brain teasers",
+            
+            # Pattern Recognition
+            "What comes next?",
+            "Complete the sequence",
+            "Find the hidden pattern",
+            "Predict the next move",
+            "Mirror pattern games",
+            "Symmetry spot puzzles",
+            
+            # Simple Scenario Puzzles
+            "What would you do? (quick decisions)",
+            "Is this possible?",
+            "Can you make this work?",
+            "Problem solving quick games",
         ],
     ),
 
@@ -528,7 +595,7 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "Loss aversion in decision making",
             "Bandwagon effect and conformity",
             
-            # Social Psychology (8 topics)
+            # Social Psychology (10 topics)
             "Bystander effect in emergencies",
             "Social proof and influence",
             "Groupthink in organizations",
@@ -537,6 +604,8 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "In-group bias and tribalism",
             "Self-serving bias in success",
             "Cognitive dissonance resolution",
+            "Reciprocity principle in relationships",
+            "Mirror neurons and empathy",
             
             # Behavioral Economics (6 topics)
             "Choice overload and paralysis",
@@ -546,13 +615,17 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "Endowment effect and ownership",
             "Decoy effect in pricing",
             
-            # Mental Health (6 topics)
+            # Mental Health & Well-being (10 topics)
             "Stress response mechanisms",
             "Anxiety spiral patterns",
             "Depression and rumination",
             "Burnout warning signs",
             "Emotional regulation techniques",
             "Growth mindset vs fixed mindset",
+            "Self-compassion benefits",
+            "Gratitude practice effects",
+            "Resilience building strategies",
+            "Mindfulness and present moment awareness",
             
             # Decision Making (5 topics)
             "Analysis paralysis causes",
@@ -560,6 +633,71 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
             "Decision fatigue impact",
             "Regret minimization framework",
             "Satisficing vs maximizing",
+            
+            # Habit Formation & Change (8 topics)
+            "Habit loop: cue, routine, reward",
+            "Implementation intentions power",
+            "Tiny habits strategy",
+            "Breaking bad habits effectively",
+            "Identity-based habit formation",
+            "Environment design for behavior change",
+            "Temptation bundling technique",
+            "Streaks and consistency motivation",
+            
+            # Relationships & Communication (8 topics)
+            "Active listening techniques",
+            "Nonviolent communication framework",
+            "Attachment styles in relationships",
+            "Stonewalling and the four horsemen",
+            "Emotional validation impact",
+            "Conflict resolution strategies",
+            "Assertiveness vs aggression",
+            "Love languages and appreciation",
+            
+            # Memory & Learning (7 topics)
+            "Spacing effect for retention",
+            "Active recall vs passive reading",
+            "Elaborative encoding strategy",
+            "Memory palace technique",
+            "Interleaving for skill building",
+            "Testing effect on learning",
+            "Sleep and memory consolidation",
+            
+            # Emotions & Emotional Intelligence (7 topics)
+            "Emotional granularity benefits",
+            "Affect labeling to reduce intensity",
+            "Reappraisal vs suppression",
+            "Emotional contagion awareness",
+            "Window of tolerance concept",
+            "Primary vs secondary emotions",
+            "Emotional intelligence components",
+            
+            # Motivation & Productivity (8 topics)
+            "Intrinsic vs extrinsic motivation",
+            "Self-determination theory (autonomy, mastery, purpose)",
+            "Progress principle and small wins",
+            "Zeigarnik effect (unfinished tasks)",
+            "Parkinson's law and deadlines",
+            "Flow state conditions",
+            "Procrastination psychology",
+            "Implementation intentions for goals",
+            
+            # Self-Awareness & Personal Growth (6 topics)
+            "Johari window model",
+            "Imposter syndrome patterns",
+            "Self-handicapping behavior",
+            "Personal values clarification",
+            "Narrative identity formation",
+            "Meta-cognition and self-reflection",
+            
+            # Positive Psychology (7 topics)
+            "Optimism and explanatory styles",
+            "Character strengths identification",
+            "Savoring positive experiences",
+            "Post-traumatic growth",
+            "Meaning and purpose finding",
+            "Social connections and happiness",
+            "Hedonic vs eudaimonic well-being",
         ]
     ),
 
@@ -568,21 +706,136 @@ CONTENT_REGISTRY: Dict[str, ContentSpec] = {
                 content_type="finance_card",
                 assets=["insight", "explanation", "example", "action"],
                 topics=[
+                    # Investing Basics (12 topics)
                     "Index funds vs active funds",
-                    "Dollar-cost averaging",
-                    "Asset allocation and rebalancing",
-                    "Emergency funds and cash management",
-                    "Retirement accounts (401k/IRA) basics",
-                    "Taxes: capital gains and brackets",
-                    "Risk management and diversification",
-                    "Bonds vs stocks vs alternatives",
-                    "Inflation and real returns",
-                    "Behavioral finance pitfalls",
-                    "Budgeting frameworks (50/30/20)",
-                    "Debt payoff strategies",
-                    "Credit scores and utilization",
-                    "Market cycles and drawdowns",
-                    "Fintech tools and automation",
+                    "Dollar-cost averaging strategy",
+                    "Asset allocation by age",
+                    "Diversification principles",
+                    "Risk tolerance assessment",
+                    "Compound interest power",
+                    "Time in market vs timing market",
+                    "ETFs vs mutual funds",
+                    "Dividend investing basics",
+                    "Growth vs value investing",
+                    "International diversification",
+                    "Rebalancing portfolio strategy",
+                    
+                    # Retirement Planning (8 topics)
+                    "401(k) employer match maximization",
+                    "Roth vs Traditional IRA",
+                    "Retirement withdrawal strategies",
+                    "Social security optimization",
+                    "Healthcare costs in retirement",
+                    "Retirement number calculation",
+                    "Early retirement considerations (FIRE)",
+                    "Required minimum distributions (RMDs)",
+                    
+                    # Personal Finance Fundamentals (10 topics)
+                    "Emergency fund sizing (3-6 months)",
+                    "Budgeting frameworks (50/30/20 rule)",
+                    "Pay yourself first principle",
+                    "Automated savings systems",
+                    "Lifestyle inflation awareness",
+                    "Net worth tracking importance",
+                    "Cash flow management basics",
+                    "Financial goal setting SMART method",
+                    "Sinking funds for irregular expenses",
+                    "Financial independence milestones",
+                    
+                    # Debt Management (7 topics)
+                    "Debt avalanche vs snowball method",
+                    "Good debt vs bad debt",
+                    "Credit card debt strategies",
+                    "Student loan repayment options",
+                    "Mortgage refinancing decisions",
+                    "Debt consolidation pros and cons",
+                    "Zero-based budgeting for debt payoff",
+                    
+                    # Credit & Banking (6 topics)
+                    "Credit score factors and optimization",
+                    "Credit utilization ratio impact",
+                    "Building credit from scratch",
+                    "High-yield savings accounts",
+                    "Bank account fees to avoid",
+                    "Credit card rewards optimization",
+                    
+                    # Taxes & Optimization (8 topics)
+                    "Tax-advantaged accounts (HSA, FSA)",
+                    "Capital gains vs ordinary income",
+                    "Tax-loss harvesting strategy",
+                    "Marginal vs effective tax rate",
+                    "Standard vs itemized deductions",
+                    "Tax brackets and planning",
+                    "Charitable giving tax benefits",
+                    "Freelancer tax considerations",
+                    
+                    # Risk Management & Insurance (7 topics)
+                    "Term vs whole life insurance",
+                    "Health insurance deductibles and premiums",
+                    "Disability insurance importance",
+                    "Umbrella insurance coverage",
+                    "Renter's vs homeowner's insurance",
+                    "Auto insurance liability limits",
+                    "Life insurance needs calculation",
+                    
+                    # Real Estate & Housing (7 topics)
+                    "Rent vs buy decision framework",
+                    "Home affordability calculation (28/36 rule)",
+                    "Mortgage types and terms",
+                    "Down payment strategies",
+                    "Real estate investment basics (REITs)",
+                    "Property tax considerations",
+                    "Home equity lines of credit (HELOC)",
+                    
+                    # Market Understanding (8 topics)
+                    "Bull vs bear markets",
+                    "Market cycles and volatility",
+                    "Recession indicators and preparation",
+                    "Inflation impact on purchasing power",
+                    "Interest rate effects on investments",
+                    "Market corrections vs crashes",
+                    "Economic indicators basics",
+                    "Stock market indexes explained",
+                    
+                    # Behavioral Finance (6 topics)
+                    "Loss aversion in investing",
+                    "Anchoring bias in financial decisions",
+                    "Herd mentality in markets",
+                    "Recency bias and past performance",
+                    "Emotional investing pitfalls",
+                    "Analysis paralysis in choosing investments",
+                    
+                    # Income & Career (7 topics)
+                    "Salary negotiation strategies",
+                    "Side hustle economics",
+                    "Human capital as an asset",
+                    "Career switching financial planning",
+                    "Income diversification benefits",
+                    "Professional development ROI",
+                    "Freelancing vs full-time trade-offs",
+                    
+                    # Advanced Topics (6 topics)
+                    "Alternative investments overview",
+                    "Cryptocurrency basics and risks",
+                    "Angel investing and startup equity",
+                    "Options trading fundamentals",
+                    "Real estate crowdfunding",
+                    "Peer-to-peer lending risks",
+                    
+                    # Financial Tools & Systems (5 topics)
+                    "Robo-advisors vs DIY investing",
+                    "Budgeting apps and automation",
+                    "Financial tracking spreadsheets",
+                    "Investment fee comparison",
+                    "Fintech tools for saving and investing",
+                    
+                    # Family & Life Events (6 topics)
+                    "Newborn financial planning (529 plans)",
+                    "Marriage and money conversations",
+                    "Divorce financial implications",
+                    "Aging parents financial support",
+                    "Inheritance and estate basics",
+                    "Financial education for kids",
                 ],
             ),
 }
