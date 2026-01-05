@@ -7,12 +7,16 @@ PyBenders generates daily programming MCQs and brain teasers across multiple sub
 ## Features
 
 ### Content Generation
-- **Multi-subject support**: Python, SQL, regex, system design, Linux, Docker/K8s, JavaScript, Rust, Go, mind benders (brain teasers)
+- **Multi-subject support**: Python, SQL, regex, system design, Linux, Docker/K8s, JavaScript, Rust, Go, mind benders, psychology, finance
 - **AI question generation**: Subject-aware LLM prompts with validation for content quality
 - **Dual-format rendering**: Both reel (1080×1920) and carousel (1080×1080) images generated per question
-- **Carousel format**: 6-slide Instagram carousels for technical subjects (cover, question, countdown, answer, explanation, CTA)
-- **Mind benders format**: 5-card carousel with colorful themes (welcome, question, hint, answer, CTA)
-- **Video reels**: Two types - technical content (with countdown transitions) and mind benders (5-image sequence without transitions)
+- **Multiple card formats**:
+  - **Technical subjects**: 6-slide carousel (cover, question, countdown, answer, explanation, CTA)
+  - **Mind benders**: 5-card reel with playful colorful themes (welcome, question, hint, answer, CTA)
+  - **Psychology**: 6-card reel exploring wisdom (welcome, statement, explanation, example, application, CTA)
+  - **Finance**: 6-card reel with actionable insights (welcome, insight, explanation, example, action, CTA)
+- **Theme variants**: Dark (soft/muted) and light (vibrant/playful) color themes for mind_benders and psychology
+- **Video reels**: Multiple formats with proper timing and transitions (technical with countdown, mind benders direct, psychology/finance sequential)
 - **Batch processing**: Generate 1-10+ questions per run; multi-subject sweeps in one command
 
 ### Instagram Publishing
@@ -32,20 +36,24 @@ PyBenders generates daily programming MCQs and brain teasers across multiple sub
 
 ## Supported Subjects
 
-| Subject | Content Type | Example |
-|---------|-------------|---------|
-| Python | code_output | What's the output? |
-| JavaScript | code_output | Async/await edge cases |
-| Rust | code_output | Ownership & borrowing |
-| Go | code_output | Goroutines & channels |
-| SQL | query_output | Query optimization |
-| Regex | pattern_match | Pattern matching |
-| System Design | scenario | Design a scalable API |
-| Linux | command_output | Bash command puzzles |
-| Docker/K8s | qa | Container orchestration Q&A |
-| Mind Benders | mind_bender | Logic puzzles, riddles, brain teasers |
+| Subject | Content Type | Format | Features |
+|---------|-------------|--------|----------|
+| Python | code_output | 6-slide carousel | Code output prediction |
+| JavaScript | code_output | 6-slide carousel | Async/await, callbacks |
+| Rust | code_output | 6-slide carousel | Ownership, lifetimes |
+| Go | code_output | 6-slide carousel | Goroutines, channels |
+| SQL | query_output | 6-slide carousel | Query optimization |
+| Regex | pattern_match | 6-slide carousel | Pattern matching |
+| System Design | scenario | 6-slide carousel | Scalability scenarios |
+| Linux | command_output | 6-slide carousel | Command-line puzzles |
+| Docker/K8s | qa | 6-slide carousel | Container orchestration |
+| Mind Benders | mind_bender | 5-card reel | Logic puzzles, riddles (with playful themes) |
+| Psychology | wisdom_card | 6-card reel | Behavioral insights (with light/dark themes) |
+| Finance | finance_card | 6-card reel | Personal finance tips (with professional themes) |
 
-Each subject maps to a content type that controls the LLM prompt, validator rules, and renderer styling. Mind benders use a unique colorful theme-based renderer with 5 rotating color palettes (sunset, ocean, mint, lavender, golden).
+**Subject Categories**:
+- **Technical** (9 subjects): Code/query output, system design, DevOps Q&A with countdown transitions
+- **Themed** (3 subjects): Mind benders (playful), psychology (behavioral), finance (professional) with customizable color variants
 
 ## Quick Start
 
@@ -105,10 +113,39 @@ output_1/
 ├── python/
 │   ├── carousels/              # 6-slide carousel images
 │   ├── images/                 # Question/answer/explanation images
-│   └── reels/                  # Video files
-└── runs/
-    └── 2026-01-01_205914_metadata.json  # Content manifest
+│   ├── reels/                  # Video files
+│   ├── temp/                   # MoviePy temporary files (auto-cleaned)
+│   └── runs/
+│       └── 2026-01-01_205914_metadata.json
+├── psychology/
+│   ├── carousels/              # 6-slide carousel versions
+│   ├── images/
+│   │   └── reel/               # 6 wisdom card images per question
+│   ├── reels/                  # Generated video files
+│   ├── temp/                   # MoviePy temporary files
+│   └── runs/
+├── finance/
+│   ├── carousels/              # 6-slide carousel versions
+│   ├── images/
+│   │   └── reel/               # 6 insight card images per question
+│   ├── reels/                  # Generated video files
+│   ├── temp/                   # MoviePy temporary files
+│   └── runs/
+└── mind_benders/
+    ├── carousels/              # 6-slide carousel versions
+    ├── images/
+    │   └── reel/               # 5 card images per question
+    ├── reels/                  # Generated video files
+    ├── temp/                   # MoviePy temporary files
+    └── runs/
 ```
+
+**Temp file management**:
+- MoviePy creates temporary audio/video files during video rendering
+- Temp files are isolated to subject-specific `temp/` directories for efficient cleanup
+- Temporary directory is set using Python's `tempfile.tempdr` for system compatibility
+- All temp files are automatically cleaned up after video generation completes
+
 **Published content:**
 ```
 uploaded/
@@ -374,17 +411,24 @@ This project is in active development! Contributions welcome for:
 
 ## Project Status
 
-- ✅ Question generation (LLM + validation)
-- ✅ Image rendering (question/answer/explanation cards)
+- ✅ Question generation (LLM + validation) for all 12 subjects
+- ✅ Image rendering (question/answer/explanation cards for technical subjects)
+- ✅ Specialized card rendering (psychology wisdom cards, finance insight cards, mind bender puzzles)
 - ✅ Carousel generation (6-slide format with subject headers)
-- ✅ Video stitching (with transitions and music)
+- ✅ Psychology wisdom cards (6-card sequential flow: statement → explanation → example → application)
+- ✅ Finance insight cards (6-card sequential flow: insight → explanation → example → action)
+- ✅ Mind benders (5-card reel with playful themes and colorful design)
+- ✅ Theme variants (dark/light color schemes for psychology and mind benders)
+- ✅ Video stitching (with transitions, fades, and random background music selection)
+- ✅ Subject-specific temp file isolation for MoviePy processing
 - ✅ Instagram carousel upload
 - ✅ Instagram reel upload
 - ✅ Session persistence (instagrapi best practices)
 - ✅ File organization (auto-organize by date)
-- ✅ Memory management (proper MoviePy cleanup)
+- ✅ Memory management (proper MoviePy cleanup, tempfile isolation)
+- ✅ Content validation (expanded limits for substantive content)
 - 🔄 Metadata validation improvements
-- 🔄 Enhanced error recovery
+- 🔄 Enhanced error recovery for LLM retries
 - ❌ Web UI (planned Phase 3)
 - ❌ TikTok/YouTube support (planned Phase 2)
 - ❌ Scheduled posting (planned Phase 4)

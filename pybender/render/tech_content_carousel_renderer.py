@@ -167,6 +167,27 @@ class TechContentCarouselRenderer:
         
         return lines
     
+    def _measure_code_block(self, draw, code_lines: list[str], max_code_height: int):
+        """Dynamically calculate best font size and line height for code block to fit within max_code_height."""
+        base_size = self.CODE_FONT.size
+        min_size = 18
+        chosen_font = self.CODE_FONT
+        chosen_line_height = int(base_size * 1.25)
+        chosen_height = 0
+        max_width = self.WIDTH - (self.PADDING_X * 2) - 40 - self.IDE_GUTTER_WIDTH
+
+        for size in range(base_size, min_size - 1, -2):
+            font = ImageFont.truetype(str(self.JETBRAINS_MONO_FONT_DIR / "JetBrainsMono-Regular.ttf"), size)
+            line_height = int(size * 1.25)
+            wrapped = sum(len(wrap_code_line(draw, src, font, max_width)) for src in code_lines)
+            block_height = self.IDE_HEADER_HEIGHT + wrapped * line_height + 30
+            total_height = block_height + 20  # matches draw_editor_code_with_ide return gap
+            chosen_font, chosen_line_height, chosen_height = font, line_height, total_height
+            if total_height <= max_code_height:
+                break
+
+        return chosen_font, chosen_line_height, chosen_height
+    
     def generate_cover_slide(
         self,
         question: Question,
@@ -319,18 +340,25 @@ class TechContentCarouselRenderer:
         q_lines = self._wrap_text(draw, question.question, self.TEXT_FONT, content_width)
         question_text_height = len(q_lines) * 45 + 20
         
-        # Code height if available
-        code_height = 0
-        if question.code:
-            code_lines = question.code.split('\n')[:5]  # Limit to 5 lines
-            code_height = len(code_lines) * 35 + 50
-        
         # Options height
         options_height = 0
         if question.options:
             for opt in question.options[:4]:  # A, B, C, D
                 opt_lines = self._wrap_text(draw, opt, self.TEXT_FONT, content_width - 40)
                 options_height += len(opt_lines) * 40 + 20
+        
+        # Code height if available - dynamically sized to fit
+        code_font = self.CODE_FONT
+        code_line_height = 35
+        code_height = 0
+        normalized_lines = []
+        if question.code:
+            normalized_lines = normalize_code(question.code)
+            base_without_code = scenario_height + label_height + question_text_height + options_height
+            max_code_height = max(200, self.HEIGHT - base_without_code - 60)  # At least 200px for code
+            code_font, code_line_height, code_height = self._measure_code_block(
+                draw, normalized_lines, max_code_height
+            )
         
         total_content_height = scenario_height + label_height + question_text_height + code_height + options_height
         
@@ -421,10 +449,7 @@ class TechContentCarouselRenderer:
         # Code if available (IDE-style)
         if question.code:
             y_pos += 20
-            # Normalize code
-            normalized_lines = normalize_code(question.code)[:5]  # Limit to 5 source lines
-            
-            # Draw IDE-style code block
+            # Draw IDE-style code block with dynamically sized font
             y_pos = draw_editor_code_with_ide(
                 draw=draw,
                 code=normalized_lines,
@@ -432,7 +457,7 @@ class TechContentCarouselRenderer:
                 y_cursor=y_pos,
                 width=self.WIDTH,
                 padding_x=self.PADDING_X,
-                code_font=self.CODE_FONT,
+                code_font=code_font,
                 small_label_font=self.SMALL_FONT,
                 code_bg=self.CODE_BG,
                 ide_header_bg=self.IDE_HEADER_BG,
@@ -443,7 +468,7 @@ class TechContentCarouselRenderer:
                 language_map=self.LANGUAGE_MAP,
                 ide_gutter_width=self.IDE_GUTTER_WIDTH,
                 ide_header_height=self.IDE_HEADER_HEIGHT,
-                line_height=35
+                line_height=code_line_height
             )
         
         # Options (A, B, C, D)
@@ -579,12 +604,6 @@ class TechContentCarouselRenderer:
         q_lines = self._wrap_text(draw, question.question, self.TEXT_FONT, content_width)
         question_text_height = len(q_lines) * 45 + 20
         
-        # Code height if available
-        code_height = 0
-        if question.code:
-            code_lines = question.code.split('\n')[:5]
-            code_height = len(code_lines) * 35 + 50
-        
         # Options height
         options_height = 0
         if question.options:
@@ -594,6 +613,19 @@ class TechContentCarouselRenderer:
         
         # Hook line height
         hook_height = 40
+        
+        # Code height if available - dynamically sized to fit
+        code_font = self.CODE_FONT
+        code_line_height = 35
+        code_height = 0
+        normalized_lines = []
+        if question.code:
+            normalized_lines = normalize_code(question.code)
+            base_without_code = scenario_height + label_height + question_text_height + options_height + hook_height
+            max_code_height = max(200, self.HEIGHT - base_without_code - 60)  # At least 200px for code
+            code_font, code_line_height, code_height = self._measure_code_block(
+                draw, normalized_lines, max_code_height
+            )
         
         total_content_height = scenario_height + label_height + question_text_height + code_height + options_height + hook_height
         
@@ -684,8 +716,7 @@ class TechContentCarouselRenderer:
         # Code if available (IDE-style)
         if question.code:
             y_pos += 20
-            normalized_lines = normalize_code(question.code)[:5]
-            
+            # Draw IDE-style code block with dynamically sized font
             y_pos = draw_editor_code_with_ide(
                 draw=draw,
                 code=normalized_lines,
@@ -693,7 +724,7 @@ class TechContentCarouselRenderer:
                 y_cursor=y_pos,
                 width=self.WIDTH,
                 padding_x=self.PADDING_X,
-                code_font=self.CODE_FONT,
+                code_font=code_font,
                 small_label_font=self.SMALL_FONT,
                 code_bg=self.CODE_BG,
                 ide_header_bg=self.IDE_HEADER_BG,
@@ -704,7 +735,7 @@ class TechContentCarouselRenderer:
                 language_map=self.LANGUAGE_MAP,
                 ide_gutter_width=self.IDE_GUTTER_WIDTH,
                 ide_header_height=self.IDE_HEADER_HEIGHT,
-                line_height=35
+                line_height=code_line_height
             )
         
         # Options (A, B, C, D) with correct answer highlighted

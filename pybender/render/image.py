@@ -32,14 +32,12 @@ class ImageRenderer:
         _ensure_logging_configured()
         self.MODEL = "gpt-4o-mini"
         # Output and assets
-        self.BASE_DIR = Path("output_1")
-        # self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
-
-        
+        # self.BASE_DIR = Path("output_1")
         # self.WRITE_METADATA = False  # Set to True to write metadata.json
         # self.USE_STATIC_QUESTIONS = True  # Set to True to use static questions from output/questions.json
         # self.GENERATE_NEW_QIDS = False  # Set to True to assign new question IDs
 
+        self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
         self.WRITE_METADATA = True  # Set to True to write metadata.json
         self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
         self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
@@ -557,8 +555,8 @@ class ImageRenderer:
         # Generate questions
         # --------------------------------------------------
         if self.USE_STATIC_QUESTIONS:
-            logger.info("Using static questions from output/questions.json")
-            with open("output/questions.json", "r") as f:
+            logger.info("Using static questions from output_1/questions.json")
+            with open("output_1/questions.json", "r") as f:
                 questions_data = json.load(f)
                 topic, content_type = "python", "code_output"
                 questions = [Question(**q) for q in questions_data]

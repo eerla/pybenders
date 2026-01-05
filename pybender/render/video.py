@@ -35,8 +35,8 @@ class VideoRenderer:
         self.VIDEO_W, self.VIDEO_H = 1080, 1920
         self.FPS = 30
         self.SAFE_WIDTH = 960
-        self.BASE_DIR = Path("output_1") # local output path
-        # self.BASE_DIR = Path(r"G:\My Drive\output") # Change to google drive path
+        # self.BASE_DIR = Path("output_1") # local output path
+        self.BASE_DIR = Path(r"G:\My Drive\output") # Change to google drive path
         self.RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.RUN_DATE = datetime.now().strftime("%Y%m%d")
         self.ASSETS_DIR = Path("pybender/assets")
@@ -1082,19 +1082,16 @@ class VideoRenderer:
         return metadata_path
 
 
-
 # if __name__ == "__main__":
+#     import sys
 #     renderer = VideoRenderer()
-#     subjects = ["python", "finance", "psychology", "mind_benders"]
 
-#     for subject in subjects:
-#         test_metadata_path = renderer.BASE_DIR / subject / "runs" 
-    
-#         if not test_metadata_path.exists():
-#             logger.error("❌ Metadata directory not found at: %s", test_metadata_path)
+#     metadata = sys.argv[1] if len(sys.argv) > 1 else ""
+#     if not metadata:
+#         logger.error("❌ Please provide the path to the metadata JSON file as an argument.")
+#     else:
+#         metadata_path = Path(metadata)
+#         if not metadata_path.exists():
+#             logger.error("❌ Metadata file not found at: %s", metadata_path)
 #         else:
-#             files = os.listdir(test_metadata_path)
-#             for file in files[-1:]:  # Process only the latest file for testing
-#                 # if file.endswith(".json") and '170658' in file:
-#                 logger.info("Processing file: %s", file)
-#                 renderer.main(test_metadata_path / file)
+#             renderer.main(metadata_path)
