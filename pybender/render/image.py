@@ -32,8 +32,8 @@ class ImageRenderer:
         _ensure_logging_configured()
         self.MODEL = "gpt-4o-mini"
         # Output and assets
-        self.BASE_DIR = Path("output_1")
-        # self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
+        # self.BASE_DIR = Path("output_1")
+        self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
 
         
         # self.WRITE_METADATA = False  # Set to True to write metadata.json
