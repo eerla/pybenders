@@ -4,24 +4,24 @@
 ```mermaid
 flowchart TD
     subgraph Generation
-        A[Content Registry\n(topics/categories)] --> B[LLM Prompts\nsubject-specific templates]
+        A[Content Registry topics/categories] --> B[LLM Prompts subject-specific templates]
         B --> C[LLM Response]
-        C --> D[Validators\nlength/structure checks]
+        C --> D[Validators length/structure checks]
     end
 
     subgraph Artifacts
         C -->|raw| M[Metadata JSON\nper question/run]
-        D -->|approved| E[Image Renderers\n(per content type)]
-        E --> F[Carousel Builder\n(6-slide tech)]
-        E --> G[Reel Frames\n(5/6-card themed)]
-        F --> H[Images\ncarousel/cover/cta]
-        G --> I[Images\nreel frames]
+        D -->|approved| E[Image Renderers per content type]
+        E --> F[Carousel Builder 6-slide tech]
+        E --> G[Reel Frames 5/6-card themed]
+        F --> H[Images carousel/cover/cta]
+        G --> I[Images reel frames]
     end
 
     subgraph Video
-        I --> J[Video Stitcher\ntransitions + fades]
-        J --> K[Audio Picker\nrandom bg music]
-        K --> L[Reel MP4\n1080x1920]
+        I --> J[Video Stitcher transitions + fades]
+        J --> K[Audio Picker random bg music]
+        K --> L[Reel MP4 1080x1920]
     end
 
     subgraph Storage
