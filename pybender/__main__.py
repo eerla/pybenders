@@ -22,7 +22,7 @@ SUBJECTS = [
         "psychology",
     ]
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__) 
 
 def main():
     setup_logging()
