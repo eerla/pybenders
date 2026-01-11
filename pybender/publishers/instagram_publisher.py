@@ -49,16 +49,18 @@ class InstagramVideoUploader:
         self,
         username: str = "YOUR_INSTAGRAM_USERNAME",
         password: str = "YOUR_INSTAGRAM_PASSWORD",
+        profile_username: Optional[str] = None,
         session_file: Optional[Path] = None,
         proxy: Optional[str] = None,
-        delay_range: list = [1, 3]
+        delay_range: list = [3, 6]
         ):
         """
         Initialize Instagram video uploader.
         
         Args:
-            username: Instagram username (placeholder by default)
+            username: Instagram login username/email (placeholder by default)
             password: Instagram password (placeholder by default)
+            profile_username: Instagram handle to use for profile/validation calls
             session_file: Path to store/load session JSON file (auto-generated if None)
             proxy: Optional proxy URL (e.g., "http://proxy:9137")
             delay_range: [min, max] delay in seconds between requests
@@ -73,6 +75,8 @@ class InstagramVideoUploader:
             )
         """
         self.username = username
+        # Use explicit profile handle if provided; otherwise fall back to login username
+        self.profile_username = profile_username or username
         self.password = password
         
         # Generate username-specific session file if not provided
@@ -108,7 +112,10 @@ class InstagramVideoUploader:
         if proxy:
             self._set_proxy(proxy)
         
-        logger.info(f"Initialized InstagramVideoUploader for user: {username}")
+        logger.info(
+            f"Initialized InstagramVideoUploader for user: {username}"
+            f" (profile: {self.profile_username})"
+        )
         logger.info(f"Session file: {self.session_file}")
     
     def _set_proxy(self, proxy: str) -> None:
@@ -177,7 +184,7 @@ class InstagramVideoUploader:
         try:
             # Use lightweight user info lookup to validate session
             # This is less likely to trigger rate limits than timeline fetch
-            self.cl.user_info_by_username(self.username)
+            self.cl.user_info_by_username(self.profile_username)
             logger.debug("✓ Session validation successful")
             return True
         except LoginRequired:
@@ -246,6 +253,43 @@ class InstagramVideoUploader:
         delay = random.uniform(min_sec, max_sec)
         logger.debug(f"⏳ Human-like delay: {delay:.2f}s")
         time.sleep(delay)
+    
+    def _warmup_session(self) -> bool:
+        """
+        Perform lightweight discovery actions before uploading to appear human-like.
+        
+        This reduces bot detection risk by:
+        - Researching hashtags (appears content-aware)
+        
+        NOTE: Skips profile lookup (instagrapi may use email) and suggestions
+        (method may be unavailable on some builds).
+        
+        Returns:
+            True if warmup succeeded or was skipped
+        """
+        logger.info("🔥 Warming up session with discovery actions...")
+        
+        # Decide which actions to perform (randomize for natural behavior)
+        actions = ['hashtags']
+        selected_actions = ['hashtags']  # Always run hashtag research (safest)
+        
+        success_count = 0
+        
+        # Action 1: Get hashtag info for common programming tags
+        if 'hashtags' in selected_actions:
+            try:
+                self._human_delay(1.0, 2.0)
+                hashtags = ['coding', 'programming', 'python', 'webdev']
+                chosen_tag = random.choice(hashtags)
+                tag_info = self.cl.hashtag_info(chosen_tag)
+                logger.debug(f"✓ Researched #{chosen_tag}: {tag_info.media_count} posts")
+                success_count += 1
+            except Exception as e:
+                logger.warning(f"⚠️  Could not retrieve hashtag info: {e}")
+                # Don't fail - continue with upload
+        
+        logger.info(f"✅ Session warmup complete ({success_count}/{len(selected_actions)} actions successful)")
+        return True
     
     def login(self) -> bool:
         """
@@ -645,6 +689,7 @@ def upload_from_metadata(
     metadata_file_path: Path,
     username: str,
     password: str,
+    profile_username: Optional[str] = None,
     session_dir: Optional[Path] = None,
     delay_between_uploads: int = 12
     ) -> Dict[str, Any]:
@@ -731,7 +776,7 @@ def upload_from_metadata(
         
         # Collect reel video with metadata
         video_path = assets.get('combined_reel')
-        question_image = assets.get('question_image')  # Thumbnail for reel
+        question_image = assets.get('reel', {}).get('question_image')  # Thumbnail for reel (nested under reel)
         
         if video_path:
             vid_path = project_root / video_path if not Path(video_path).is_absolute() else Path(video_path)
@@ -762,6 +807,7 @@ def upload_from_metadata(
     uploader = InstagramVideoUploader(
         username=username,
         password=password,
+        profile_username=profile_username or username,
         session_file=session_file
     )
     
@@ -785,6 +831,11 @@ def upload_from_metadata(
     carousel_uploaded = []
     carousel_failed = []
     
+    # Warmup session before first upload (only if we have carousels to upload)
+    if carousel_images_by_question:
+        uploader._warmup_session()
+        uploader._human_delay(2.0, 3.5)
+    
     for question_id, carousel_data in carousel_images_by_question.items():
         try:
             image_paths = carousel_data['paths']
@@ -792,8 +843,12 @@ def upload_from_metadata(
             subject = carousel_data['subject']
             
             logger.info(f"Uploading carousel for {question_id}: {title}")
-            uploader.upload_carousel(image_paths, subject=subject)
-            carousel_uploaded.append(question_id)
+            success = uploader.upload_carousel(image_paths, subject=subject)
+            
+            if success:
+                carousel_uploaded.append(question_id)
+            else:
+                carousel_failed.append(question_id)
             
             # Random delay between uploads
             delay = random.uniform(10, 15)
@@ -819,6 +874,11 @@ def upload_from_metadata(
     reel_uploaded = []
     reel_failed = []
     
+    # Warmup session before first reel upload (only if we have reels to upload)
+    if reel_videos_with_metadata:
+        uploader._warmup_session()
+        uploader._human_delay(2.0, 3.5)
+    
     for reel_data in reel_videos_with_metadata:
         try:
             video_path = reel_data['path']
@@ -829,9 +889,10 @@ def upload_from_metadata(
             caption = f"{title}\n\n#{subject} #programming #coding #dailydoseofprogramming"
             logger.info(f"Uploading reel: {video_path.name} - {title}")
             
+            success = False
             if thumbnail_path:
                 logger.info(f"Using custom thumbnail: {thumbnail_path.name}")
-                uploader.upload_reel(
+                success = uploader.upload_reel(
                     video_path=video_path,
                     caption=caption,
                     thumbnail_path=str(thumbnail_path),
@@ -840,9 +901,12 @@ def upload_from_metadata(
                 )
             else:
                 logger.info("Using auto-generated thumbnail")
-                uploader.upload_reel(video_path, caption=caption, subject=subject)
+                success = uploader.upload_reel(video_path, caption=caption, subject=subject)
             
-            reel_uploaded.append(str(video_path))
+            if success:
+                reel_uploaded.append(str(video_path))
+            else:
+                reel_failed.append(str(video_path))
             
             # Random delay between uploads
             delay = random.uniform(10, 15)
@@ -953,6 +1017,7 @@ if __name__ == "__main__":
     # Get credentials from environment variables
     username = os.getenv('INSTAGRAM_USERNAME')
     password = os.getenv('INSTAGRAM_PASSWORD')
+    profile_username = os.getenv('INSTAGRAM_PROFILE_USERNAME', username)
 
     if not username or not password:
         logger.error("Missing INSTAGRAM_USERNAME or INSTAGRAM_PASSWORD in environment variables")
@@ -1020,7 +1085,8 @@ if __name__ == "__main__":
     result = upload_from_metadata(
         metadata_file_path=metadata_file,
         username=username,
-        password=password
+        password=password,
+        profile_username=profile_username
     )
 
     # Exit with appropriate code
