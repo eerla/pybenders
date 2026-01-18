@@ -421,6 +421,10 @@ class InstagramVideoUploader:
             logger.error(f"❌ Invalid video path (not a file): {video_path}")
             return False
         
+        # Log video details
+        video_size_mb = video_path.stat().st_size / (1024 * 1024)
+        logger.debug(f"✓ Video file: {video_path.name} ({video_size_mb:.1f}MB)")
+        
         # Validate supported video format
         supported_formats = {'.mp4', '.mov', '.avi', '.mkv'}
         if video_path.suffix.lower() not in supported_formats:
@@ -435,9 +439,12 @@ class InstagramVideoUploader:
             if not thumbnail_path.exists():
                 logger.warning(f"⚠️  Thumbnail file not found: {thumbnail_path}, using auto-generated")
                 use_custom_thumbnail = False
+            else:
+                thumb_size_kb = thumbnail_path.stat().st_size / 1024
+                logger.debug(f"✓ Thumbnail: {thumbnail_path.name} ({thumb_size_kb:.1f}KB)")
         
-        logger.info(f"Starting reel upload: {video_path.name}")
-        logger.info(f"Caption: {caption[:80]}...")
+        logger.info(f"📤 Starting reel upload: {video_path.name}")
+        logger.info(f"   Caption: {caption[:80]}...")
         
         # Human-like delay before upload
         self._human_delay(1.5, 3.5)
@@ -445,7 +452,8 @@ class InstagramVideoUploader:
         try:
             if use_custom_thumbnail and thumbnail_path:
                 # Use custom thumbnail (may cause validation errors)
-                logger.info("⚠️  Using custom thumbnail (may cause validation errors)...")
+                logger.info(f"   Using custom thumbnail: {Path(thumbnail_path).name}")
+                logger.debug(f"   Calling clip_upload with custom thumbnail...")
                 media = self.cl.clip_upload(
                     path=str(video_path),
                     caption=caption,
@@ -453,14 +461,14 @@ class InstagramVideoUploader:
                 )
             else:
                 # Auto-generate thumbnail (safer)
-                logger.debug("Uploading with auto-generated thumbnail (safest option)...")
+                logger.debug("   Using auto-generated thumbnail (safest option)...")
                 media = self.cl.clip_upload(
                     path=str(video_path),
                     caption=caption
                 )
             
-            logger.info(f"✓ Successfully uploaded reel: {media.pk}")
-            logger.info(f"✓ Reel URL: https://www.instagram.com/reel/{media.code}/")
+            logger.info(f"✅ Successfully uploaded reel: {media.pk}")
+            logger.info(f"✅ Reel URL: https://www.instagram.com/reel/{media.code}/")
             return True
             
         except ValueError as e:
@@ -473,15 +481,26 @@ class InstagramVideoUploader:
                 )
                 return True  # Consider it success since reel was likely created
             else:
-                logger.error(f"❌ Validation error: {e}")
+                logger.error(f"❌ Validation error: {error_msg}")
+                import traceback
+                logger.debug(f"   Traceback: {traceback.format_exc()}")
                 return False
                 
         except Exception as e:
+            error_type = type(e).__name__
             error_msg = str(e)
-            logger.error(f"❌ Upload failed: {error_msg}")
+            logger.error(f"❌ Upload failed")
+            logger.error(f"   Error type: {error_type}")
+            logger.error(f"   Error message: {error_msg}")
+            
+            if hasattr(e, '__dict__'):
+                logger.debug(f"   Error details: {e.__dict__}")
+            
+            import traceback
+            logger.debug(f"   Traceback: {traceback.format_exc()}")
             
             if "user_has_logged_out" in error_msg:
-                logger.warning("Session was logged out. You may need to re-login.")
+                logger.warning("   ⚠️  Session was logged out. You may need to re-login.")
             
             return False
     
@@ -513,10 +532,12 @@ class InstagramVideoUploader:
         # Validate all image files exist
         image_paths = [Path(img) for img in image_paths]
         
-        for img_path in image_paths:
+        logger.debug(f"Validating {len(image_paths)} carousel images...")
+        for idx, img_path in enumerate(image_paths, 1):
             if not img_path.exists():
-                logger.error(f"Image file not found: {img_path}")
+                logger.error(f"❌ Image {idx}/{len(image_paths)} not found: {img_path}")
                 return False
+            logger.debug(f"✓ Image {idx}/{len(image_paths)}: {img_path.name} ({img_path.stat().st_size / 1024:.1f}KB)")
         
         logger.info(f"Starting carousel upload with {len(image_paths)} images")
         logger.info(f"Caption: {caption[:100]}...")
@@ -526,15 +547,20 @@ class InstagramVideoUploader:
             try:
                 # Re-validate session before upload
                 if not self._validate_session():
-                    logger.warning("Session invalid before upload, attempting re-login")
+                    logger.warning("⚠️  Session invalid before upload, attempting re-login")
                     if not self.login():
-                        logger.error("Failed to re-login")
+                        logger.error("❌ Failed to re-login")
                         continue
+                    logger.info("✓ Re-login successful")
                 
-                logger.info(f"Upload attempt {attempt}/{retries}")
+                logger.info(f"📤 Upload attempt {attempt}/{retries}")
                 
                 # Human-like delay before upload
                 self._human_delay(1.5, 3.5)
+                
+                # Log the upload request details
+                logger.debug(f"Uploading carousel with {len(image_paths)} images to Instagram...")
+                logger.debug(f"Image paths: {[img.name for img in image_paths]}")
                 
                 # Upload carousel
                 media = self.cl.album_upload(
@@ -542,20 +568,31 @@ class InstagramVideoUploader:
                     caption=caption
                 )
                 
-                logger.info(f"Successfully uploaded carousel: {media.pk}")
-                logger.info(f"Post URL: https://www.instagram.com/p/{media.code}/")
+                logger.info(f"✅ Successfully uploaded carousel: {media.pk}")
+                logger.info(f"✅ Post URL: https://www.instagram.com/p/{media.code}/")
                 
                 return True
                 
             except Exception as e:
-                logger.error(f"Upload attempt {attempt} failed: {e}")
+                error_type = type(e).__name__
+                error_msg = str(e)
+                logger.error(f"❌ Upload attempt {attempt} failed")
+                logger.error(f"   Error type: {error_type}")
+                logger.error(f"   Error message: {error_msg}")
+                
+                # Log additional context
+                if hasattr(e, '__dict__'):
+                    logger.debug(f"   Error details: {e.__dict__}")
+                
+                import traceback
+                logger.debug(f"   Traceback: {traceback.format_exc()}")
                 
                 if attempt < retries:
                     delay = random.uniform(2 ** attempt, 2 ** attempt + 5)
-                    logger.info(f"Retrying in {delay:.1f} seconds...")
+                    logger.info(f"⏳ Retrying in {delay:.1f} seconds... (attempt {attempt + 1}/{retries})")
                     time.sleep(delay)
                 else:
-                    logger.error(f"All {retries} upload attempts failed")
+                    logger.error(f"❌ All {retries} upload attempts failed for carousel")
         
         return False
     
