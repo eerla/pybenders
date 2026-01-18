@@ -87,7 +87,7 @@ def validate_psychology_card(q: dict):
     assert len(q["statement"]) <= 150, "Statement too long (max 150 chars)"
     assert len(q["explanation"]) <= 300, "Explanation too long (max 300 chars)"
     assert len(q["real_example"]) <= 260, "Real example too long (max 260 chars)"
-    assert len(q["application"]) <= 170, "Application too long (max 170 chars)"
+    assert len(q["application"]) <= 200, "Application too long (max 200 chars)"
     if q.get("application"):
         assert q["application"].lower().startswith("try this:"), "Application must start with 'Try this:'"
     if q.get("source"):
