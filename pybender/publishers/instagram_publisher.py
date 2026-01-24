@@ -31,8 +31,21 @@ from instagrapi.exceptions import LoginRequired, ClientError
 
 logger = logging.getLogger("InstagramVideoUploader")
 
-
-    
+SUBJECTS = [ 
+        "docker_k8s", 
+        "golang", 
+        "javascript", 
+        "linux", 
+        "python", 
+        "regex", 
+        "rust", 
+        "sql", 
+        "system_design",
+        "mind_benders",
+        "finance",
+        "psychology",
+    ]
+ 
 class InstagramVideoUploader:
     """
     Uploads videos (Reels) to Instagram following best practices.
@@ -1005,126 +1018,126 @@ def upload_from_metadata(
     
     return combined_result
 
-if __name__ == "__main__":
-    import sys
-    import glob
+# if __name__ == "__main__":
+    # import sys
+    # import glob
 
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    # # Configure logging
+    # logging.basicConfig(
+    #     level=logging.INFO,
+    #     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    # )
 
-    # Define paths
-    script_dir = Path(__file__).resolve().parent
-    project_root = script_dir.parent.parent
-    output_1_dir = project_root / "output_1"
+    # # Define paths
+    # script_dir = Path(__file__).resolve().parent
+    # project_root = script_dir.parent.parent
+    # output_1_dir = project_root / "output_1"
 
-    # Load .env if python-dotenv is available
-    if load_dotenv:
-        load_dotenv(project_root / ".env")
+    # # Load .env if python-dotenv is available
+    # if load_dotenv:
+    #     load_dotenv(project_root / ".env")
 
-    # Parse CLI arguments
-    metadata_override = None
-    test_mode = "--test" in sys.argv
+    # # Parse CLI arguments
+    # metadata_override = None
+    # test_mode = "--test" in sys.argv
     
-    if len(sys.argv) > 1:
-        if sys.argv[1] != "--test":
-            metadata_override = sys.argv[1]
+    # if len(sys.argv) > 1:
+    #     if sys.argv[1] != "--test":
+    #         metadata_override = sys.argv[1]
 
-    if metadata_override:
-        metadata_file = Path(metadata_override).resolve()
-        if not metadata_file.exists():
-            logger.error(f"Metadata file not found: {metadata_file}")
-            sys.exit(1)
-    else:
-        # Find the metadata JSON file in the python/runs directory
-        metadata_pattern = output_1_dir / "python" / "runs" / "*_metadata.json"
-        metadata_files = glob.glob(str(metadata_pattern))
+    # if metadata_override:
+    #     metadata_file = Path(metadata_override).resolve()
+    #     if not metadata_file.exists():
+    #         logger.error(f"Metadata file not found: {metadata_file}")
+    #         sys.exit(1)
+    # else:
+    #     # Find the metadata JSON file in the python/runs directory
+    #     metadata_pattern = output_1_dir / "python" / "runs" / "*_metadata.json"
+    #     metadata_files = glob.glob(str(metadata_pattern))
 
-        if not metadata_files:
-            logger.error("No metadata JSON file found in output_1/python/runs/")
-            sys.exit(1)
+    #     if not metadata_files:
+    #         logger.error("No metadata JSON file found in output_1/python/runs/")
+    #         sys.exit(1)
 
-        # Use the most recent metadata file
-        metadata_file = Path(sorted(metadata_files)[-1]).resolve()
+    #     # Use the most recent metadata file
+    #     metadata_file = Path(sorted(metadata_files)[-1]).resolve()
 
-    logger.info(f"Using metadata file: {metadata_file}")
+    # logger.info(f"Using metadata file: {metadata_file}")
 
-    # Get credentials from environment variables
-    username = os.getenv('INSTAGRAM_USERNAME')
-    password = os.getenv('INSTAGRAM_PASSWORD')
-    profile_username = os.getenv('INSTAGRAM_PROFILE_USERNAME', username)
+    # # Get credentials from environment variables
+    # username = os.getenv('INSTAGRAM_USERNAME')
+    # password = os.getenv('INSTAGRAM_PASSWORD')
+    # profile_username = os.getenv('INSTAGRAM_PROFILE_USERNAME', username)
 
-    if not username or not password:
-        logger.error("Missing INSTAGRAM_USERNAME or INSTAGRAM_PASSWORD in environment variables")
-        sys.exit(1)
+    # if not username or not password:
+    #     logger.error("Missing INSTAGRAM_USERNAME or INSTAGRAM_PASSWORD in environment variables")
+    #     sys.exit(1)
 
-    # Test mode: validate files without uploading
-    if test_mode:
-        logger.info("=" * 60)
-        logger.info("🧪 TEST MODE: Validating carousel and reel files")
-        logger.info("=" * 60)
+    # # Test mode: validate files without uploading
+    # if test_mode:
+    #     logger.info("=" * 60)
+    #     logger.info("🧪 TEST MODE: Validating carousel and reel files")
+    #     logger.info("=" * 60)
         
-        try:
-            with open(metadata_file, 'r', encoding='utf-8') as f:
-                metadata = json.load(f)
+    #     try:
+    #         with open(metadata_file, 'r', encoding='utf-8') as f:
+    #             metadata = json.load(f)
             
-            project_root_actual = metadata_file.parent.parent.parent.parent
-            questions = metadata.get('questions', [])
-            subject = metadata.get('subject', 'programming')
+    #         project_root_actual = metadata_file.parent.parent.parent.parent
+    #         questions = metadata.get('questions', [])
+    #         subject = metadata.get('subject', 'programming')
             
-            carousel_count = 0
-            reel_count = 0
+    #         carousel_count = 0
+    #         reel_count = 0
             
-            for q in questions:
-                assets = q.get('assets', {})
-                carousel_images = assets.get('carousel_images', [])
-                video_path = assets.get('combined_reel')
+    #         for q in questions:
+    #             assets = q.get('assets', {})
+    #             carousel_images = assets.get('carousel_images', [])
+    #             video_path = assets.get('combined_reel')
                 
-                # Check carousel
-                if carousel_images:
-                    valid_count = 0
-                    for img in carousel_images:
-                        img_path = project_root_actual / img if not Path(img).is_absolute() else Path(img)
-                        if img_path.exists():
-                            valid_count += 1
-                            logger.info(f"✅ Carousel image found: {img_path.name}")
-                        else:
-                            logger.warning(f"❌ Carousel image missing: {img_path}")
+    #             # Check carousel
+    #             if carousel_images:
+    #                 valid_count = 0
+    #                 for img in carousel_images:
+    #                     img_path = project_root_actual / img if not Path(img).is_absolute() else Path(img)
+    #                     if img_path.exists():
+    #                         valid_count += 1
+    #                         logger.info(f"✅ Carousel image found: {img_path.name}")
+    #                     else:
+    #                         logger.warning(f"❌ Carousel image missing: {img_path}")
                     
-                    if valid_count == len(carousel_images):
-                        carousel_count += 1
+    #                 if valid_count == len(carousel_images):
+    #                     carousel_count += 1
                 
-                # Check reel
-                if video_path:
-                    vid_path = project_root_actual / video_path if not Path(video_path).is_absolute() else Path(video_path)
-                    if vid_path.exists():
-                        logger.info(f"✅ Reel video found: {vid_path.name}")
-                        reel_count += 1
-                    else:
-                        logger.warning(f"❌ Reel video missing: {vid_path}")
+    #             # Check reel
+    #             if video_path:
+    #                 vid_path = project_root_actual / video_path if not Path(video_path).is_absolute() else Path(video_path)
+    #                 if vid_path.exists():
+    #                     logger.info(f"✅ Reel video found: {vid_path.name}")
+    #                     reel_count += 1
+    #                 else:
+    #                     logger.warning(f"❌ Reel video missing: {vid_path}")
             
-            logger.info("=" * 60)
-            logger.info(f"📊 Test Results: {carousel_count} complete carousels, {reel_count} reel videos")
-            logger.info("=" * 60)
-            sys.exit(0)
+    #         logger.info("=" * 60)
+    #         logger.info(f"📊 Test Results: {carousel_count} complete carousels, {reel_count} reel videos")
+    #         logger.info("=" * 60)
+    #         sys.exit(0)
             
-        except Exception as e:
-            logger.error(f"Test mode error: {e}")
-            sys.exit(1)
+    #     except Exception as e:
+    #         logger.error(f"Test mode error: {e}")
+    #         sys.exit(1)
 
-    # Upload both carousel and reels
-    logger.info("=" * 60)
-    logger.info("📤 STARTING UNIFIED UPLOAD (Carousel + Reels)")
-    logger.info("=" * 60)
+    # # Upload both carousel and reels
+    # logger.info("=" * 60)
+    # logger.info("📤 STARTING UNIFIED UPLOAD (Carousel + Reels)")
+    # logger.info("=" * 60)
     
-    result = upload_from_metadata(
-        metadata_file_path=metadata_file,
-        username=username,
-        password=password,
-        profile_username=profile_username
-    )
+    # result = upload_from_metadata(
+    #     metadata_file_path=metadata_file,
+    #     username=username,
+    #     password=password,
+    #     profile_username=profile_username
+    # )
 
-    # Exit with appropriate code
-    sys.exit(0 if result['success'] else 1)
+    # # Exit with appropriate code
+    # sys.exit(0 if result['success'] else 1)

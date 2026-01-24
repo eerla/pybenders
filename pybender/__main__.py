@@ -6,20 +6,28 @@ from pybender.render.reel_generator import ReelGenerator
 from pybender.publishers.instagram_publisher import upload_from_metadata
 from pybender.config.logging_config import setup_logging
 import os
+import json
+import random
 
-SUBJECTS = [ 
-        "docker_k8s", 
+CODE_SUBJECTS = [ 
         "golang", 
         "javascript", 
-        "linux", 
         "python", 
         "regex", 
         "rust", 
-        "sql", 
-        "system_design",
-        "mind_benders",
-        "finance",
-        "psychology",
+    ]
+
+IQLABS_SUBJECTS = [
+    "mind_benders",# add any iqlabs specific subjects here
+    "finance",
+    "psychology",
+]
+
+BACKEND_SUBJECTS = [
+    "docker_k8s", 
+    "sql", 
+    "system_design",
+    "linux"
     ]
 
 logger = logging.getLogger(__name__) 
@@ -65,18 +73,26 @@ def main():
     should_upload = args.upload
 
     if not subject:
-        run_all_subjects(upload=should_upload)
-    else:
+        # run_all_subjects(upload=should_upload)
+        # pick one for coding vs iqlabs
+        subjects = ["python", random.choice(IQLABS_SUBJECTS), random.choice(BACKEND_SUBJECTS)]
+    for subj in subjects:
+        logger.info("=" * 60)
+        logger.info(f"🎬 Generating reels for subject: {subj} with {qs} questions")
+        logger.info("=" * 60)
         generator = ReelGenerator()
-        metadata_path = generator.generate(questions_per_run=qs, subject=subject)
+        metadata_path = generator.generate(questions_per_run=qs, subject=subj)
         logger.info(f"Metadata generated at: {metadata_path}")
         
         # Upload if requested
         if should_upload and metadata_path:
             logger.info("=" * 60)
-            logger.info(f"📤 Starting Instagram upload for {subject}")
+            logger.info(f"📤 Starting Instagram upload for {subj}")
             logger.info("=" * 60)
             upload_instagram_reels(metadata_path)
+    
+    print("Reel generation process completed.")
+
     
 def upload_instagram_reels(metadata_path: Path) -> dict:
     """
@@ -88,20 +104,40 @@ def upload_instagram_reels(metadata_path: Path) -> dict:
     Returns:
         Upload result dictionary
     """
-    # Get credentials from environment variables (more secure)
-    username = os.getenv('INSTAGRAM_USERNAME')
-    password = os.getenv('INSTAGRAM_PASSWORD')
+    metadata_file_path = Path(metadata_path).resolve()
+    with open(metadata_file_path, 'r', encoding='utf-8') as f:
+        metadata = json.load(f)
+        sub = metadata.get('subject', '')
     
+    if not sub:
+        return {'success': False, 'error': 'Subject not found in metadata'}
+    # Get credentials from environment variables (more secure)
+    if sub in CODE_SUBJECTS:
+        username = os.getenv('INSTAGRAM_USERNAME')
+        password = os.getenv('INSTAGRAM_PASSWORD')  
+        profile_username = os.getenv('INSTAGRAM_PROFILE_USERNAME')
+    elif sub in IQLABS_SUBJECTS:
+        username = os.getenv('IQLABS_INSTAGRAM_USERNAME')
+        password = os.getenv('IQLABS_INSTAGRAM_PASSWORD')  
+        profile_username = os.getenv('IQLABS_INSTAGRAM_PROFILE_USERNAME')
+    elif sub in BACKEND_SUBJECTS:
+        username = os.getenv('BACKEND_INSTAGRAM_USERNAME')
+        password = os.getenv('BACKEND_INSTAGRAM_PASSWORD')
+        profile_username = os.getenv('BACKEND_INSTAGRAM_PROFILE_USERNAME')
+    else:
+        return {'success': False, 'error': 'Unknown subject for credentials'}      
+
     if not username or not password:
         logger.error("❌ Instagram credentials not found in environment variables")
-        logger.error("Set INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD environment variables")
+        logger.error("Set the appropriate INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD environment variables for the subject")
         return {'success': False, 'error': 'Missing credentials'}
     
     try:
         result = upload_from_metadata(
             metadata_file_path=metadata_path,
             username=username,
-            password=password
+            password=password,
+            profile_username=profile_username
         )
         
         if result['success']:
