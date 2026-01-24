@@ -873,48 +873,48 @@ def upload_from_metadata(
             'error': 'Login failed'
         }
     
-    # Upload carousels
-    logger.info("=" * 60)
-    logger.info("🖼️  UPLOADING CAROUSELS")
-    logger.info("=" * 60)
+    # # Upload carousels
+    # logger.info("=" * 60)
+    # logger.info("🖼️  UPLOADING CAROUSELS")
+    # logger.info("=" * 60)
     
     carousel_uploaded = []
     carousel_failed = []
     
-    # Warmup session before first upload (only if we have carousels to upload)
-    if carousel_images_by_question:
-        uploader._warmup_session()
-        uploader._human_delay(2.0, 3.5)
+    # # Warmup session before first upload (only if we have carousels to upload)
+    # if carousel_images_by_question:
+    #     uploader._warmup_session()
+    #     uploader._human_delay(2.0, 3.5)
     
-    for question_id, carousel_data in carousel_images_by_question.items():
-        try:
-            image_paths = carousel_data['paths']
-            title = carousel_data['title']
-            subject = carousel_data['subject']
+    # for question_id, carousel_data in carousel_images_by_question.items():
+    #     try:
+    #         image_paths = carousel_data['paths']
+    #         title = carousel_data['title']
+    #         subject = carousel_data['subject']
             
-            logger.info(f"Uploading carousel for {question_id}: {title}")
-            success = uploader.upload_carousel(image_paths, subject=subject)
+    #         logger.info(f"Uploading carousel for {question_id}: {title}")
+    #         success = uploader.upload_carousel(image_paths, subject=subject)
             
-            if success:
-                carousel_uploaded.append(question_id)
-            else:
-                carousel_failed.append(question_id)
+    #         if success:
+    #             carousel_uploaded.append(question_id)
+    #         else:
+    #             carousel_failed.append(question_id)
             
-            # Random delay between uploads
-            delay = random.uniform(10, 15)
-            logger.debug(f"⏳ Waiting {delay:.1f}s before next upload...")
-            time.sleep(delay)
-        except Exception as e:
-            logger.error(f"Failed to upload carousel {question_id}: {e}")
-            carousel_failed.append(question_id)
+    #         # Random delay between uploads
+    #         delay = random.uniform(10, 15)
+    #         logger.debug(f"⏳ Waiting {delay:.1f}s before next upload...")
+    #         time.sleep(delay)
+    #     except Exception as e:
+    #         logger.error(f"Failed to upload carousel {question_id}: {e}")
+    #         carousel_failed.append(question_id)
     
-    logger.info(f"✅ Carousels: {len(carousel_uploaded)} uploaded, {len(carousel_failed)} failed")
+    # logger.info(f"✅ Carousels: {len(carousel_uploaded)} uploaded, {len(carousel_failed)} failed")
     
-    # Wait before uploading reels
-    if carousel_uploaded:
-        delay = random.uniform(delay_between_uploads, delay_between_uploads + 5)
-        logger.info(f"⏳ Waiting {delay:.1f} seconds before uploading reels...")
-        time.sleep(delay)
+    # # Wait before uploading reels
+    # if carousel_uploaded:
+    #     delay = random.uniform(delay_between_uploads, delay_between_uploads + 5)
+    #     logger.info(f"⏳ Waiting {delay:.1f} seconds before uploading reels...")
+    #     time.sleep(delay)
     
     # Upload reels
     logger.info("=" * 60)
