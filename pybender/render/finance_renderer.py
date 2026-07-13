@@ -221,11 +221,14 @@ class FinanceRenderer:
     def render_action_card(self, question: FinanceCard, theme: Dict, output_path: Path, size: Tuple[int, int]):
         return self._render_body_card("action", "Try this", question.action, theme, output_path, size)
 
-    def render_cta_card(self, theme: Dict, reel_cta_path: Path, carousel_cta_path: Path) -> Dict[str, Path]:
-        for size, path, format_name in [
-            (self.REEL_SIZE, reel_cta_path, "REEL"),
-            (self.CAROUSEL_SIZE, carousel_cta_path, "CAROUSEL"),
-        ]:
+    def render_cta_card(self, theme: Dict, reel_cta_path: Path, carousel_cta_path: Path | None = None) -> Dict[str, Path]:
+        """Render CTA image(s). Carousel format is skipped if carousel_cta_path is None (reels-only mode)."""
+
+        formats = [(self.REEL_SIZE, reel_cta_path, "REEL")]
+        if carousel_cta_path is not None:
+            formats.append((self.CAROUSEL_SIZE, carousel_cta_path, "CAROUSEL"))
+
+        for size, path, format_name in formats:
             path.parent.mkdir(parents=True, exist_ok=True)
             width, height = size
             layout = self._get_layout(size, "cta")

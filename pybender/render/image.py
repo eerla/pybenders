@@ -36,8 +36,9 @@ class ImageRenderer:
         # self.WRITE_METADATA = False  # Set to True to write metadata.json
         # self.USE_STATIC_QUESTIONS = True  # Set to True to use static questions from output/questions.json
         # self.GENERATE_NEW_QIDS = False  # Set to True to assign new question IDs
+        # self.BASE_DIR = Path(r"G:\My Drive\output")  # Google Drive path
 
-        self.BASE_DIR = Path(r"G:\My Drive\output")  # Change to google drive path
+        self.BASE_DIR = Path(r"C:\Users\gurub\projects\pybenders\output")
         self.WRITE_METADATA = True  # Set to True to write metadata.json
         self.USE_STATIC_QUESTIONS = False  # Set to True to use static questions from output/questions.json
         self.GENERATE_NEW_QIDS = True  # Set to True to assign new question IDs
@@ -156,46 +157,46 @@ class ImageRenderer:
             # WELCOME COVER - Per question with category
             # ==========================================
             reel_welcome_img = reel_dir / f"{q.question_id}_welcome.png"
-            carousel_welcome_img = carousel_dir / f"{q.question_id}_welcome.png"
-            
+            # carousel_welcome_img = carousel_dir / f"{q.question_id}_welcome.png"  # reels-only: carousel disabled
+
             renderer.render_welcome_cover(theme, reel_welcome_img, size=renderer.REEL_SIZE, category=q.category)
-            renderer.render_welcome_cover(theme, carousel_welcome_img, size=renderer.CAROUSEL_SIZE, category=q.category)
-            
-            logger.info(f"✅ Rendered WELCOME covers: {q.title} ({q.category})")
-            
+            # renderer.render_welcome_cover(theme, carousel_welcome_img, size=renderer.CAROUSEL_SIZE, category=q.category)
+
+            logger.info(f"✅ Rendered WELCOME cover: {q.title} ({q.category})")
+
             # ==========================================
-            # CTA PER QUESTION (reel + carousel)
+            # CTA PER QUESTION (reel only)
             # ==========================================
             reel_cta_img = reel_dir / f"{q.question_id}_cta.png"
-            carousel_cta_img = carousel_dir / f"{q.question_id}_cta.png"
-            renderer.render_theme_cta(theme, reel_cta_img, carousel_cta_img)
-            
+            # carousel_cta_img = carousel_dir / f"{q.question_id}_cta.png"  # reels-only: carousel disabled
+            renderer.render_theme_cta(theme, reel_cta_img)
+
             # ==========================================
             # REEL FORMAT (1080x1920) - in reel/ directory
             # ==========================================
             reel_question_img = reel_dir / f"{q.question_id}_question.png"
             reel_hint_img = reel_dir / f"{q.question_id}_hint.png"
             reel_answer_img = reel_dir / f"{q.question_id}_answer.png"
-            
+
             renderer.render_puzzle_card(question_dict, theme, reel_question_img, size=renderer.REEL_SIZE)
             renderer.render_hint_card(question_dict, theme, reel_hint_img, size=renderer.REEL_SIZE)
             renderer.render_answer_card(question_dict, theme, reel_answer_img, size=renderer.REEL_SIZE)
-            
+
             logger.info(f"✅ Rendered (REEL): {q.title}")
-            
+
             # ==========================================
-            # CAROUSEL FORMAT (1080x1080) - in carousels/ directory
+            # CAROUSEL FORMAT (1080x1080) - disabled for reels-only mode
             # ==========================================
-            carousel_question_img = carousel_dir / f"{q.question_id}_question.png"
-            carousel_hint_img = carousel_dir / f"{q.question_id}_hint.png"
-            carousel_answer_img = carousel_dir / f"{q.question_id}_answer.png"
-            
-            renderer.render_puzzle_card(question_dict, theme, carousel_question_img, size=renderer.CAROUSEL_SIZE)
-            renderer.render_hint_card(question_dict, theme, carousel_hint_img, size=renderer.CAROUSEL_SIZE)
-            renderer.render_answer_card(question_dict, theme, carousel_answer_img, size=renderer.CAROUSEL_SIZE)
-            
-            logger.info(f"✅ Rendered (CAROUSEL): {q.title}")
-            
+            # carousel_question_img = carousel_dir / f"{q.question_id}_question.png"
+            # carousel_hint_img = carousel_dir / f"{q.question_id}_hint.png"
+            # carousel_answer_img = carousel_dir / f"{q.question_id}_answer.png"
+            #
+            # renderer.render_puzzle_card(question_dict, theme, carousel_question_img, size=renderer.CAROUSEL_SIZE)
+            # renderer.render_hint_card(question_dict, theme, carousel_hint_img, size=renderer.CAROUSEL_SIZE)
+            # renderer.render_answer_card(question_dict, theme, carousel_answer_img, size=renderer.CAROUSEL_SIZE)
+            #
+            # logger.info(f"✅ Rendered (CAROUSEL): {q.title}")
+
             # Add to metadata
             metadata["questions"].append({
                 "question_id": q.question_id,
@@ -211,17 +212,17 @@ class ImageRenderer:
                         "hint_image": str(reel_hint_img),
                         "answer_image": str(reel_answer_img)
                     },
-                    "carousel": {
-                        "welcome_image": str(carousel_welcome_img),
-                        "cta_image": str(carousel_cta_img),
-                        "question_image": str(carousel_question_img),
-                        "hint_image": str(carousel_hint_img),
-                        "answer_image": str(carousel_answer_img)
-                    }
+                    # "carousel": {  # reels-only: carousel disabled
+                    #     "welcome_image": str(carousel_welcome_img),
+                    #     "cta_image": str(carousel_cta_img),
+                    #     "question_image": str(carousel_question_img),
+                    #     "hint_image": str(carousel_hint_img),
+                    #     "answer_image": str(carousel_answer_img)
+                    # }
                 }
             })
-        
-        logger.info("All mind_bender images rendered successfully (reel + carousel)")
+
+        logger.info("All mind_bender images rendered successfully (reel only)")
         
         
         # --------------------------------------------------
@@ -312,67 +313,67 @@ class ImageRenderer:
             # Card 1: WELCOME COVER - Per question with category
             # ==========================================
             reel_welcome_img = reel_dir / f"{q.question_id}_1_welcome.png"
-            carousel_welcome_img = carousel_dir / f"{q.question_id}_1_welcome.png"
-            
+            # carousel_welcome_img = carousel_dir / f"{q.question_id}_1_welcome.png"  # reels-only: carousel disabled
+
             renderer.render_welcome_card(theme, reel_welcome_img, size=renderer.REEL_SIZE, category=q.category)
-            renderer.render_welcome_card(theme, carousel_welcome_img, size=renderer.CAROUSEL_SIZE, category=q.category)
-            
+            # renderer.render_welcome_card(theme, carousel_welcome_img, size=renderer.CAROUSEL_SIZE, category=q.category)
+
             logger.info(f"✅ Rendered WELCOME card: {q.title} ({q.category})")
-            
+
             # ==========================================
-            # Card 2: STATEMENT CARD (reel + carousel)
+            # Card 2: STATEMENT CARD (reel only)
             # ==========================================
             reel_statement_img = reel_dir / f"{q.question_id}_2_statement.png"
-            carousel_statement_img = carousel_dir / f"{q.question_id}_2_statement.png"
-            
+            # carousel_statement_img = carousel_dir / f"{q.question_id}_2_statement.png"  # reels-only: carousel disabled
+
             renderer.render_statement_card(question_dict, theme, reel_statement_img, size=renderer.REEL_SIZE)
-            renderer.render_statement_card(question_dict, theme, carousel_statement_img, size=renderer.CAROUSEL_SIZE)
-            
+            # renderer.render_statement_card(question_dict, theme, carousel_statement_img, size=renderer.CAROUSEL_SIZE)
+
             logger.info(f"✅ Rendered STATEMENT card: {q.title}")
-            
+
             # ==========================================
-            # Card 3: EXPLANATION CARD (reel + carousel)
+            # Card 3: EXPLANATION CARD (reel only)
             # ==========================================
             reel_explanation_img = reel_dir / f"{q.question_id}_3_explanation.png"
-            carousel_explanation_img = carousel_dir / f"{q.question_id}_3_explanation.png"
-            
+            # carousel_explanation_img = carousel_dir / f"{q.question_id}_3_explanation.png"  # reels-only: carousel disabled
+
             renderer.render_explanation_card(question_dict, theme, reel_explanation_img, size=renderer.REEL_SIZE)
-            renderer.render_explanation_card(question_dict, theme, carousel_explanation_img, size=renderer.CAROUSEL_SIZE)
-            
+            # renderer.render_explanation_card(question_dict, theme, carousel_explanation_img, size=renderer.CAROUSEL_SIZE)
+
             logger.info(f"✅ Rendered EXPLANATION card: {q.title}")
-            
+
             # ==========================================
-            # Card 4: EXAMPLE CARD (reel + carousel)
+            # Card 4: EXAMPLE CARD (reel only)
             # ==========================================
             reel_example_img = reel_dir / f"{q.question_id}_4_example.png"
-            carousel_example_img = carousel_dir / f"{q.question_id}_4_example.png"
-            
+            # carousel_example_img = carousel_dir / f"{q.question_id}_4_example.png"  # reels-only: carousel disabled
+
             renderer.render_example_card(question_dict, theme, reel_example_img, size=renderer.REEL_SIZE)
-            renderer.render_example_card(question_dict, theme, carousel_example_img, size=renderer.CAROUSEL_SIZE)
-            
+            # renderer.render_example_card(question_dict, theme, carousel_example_img, size=renderer.CAROUSEL_SIZE)
+
             logger.info(f"✅ Rendered EXAMPLE card: {q.title}")
-            
+
             # ==========================================
-            # Card 5: APPLICATION CARD (reel + carousel)
+            # Card 5: APPLICATION CARD (reel only)
             # ==========================================
             reel_application_img = reel_dir / f"{q.question_id}_5_application.png"
-            carousel_application_img = carousel_dir / f"{q.question_id}_5_application.png"
-            
+            # carousel_application_img = carousel_dir / f"{q.question_id}_5_application.png"  # reels-only: carousel disabled
+
             renderer.render_application_card(question_dict, theme, reel_application_img, size=renderer.REEL_SIZE)
-            renderer.render_application_card(question_dict, theme, carousel_application_img, size=renderer.CAROUSEL_SIZE)
-            
+            # renderer.render_application_card(question_dict, theme, carousel_application_img, size=renderer.CAROUSEL_SIZE)
+
             logger.info(f"✅ Rendered APPLICATION card: {q.title}")
-            
+
             # ==========================================
-            # Card 6: CTA CARD (reel + carousel)
+            # Card 6: CTA CARD (reel only)
             # ==========================================
             reel_cta_img = reel_dir / f"{q.question_id}_6_cta.png"
-            carousel_cta_img = carousel_dir / f"{q.question_id}_6_cta.png"
-            
-            renderer.render_cta_card(theme, reel_cta_img, carousel_cta_img)
-            
+            # carousel_cta_img = carousel_dir / f"{q.question_id}_6_cta.png"  # reels-only: carousel disabled
+
+            renderer.render_cta_card(theme, reel_cta_img)
+
             logger.info(f"✅ Rendered CTA card: {q.title}")
-            
+
             # Add to metadata
             metadata["questions"].append({
                 "question_id": q.question_id,
@@ -389,18 +390,18 @@ class ImageRenderer:
                         "application_image": str(reel_application_img),
                         "cta_image": str(reel_cta_img)
                     },
-                    "carousel": {
-                        "welcome_image": str(carousel_welcome_img),
-                        "statement_image": str(carousel_statement_img),
-                        "explanation_image": str(carousel_explanation_img),
-                        "example_image": str(carousel_example_img),
-                        "application_image": str(carousel_application_img),
-                        "cta_image": str(carousel_cta_img)
-                    }
+                    # "carousel": {  # reels-only: carousel disabled
+                    #     "welcome_image": str(carousel_welcome_img),
+                    #     "statement_image": str(carousel_statement_img),
+                    #     "explanation_image": str(carousel_explanation_img),
+                    #     "example_image": str(carousel_example_img),
+                    #     "application_image": str(carousel_application_img),
+                    #     "cta_image": str(carousel_cta_img)
+                    # }
                 }
             })
-        
-        logger.info("All psychology images rendered successfully (reel + carousel)")
+
+        logger.info("All psychology images rendered successfully (reel only)")
         
         
         # --------------------------------------------------
@@ -456,39 +457,39 @@ class ImageRenderer:
             "questions": [],
         }
 
-        logger.info("Rendering finance images (reel + carousel)...")
+        logger.info("Rendering finance images (reel only)...")
         for q in questions:
             q_slug = slugify(q.title)
             content_dict = q.model_dump() if hasattr(q, "model_dump") else q.dict()
 
             reel_welcome = reel_dir / f"{q.question_id}_welcome.png"
-            carousel_welcome = carousel_dir / f"{q.question_id}_welcome.png"
+            # carousel_welcome = carousel_dir / f"{q.question_id}_welcome.png"  # reels-only: carousel disabled
             renderer.render_welcome_card(theme, reel_welcome, size=renderer.REEL_SIZE, category=q.category)
-            renderer.render_welcome_card(theme, carousel_welcome, size=renderer.CAROUSEL_SIZE, category=q.category)
+            # renderer.render_welcome_card(theme, carousel_welcome, size=renderer.CAROUSEL_SIZE, category=q.category)
 
             reel_insight = reel_dir / f"{q.question_id}_insight.png"
-            carousel_insight = carousel_dir / f"{q.question_id}_insight.png"
+            # carousel_insight = carousel_dir / f"{q.question_id}_insight.png"  # reels-only: carousel disabled
             renderer.render_insight_card(q, theme, reel_insight, size=renderer.REEL_SIZE)
-            renderer.render_insight_card(q, theme, carousel_insight, size=renderer.CAROUSEL_SIZE)
+            # renderer.render_insight_card(q, theme, carousel_insight, size=renderer.CAROUSEL_SIZE)
 
             reel_expl = reel_dir / f"{q.question_id}_explanation.png"
-            carousel_expl = carousel_dir / f"{q.question_id}_explanation.png"
+            # carousel_expl = carousel_dir / f"{q.question_id}_explanation.png"  # reels-only: carousel disabled
             renderer.render_explanation_card(q, theme, reel_expl, size=renderer.REEL_SIZE)
-            renderer.render_explanation_card(q, theme, carousel_expl, size=renderer.CAROUSEL_SIZE)
+            # renderer.render_explanation_card(q, theme, carousel_expl, size=renderer.CAROUSEL_SIZE)
 
             reel_example = reel_dir / f"{q.question_id}_example.png"
-            carousel_example = carousel_dir / f"{q.question_id}_example.png"
+            # carousel_example = carousel_dir / f"{q.question_id}_example.png"  # reels-only: carousel disabled
             renderer.render_example_card(q, theme, reel_example, size=renderer.REEL_SIZE)
-            renderer.render_example_card(q, theme, carousel_example, size=renderer.CAROUSEL_SIZE)
+            # renderer.render_example_card(q, theme, carousel_example, size=renderer.CAROUSEL_SIZE)
 
             reel_action = reel_dir / f"{q.question_id}_action.png"
-            carousel_action = carousel_dir / f"{q.question_id}_action.png"
+            # carousel_action = carousel_dir / f"{q.question_id}_action.png"  # reels-only: carousel disabled
             renderer.render_action_card(q, theme, reel_action, size=renderer.REEL_SIZE)
-            renderer.render_action_card(q, theme, carousel_action, size=renderer.CAROUSEL_SIZE)
+            # renderer.render_action_card(q, theme, carousel_action, size=renderer.CAROUSEL_SIZE)
 
             reel_cta = reel_dir / f"{q.question_id}_cta.png"
-            carousel_cta = carousel_dir / f"{q.question_id}_cta.png"
-            renderer.render_cta_card(theme, reel_cta, carousel_cta)
+            # carousel_cta = carousel_dir / f"{q.question_id}_cta.png"  # reels-only: carousel disabled
+            renderer.render_cta_card(theme, reel_cta)
 
             metadata["questions"].append(
                 {
@@ -506,14 +507,14 @@ class ImageRenderer:
                             "action_image": str(reel_action),
                             "cta_image": str(reel_cta),
                         },
-                        "carousel": {
-                            "welcome_image": str(carousel_welcome),
-                            "insight_image": str(carousel_insight),
-                            "explanation_image": str(carousel_expl),
-                            "example_image": str(carousel_example),
-                            "action_image": str(carousel_action),
-                            "cta_image": str(carousel_cta),
-                        },
+                        # "carousel": {  # reels-only: carousel disabled
+                        #     "welcome_image": str(carousel_welcome),
+                        #     "insight_image": str(carousel_insight),
+                        #     "explanation_image": str(carousel_expl),
+                        #     "example_image": str(carousel_example),
+                        #     "action_image": str(carousel_action),
+                        #     "cta_image": str(carousel_cta),
+                        # },
                     },
                 }
             )
@@ -529,7 +530,7 @@ class ImageRenderer:
 
     def _render_technical_content(self, questions_per_run: int, subject: str) -> Path:
         from pybender.render.tech_content_renderer import TechContentRenderer
-        from pybender.render.tech_content_carousel_renderer import TechContentCarouselRenderer
+        # from pybender.render.tech_content_carousel_renderer import TechContentCarouselRenderer  # reels-only: carousel disabled
         # --------------------------------------------------
         # Run context
         # --------------------------------------------------
@@ -586,7 +587,7 @@ class ImageRenderer:
         # --------------------------------------------------
         logger.info("Rendering images...")
 
-        carousel_renderer = TechContentCarouselRenderer()
+        # carousel_renderer = TechContentCarouselRenderer()  # reels-only: carousel disabled
 
         for q in questions:
             q_slug = slugify(q.title)
@@ -603,13 +604,13 @@ class ImageRenderer:
 
             logger.info("✅ Rendered (REEL): %s", q.title)
 
-            # CAROUSEL FORMAT (1080x1080)
-            carousel_images = carousel_renderer.generate_carousel_slides(
-                question=q,
-                carousel_dir=carousel_dir,
-                subject=subject,
-                question_id=q.question_id,
-            )
+            # CAROUSEL FORMAT (1080x1080) - disabled for reels-only mode
+            # carousel_images = carousel_renderer.generate_carousel_slides(
+            #     question=q,
+            #     carousel_dir=carousel_dir,
+            #     subject=subject,
+            #     question_id=q.question_id,
+            # )
 
             metadata["questions"].append(
                 {
@@ -622,7 +623,7 @@ class ImageRenderer:
                             "question_image": str(reel_question_img),
                             "answer_image": str(reel_answer_img),
                         },
-                        "carousel_images": carousel_images,
+                        # "carousel_images": carousel_images,  # reels-only: carousel disabled
                     },
                 }
             )

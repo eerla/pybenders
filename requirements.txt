@@ -1,6 +1,15 @@
 openai
-pillow
-moviepy
+# moviepy's own metadata pins pillow<12.0, but that's a stale upper bound -
+# verified working at runtime (resize/effects/export) against 12.2-12.x, which
+# is also what instagrapi requires. Pin explicitly so installs land here
+# deterministically instead of pip's resolver picking an incompatible Pillow.
+pillow>=12.2.0,<13
+moviepy>=2.0
 python-dotenv
 pydantic
 tqdm
+instagrapi
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+edge-tts

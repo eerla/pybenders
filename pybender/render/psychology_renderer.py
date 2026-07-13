@@ -507,13 +507,14 @@ class PsychologyRenderer:
         logger.info(f"✅ Saved psychology application card: {output_path}")
         return output_path
     
-    def render_cta_card(self, theme: Dict, reel_cta_path: Path, carousel_cta_path: Path) -> Dict[str, Path]:
-        """Render CTA images for both reel and carousel formats."""
-        
-        for size, path, format_name in [
-            (self.REEL_SIZE, reel_cta_path, "REEL"),
-            (self.CAROUSEL_SIZE, carousel_cta_path, "CAROUSEL"),
-        ]:
+    def render_cta_card(self, theme: Dict, reel_cta_path: Path, carousel_cta_path: Path | None = None) -> Dict[str, Path]:
+        """Render CTA image(s). Carousel format is skipped if carousel_cta_path is None (reels-only mode)."""
+
+        formats = [(self.REEL_SIZE, reel_cta_path, "REEL")]
+        if carousel_cta_path is not None:
+            formats.append((self.CAROUSEL_SIZE, carousel_cta_path, "CAROUSEL"))
+
+        for size, path, format_name in formats:
             path.parent.mkdir(parents=True, exist_ok=True)
 
             width, height = size

@@ -9,25 +9,25 @@ import os
 import json
 import random
 
-CODE_SUBJECTS = [ 
-        "golang", 
-        "javascript", 
-        "python", 
-        "regex", 
-        "rust", 
+CODE_SUBJECTS = [
+        # "golang",   # trimmed: too niche, low audience overlap with keepers
+        "javascript",
+        "python",
+        # "regex",
+        # "rust",
     ]
 
 IQLABS_SUBJECTS = [
     "mind_benders",# add any iqlabs specific subjects here
-    "finance",
-    "psychology",
+    # "finance",    # trimmed: saturated niche, revisit later
+    # "psychology", # trimmed: saturated niche, revisit later
 ]
 
 BACKEND_SUBJECTS = [
-    "docker_k8s", 
-    "sql", 
+    # "docker_k8s",  # trimmed: narrower devops audience
+    "sql",
     "system_design",
-    "linux"
+    # "linux"
     ]
 
 logger = logging.getLogger(__name__) 
@@ -45,19 +45,19 @@ def main():
         "--subject",
         type=str,
         default="",
-        choices=[ 
-            "docker_k8s", 
-            "golang", 
-            "javascript", 
-            "linux",
+        choices=[
+            # "docker_k8s",
+            # "golang",
+            "javascript",
+            # "linux",
             "mind_benders",
-            "python", 
-            "regex", 
-            "rust", 
-            "sql", 
+            "python",
+            # "regex",
+            # "rust",
+            "sql",
             "system_design",
-            "finance",
-            "psychology",
+            # "finance",
+            # "psychology",
         ],
         help="Subject for the reels (default: run all subjects)"
     )
@@ -75,7 +75,9 @@ def main():
     if not subject:
         # run_all_subjects(upload=should_upload)
         # pick one for coding vs iqlabs
-        subjects = ["python", random.choice(IQLABS_SUBJECTS), random.choice(BACKEND_SUBJECTS)]
+        subjects = [random.choice(CODE_SUBJECTS), random.choice(IQLABS_SUBJECTS), random.choice(BACKEND_SUBJECTS)]
+    else:
+        subjects = [subject]
     for subj in subjects:
         logger.info("=" * 60)
         logger.info(f"🎬 Generating reels for subject: {subj} with {qs} questions")
